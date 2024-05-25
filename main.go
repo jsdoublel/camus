@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"camus/alg"
 	"camus/io"
 )
 
@@ -33,9 +34,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error importing file data:\n%+v\n", err)
 		os.Exit(2)
 	}
-	fmt.Println(tre.AllTipNames())
-	fmt.Println(len(quartets))
-	// for _, q := range quartets {
-	// 	fmt.Printf("%d%d|%d%d\n", q.T1, q.T2, q.T3, q.T4)
-	// }
+	branches, err := alg.CAMUS(tre, quartets)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Sisyphus was not happy :(\n%+v\n", err)
+		os.Exit(3)
+	}
+	fmt.Println(branches)
 }
