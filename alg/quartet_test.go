@@ -57,6 +57,7 @@ func TestNewQuartet(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced err %+v", err)
 			}
+			t.Logf("\nquartet %s\ntest quartet %s", q.String(tre), test.quartet.String())
 			if !testQuartetEqual(q, test.quartet, tre) {
 				t.Errorf("quartet has wrong topology (%s != %s)", q.String(tre), test.quartet.String())
 			}
@@ -115,6 +116,7 @@ func TestCompare(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced err %+v", err)
 			}
+			t.Logf("\nquartet %s\ntest quartet %s", q1.String(tre), q2.String(tre))
 			result := q1.Compare(q2)
 			if result != test.result {
 				t.Errorf("got %d, expected %d", result, test.result)
