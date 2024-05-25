@@ -140,7 +140,7 @@ func (tq *TestQuartet) topology(tre *tree.Tree) uint8 {
 	}
 	slices.Sort(ids)
 	var power uint8 = 1
-	var topo uint8 = TOPONIL
+	var topo uint8 = 0b0000
 	for _, id := range ids {
 		if partition[id] {
 			topo |= power

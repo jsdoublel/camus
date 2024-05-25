@@ -13,14 +13,6 @@ type Quartet struct {
 	topology uint8
 }
 
-/* enumerate possible topologies for a quartet */
-const (
-	TOPONIL = 0b0000
-	TOPO1   = 0b0011
-	TOPO2   = 0b0101
-	TOPO3   = 0b0110
-)
-
 /* possible results for quartet comparison */
 const (
 	Q_EQ   = iota // quartets equal
@@ -61,7 +53,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	slices.Sort(taxaIDs) // sort ids so quartet topologies are equal if they are the same
 	count := 0           // only to varify we have exactly two taxa on each side
 	var power uint8 = 1
-	var topo uint8 = TOPONIL
+	var topo uint8 = 0b0000
 	for _, id := range taxaIDs {
 		if idToBool[id] {
 			count++
@@ -72,10 +64,6 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	if count != 2 {
 		panic("quartet didn't define bipartition properly, probably due to a bug")
 	}
-	if topo != TOPO1 && topo != TOPO2 && topo != TOPO3 {
-		topo ^= 0b1111 // inverse so that topology is consistent with enumerated constants
-	}
-
 	return &Quartet{taxa: taxaIDs, topology: topo}, nil
 }
 
