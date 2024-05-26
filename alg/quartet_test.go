@@ -2,6 +2,7 @@ package alg
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -101,12 +102,14 @@ func TestCompare(t *testing.T) {
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
 			}
-
 			t2, err := newick.NewParser(strings.NewReader(test.q2)).Parse()
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
 			}
 			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
+			if err != nil {
+				t.Error("invalid newick tree; test is written wrong")
+			}
 			tre.UpdateTipIndex()
 			q1, err := NewQuartet(t1, tre)
 			if err != nil {
@@ -120,6 +123,43 @@ func TestCompare(t *testing.T) {
 			result := q1.Compare(q2)
 			if result != test.result {
 				t.Errorf("got %d, expected %d", result, test.result)
+			}
+		})
+	}
+}
+
+func TestQuartetsFromTree(t *testing.T) {
+	testCases := []struct {
+		name string
+		tre  string
+		qSet []string
+	}{
+		{
+			name: "basic",
+			tre:  "((((a,b),c),d),f);",
+			qSet: []string{
+				"(((a,b),c),d);",
+				"(((a,b),c),f);",
+				"(((a,b),d),f);",
+				"(((a,c),d),f);",
+				"(((b,c),d),f);",
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
+			if err != nil {
+				t.Error("invalid newick tree; test is written wrong")
+			}
+			tre.UpdateTipIndex()
+			qSet := QuartetsFromTree(tre)
+			expectedQSet, err := stringListToQMap(test.qSet, tre)
+			if err != nil {
+				t.Error(err)
+			}
+			if !reflect.DeepEqual(qSet, expectedQSet) {
+				t.Errorf("actual %s != expected %s", setToString(qSet, tre), setToString(expectedQSet, tre))
 			}
 		})
 	}
@@ -159,4 +199,36 @@ func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) bool {
 
 func (tq *TestQuartet) String() string {
 	return fmt.Sprintf("%s%s|%s%s", tq.set1[0], tq.set1[1], tq.set2[0], tq.set2[1])
+}
+
+func setToString(qSet map[Quartet]bool, tre *tree.Tree) string {
+	str := "{"
+	for q := range qSet {
+		str += q.String(tre) + ", "
+	}
+	return str + "}"
+}
+
+func listToString(qList []*Quartet, tre *tree.Tree) string {
+	str := "{"
+	for _, q := range qList {
+		str += q.String(tre) + ", "
+	}
+	return str + "}"
+}
+
+func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]bool, error) {
+	qSet := make(map[Quartet]bool)
+	for _, nwk := range list {
+		tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
+		if err != nil {
+			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
+		}
+		q, err := NewQuartet(tr, tre)
+		if err != nil {
+			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
+		}
+		qSet[*q] = true
+	}
+	return qSet, nil
 }

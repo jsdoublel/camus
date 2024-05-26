@@ -3,13 +3,12 @@ package alg
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/evolbioinfo/gotree/tree"
 )
 
 type Quartet struct {
-	taxa     []int // should be in sorted order
+	taxa     [4]uint // should be in sorted order
 	topology uint8
 }
 
@@ -31,27 +30,35 @@ args:
 func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	qTaxa := qTree.AllTipNames()
 	if len(qTaxa) != 4 {
-		return nil, fmt.Errorf("Bad quartet, tree has %d != 4 leaves", len(qTaxa))
+		return nil, fmt.Errorf("tree has %d != 4 leaves", len(qTaxa))
 	}
 	qTree.UnRoot()
 	if qTree.Root().Nneigh() != 3 {
-		return nil, errors.New("Bad quartet, probably does not contain bipartition")
+		return nil, errors.New("probably does not contain bipartition")
 	}
-	taxaIDs := make([]int, 4)
+	taxaIDs := [4]uint{}
 	leaves := qTree.Tips()
-	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
+	idToBool := make(map[uint]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
 		ti, err := tre.TipIndex(l.Name())
 		tipIndexPanic("convertQuartet", err)
-		taxaIDs[i] = ti
+		taxaIDs[i] = uint(ti)
 		r, err := l.Parent()
 		if err != nil && err.Error() == "The node has more than one parent" { // we ignore the error produced when cur = root
 			panic(fmt.Errorf("convertQuartet: %w", err))
 		}
-		idToBool[ti] = r == qTree.Root()
+		idToBool[uint(ti)] = r == qTree.Root()
 	}
-	slices.Sort(taxaIDs) // sort ids so quartet topologies are equal if they are the same
-	count := 0           // only to varify we have exactly two taxa on each side
+	topo := setTopology(&taxaIDs, idToBool)
+	return &Quartet{taxa: taxaIDs, topology: topo}, nil
+}
+
+func setTopology(taxaIDs *[4]uint, idToBool map[uint]bool) uint8 {
+	if len(taxaIDs) != 4 {
+		panic("taxaIDs len != 4 in setTopology")
+	}
+	sortTaxa(taxaIDs) // sort ids so quartet topologies are equal if they are the same
+	count := 0        // only to varify we have exactly two taxa on each side
 	var power uint8 = 1
 	var topo uint8 = 0b0000
 	for _, id := range taxaIDs {
@@ -64,7 +71,38 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	if count != 2 {
 		panic("quartet didn't define bipartition properly, probably due to a bug")
 	}
-	return &Quartet{taxa: taxaIDs, topology: topo}, nil
+	if topo%2 != 0 {
+		topo ^= 0b1111
+	}
+	return topo
+}
+
+func sortTaxa(arr *[4]uint) {
+	for i := 0; i < 3; i++ {
+		for j := i + 1; j < 4; j++ {
+			if arr[i] > arr[j] {
+				arr[i], arr[j] = arr[j], arr[i]
+			}
+		}
+	}
+}
+
+/* returns hashmap containing quartets from tree */
+func QuartetsFromTree(tre *tree.Tree) map[Quartet]bool {
+	treeQuartets := make(map[Quartet]bool) // get quartets from tree
+	tre.Quartets(false, func(q *tree.Quartet) {
+		treeQuartets[*quartetFromTreeQ(q)] = true
+	})
+	return treeQuartets
+}
+
+/* create quartet from gotree *tree.Quartet */
+func quartetFromTreeQ(tq *tree.Quartet) *Quartet {
+	taxaIDs := [...]uint{tq.T1, tq.T2, tq.T3, tq.T4}
+	idToBool := make(map[uint]bool)
+	idToBool[taxaIDs[0]] = true
+	idToBool[taxaIDs[1]] = true
+	return &Quartet{taxa: taxaIDs, topology: setTopology(&taxaIDs, idToBool)}
 }
 
 func tipIndexPanic(context string, err error) {
@@ -75,11 +113,11 @@ func tipIndexPanic(context string, err error) {
 
 /* Not efficent, do no use except for testing !!! */
 func (q *Quartet) String(tre *tree.Tree) string {
-	names := make(map[int]string)
+	names := make(map[uint]string)
 	for _, u := range tre.Tips() {
 		ti, err := tre.TipIndex(u.Name())
 		tipIndexPanic("String", err)
-		names[ti] = u.Name()
+		names[uint(ti)] = u.Name()
 	}
 	qString := "|"
 	for i := 0; i < 4; i++ {
