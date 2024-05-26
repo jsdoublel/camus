@@ -3,6 +3,7 @@ package alg
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -66,11 +67,25 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				expected = append(expected, q)
 			}
+			slices.SortFunc(result, sortQuartet)
+			slices.SortFunc(expected, sortQuartet)
 			if !reflect.DeepEqual(result, expected) {
 				t.Errorf("actual %s != expected %s", listToString(result, tre), listToString(expected, tre))
 			}
 		})
 	}
+}
+
+func sortQuartet(q1, q2 *Quartet) int {
+	sum1 := 0
+	sum2 := 0
+	for i := 0; i < 4; i++ {
+		sum1 += int(q1.taxa[i])
+		sum2 += int(q2.taxa[i])
+	}
+	sum1 += int(q1.topology)
+	sum2 += int(q2.topology)
+	return sum1 - sum2
 }
 
 func TestLCAandLeafset(t *testing.T) {
