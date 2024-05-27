@@ -9,12 +9,11 @@ import (
 )
 
 func CAMUS(tre *tree.Tree, rawQuartets []*tree.Tree) ([][]uint, error) {
-	quartets, lcaMat, leafsets, err := prep.Preprocess(tre, rawQuartets)
+	quartets, treeData, err := prep.Preprocess(tre, rawQuartets)
 	if err != nil {
 		return nil, fmt.Errorf("Preprocess error: %w", err)
 	}
 	fmt.Println(quartets)
-	fmt.Println(lcaMat)
-	fmt.Println(leafsets)
+	fmt.Println(treeData)
 	return nil, nil
 }

@@ -88,7 +88,7 @@ func sortQuartet(q1, q2 *Quartet) int {
 	return sum1 - sum2
 }
 
-func TestLCAandLeafset(t *testing.T) {
+func TestProcessTreeData(t *testing.T) {
 	testCases := []struct {
 		name    string
 		tre     string
@@ -133,7 +133,9 @@ func TestLCAandLeafset(t *testing.T) {
 				t.Error("invalid newick tree; test is written wrong")
 			}
 			tre.UpdateTipIndex()
-			lca, leafset := lcaAndLeafset(tre)
+			treeData := PreprocessTreeData(tre)
+			lca := treeData.lca
+			leafset := treeData.leafsets
 			nLeaves := len(lca)
 			for i := 0; i < nLeaves; i++ {
 				for j := 0; j < nLeaves; j++ {
