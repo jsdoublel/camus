@@ -8,15 +8,23 @@ import (
 
 type TreeData struct {
 	tre      *tree.Tree
+	root     *tree.Node
 	children [][]*tree.Node
 	lca      [][]uint
 	leafsets [][]bool
 }
 
 func PreprocessTreeData(tre *tree.Tree) *TreeData {
+	root := tre.Root()
 	children := children(tre)
 	lca, leafsets := lcaAndLeafset(tre, children)
-	return &TreeData{tre: tre, children: children, lca: lca, leafsets: leafsets}
+	return &TreeData{tre: tre, root: root, children: children, lca: lca, leafsets: leafsets}
+}
+
+/* verify that tree still has the same root, and thus the data is still applicable */
+func (td *TreeData) Verify() bool {
+	root := td.tre.Root()
+	return root == td.root
 }
 
 func children(tre *tree.Tree) [][]*tree.Node {
