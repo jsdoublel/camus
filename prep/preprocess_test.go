@@ -1,4 +1,4 @@
-package alg
+package prep
 
 import (
 	"fmt"
@@ -135,8 +135,6 @@ func TestLCAandLeafset(t *testing.T) {
 			tre.UpdateTipIndex()
 			lca, leafset := lcaAndLeafset(tre)
 			nLeaves := len(lca)
-			t.Log(lca)
-			t.Log(leafset)
 			for i := 0; i < nLeaves; i++ {
 				for j := 0; j < nLeaves; j++ {
 					if lca[i][j] != lca[j][i] {

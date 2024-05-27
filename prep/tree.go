@@ -1,4 +1,4 @@
-package alg
+package prep
 
 import (
 	"fmt"
