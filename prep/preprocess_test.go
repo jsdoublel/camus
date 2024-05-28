@@ -134,8 +134,8 @@ func TestProcessTreeData(t *testing.T) {
 			}
 			tre.UpdateTipIndex()
 			treeData := PreprocessTreeData(tre)
-			lca := treeData.lca
-			leafset := treeData.leafsets
+			lca := treeData.LCA
+			leafset := treeData.Leafsets
 			nLeaves := len(lca)
 			for i := 0; i < nLeaves; i++ {
 				for j := 0; j < nLeaves; j++ {

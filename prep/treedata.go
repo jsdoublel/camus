@@ -7,24 +7,24 @@ import (
 )
 
 type TreeData struct {
-	tre      *tree.Tree
-	root     *tree.Node
-	children [][]*tree.Node
-	lca      [][]uint
-	leafsets [][]bool
+	Tree     *tree.Tree
+	Root     *tree.Node
+	Children [][]*tree.Node
+	LCA      [][]uint
+	Leafsets [][]bool
 }
 
 func PreprocessTreeData(tre *tree.Tree) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	lca, leafsets := lcaAndLeafset(tre, children)
-	return &TreeData{tre: tre, root: root, children: children, lca: lca, leafsets: leafsets}
+	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets}
 }
 
 /* verify that tree still has the same root, and thus the data is still applicable */
 func (td *TreeData) Verify() bool {
-	root := td.tre.Root()
-	return root == td.root
+	root := td.Tree.Root()
+	return root == td.Root
 }
 
 func children(tre *tree.Tree) [][]*tree.Node {
