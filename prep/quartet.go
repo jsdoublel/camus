@@ -88,21 +88,40 @@ func sortTaxa(arr *[4]uint) {
 }
 
 /* returns hashmap containing quartets from tree */
-func QuartetsFromTree(tre *tree.Tree) map[Quartet]bool {
+func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]bool, error) {
+	tre.UnRoot()                           // some quartets are missed if tree is rooted
 	treeQuartets := make(map[Quartet]bool) // get quartets from tree
-	tre.Quartets(false, func(q *tree.Quartet) {
-		treeQuartets[*quartetFromTreeQ(q)] = true
+	taxaIDsMap, err := mapIDsFromConstTree(tre, constTree)
+	if err != nil {
+		return nil, err
+	}
+	tre.Quartets(false, func(q *tree.Quartet) { // TODO: I don't think this code from gotree works
+		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = true
 	})
-	return treeQuartets
+	return treeQuartets, nil
 }
 
 /* create quartet from gotree *tree.Quartet */
-func quartetFromTreeQ(tq *tree.Quartet) *Quartet {
-	taxaIDs := [...]uint{tq.T1, tq.T2, tq.T3, tq.T4}
+func quartetFromTreeQ(tq *tree.Quartet, constMap map[uint]uint) *Quartet {
+	taxaIDs := [...]uint{constMap[tq.T1], constMap[tq.T2], constMap[tq.T3], constMap[tq.T4]}
 	idToBool := make(map[uint]bool)
 	idToBool[taxaIDs[0]] = true
 	idToBool[taxaIDs[1]] = true
 	return &Quartet{taxa: taxaIDs, topology: setTopology(&taxaIDs, idToBool)}
+}
+
+func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[uint]uint, error) {
+	idMap := make(map[uint]uint)
+	for _, name := range gtre.AllTipNames() {
+		constTreeID, err := tre.TipIndex(name)
+		tipIndexPanic("mapIDsFromConstTree", err)
+		gTreeID, err := gtre.TipIndex(name)
+		idMap[uint(gTreeID)] = uint(constTreeID)
+		if err != nil {
+			return nil, fmt.Errorf("tip index panic, maybe the gene tree and constraint tree labels don't match? %w", err)
+		}
+	}
+	return idMap, nil
 }
 
 func tipIndexPanic(context string, err error) {

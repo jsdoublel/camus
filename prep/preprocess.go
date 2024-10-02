@@ -14,7 +14,7 @@ import (
 args;
 
 	*tree.Tree   tre         (input constraint tree)
-	[]*tree.Tree rawQuartets (unprocess quartet trees)
+	[]*tree.Tree geneTrees   (input gene trees)
 
 returns:
 
@@ -22,12 +22,12 @@ returns:
 	[][]uint   (LCA matrix)
 	[][]uint   (leaf sets)
 */
-func Preprocess(tre *tree.Tree, rawQuartets []*tree.Tree) ([]*Quartet, *TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) ([]*Quartet, *TreeData, error) {
 	tre.UpdateTipIndex()
 	if !IsBinary(tre) {
 		return nil, nil, errors.New("Constraint tree is not binary")
 	}
-	quartets, err := processQuartets(rawQuartets, tre)
+	quartets, err := processQuartets(geneTrees, tre)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -35,19 +35,26 @@ func Preprocess(tre *tree.Tree, rawQuartets []*tree.Tree) ([]*Quartet, *TreeData
 	return quartets, treeData, nil
 }
 
-func processQuartets(rawQuartets []*tree.Tree, tre *tree.Tree) ([]*Quartet, error) {
-	treeQuartets := QuartetsFromTree(tre)
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) ([]*Quartet, error) {
+	treeQuartets, err := QuartetsFromTree(tre.Clone(), tre)
+	if err != nil {
+		panic(err)
+	}
 	qSet := make(map[Quartet]bool)
-	countTotal := len(rawQuartets)
+	countTotal := len(geneTrees)
 	countNew := 0
 	countRetained := 0
-	for i, rq := range rawQuartets {
-		q, err := validateQuartet(rq, tre)
+	for _, gt := range geneTrees {
+		gt.UpdateTipIndex()
+		newQuartets, err := QuartetsFromTree(gt, tre)
 		if err != nil {
-			return nil, fmt.Errorf("Bad quartet line %d: %w", i, err)
-		} else if !treeQuartets[*q] {
-			countNew++
-			qSet[*q] = true
+			return nil, err
+		}
+		for q, b := range newQuartets {
+			if b && !treeQuartets[q] {
+				countNew++
+				qSet[q] = true
+			}
 		}
 	}
 	quartets := make([]*Quartet, 0, len(qSet)) // convert to slice for better performance

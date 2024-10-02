@@ -145,6 +145,13 @@ func TestQuartetsFromTree(t *testing.T) {
 				"(((b,c),d),f);",
 			},
 		},
+		{
+			name: "single",
+			tre:  "((a,b),(c,d));",
+			qSet: []string{
+				"((a,b),(c,d));",
+			},
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -153,7 +160,10 @@ func TestQuartetsFromTree(t *testing.T) {
 				t.Error("invalid newick tree; test is written wrong")
 			}
 			tre.UpdateTipIndex()
-			qSet := QuartetsFromTree(tre)
+			qSet, err := QuartetsFromTree(tre, tre)
+			if err != nil {
+				t.Error(err)
+			}
 			expectedQSet, err := stringListToQMap(test.qSet, tre)
 			if err != nil {
 				t.Error(err)

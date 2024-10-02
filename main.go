@@ -11,25 +11,25 @@ import (
 
 type args struct {
 	treeFile     string
-	quartetsFile string
+	geneTreeFile string
 }
 
 func parseArgs() args {
 	flag.NewFlagSet("CAMUS", flag.ContinueOnError)
 	treeFile := flag.String("t", "", "constraint tree")
-	quartetsFile := flag.String("q", "", "quartets file")
+	geneTreeFile := flag.String("g", "", "gene tree file")
 	flag.Parse()
-	if *treeFile == "" || *quartetsFile == "" {
-		fmt.Fprintln(os.Stderr, "Error: both -t and -q are required")
+	if *treeFile == "" || *geneTreeFile == "" {
+		fmt.Fprintln(os.Stderr, "Error: both -t and -g are required")
 		flag.Usage()
 		os.Exit(1)
 	}
-	return args{treeFile: *treeFile, quartetsFile: *quartetsFile}
+	return args{treeFile: *treeFile, geneTreeFile: *geneTreeFile}
 }
 
 func main() {
 	args := parseArgs()
-	tre, quartets, err := io.ReadInputFiles(args.treeFile, args.quartetsFile)
+	tre, quartets, err := io.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error importing file data:\n%+v\n", err)
 		os.Exit(2)
