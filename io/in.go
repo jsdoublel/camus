@@ -10,16 +10,16 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 )
 
-func ReadInputFiles(treeFile, quartetsFile string) (*tree.Tree, []*tree.Tree, error) {
+func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, error) {
 	tre, err := readTreeFile(treeFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	quartets, err := readQuartetsFile(quartetsFile)
+	genetrees, err := readGeneTreesFile(genetreesFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	return tre, quartets, nil
+	return tre, genetrees, nil
 }
 
 func readTreeFile(treeFile string) (*tree.Tree, error) {
@@ -37,23 +37,23 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 	return tre, nil
 }
 
-func readQuartetsFile(quartetsFile string) ([]*tree.Tree, error) {
-	file, err := os.Open(quartetsFile)
+func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
+	file, err := os.Open(genetreesFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error opening %s:\n%w", quartetsFile, err)
+		return nil, fmt.Errorf("Error opening %s:\n%w", genetreesFile, err)
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
-	quartetList := []*tree.Tree{}
+	genetreeList := []*tree.Tree{}
 	for i := 0; scanner.Scan(); i++ {
 		line := strings.TrimSpace(scanner.Text())
 		if line != "" {
-			quartet, err := newick.NewParser(strings.NewReader(line)).Parse()
+			genetree, err := newick.NewParser(strings.NewReader(line)).Parse()
 			if err != nil {
-				return nil, fmt.Errorf("Error reading quartet on line %d:\n%w", i, err)
+				return nil, fmt.Errorf("Error reading gene tree on line %d:\n%w", i, err)
 			}
-			quartetList = append(quartetList, quartet)
+			genetreeList = append(genetreeList, genetree)
 		}
 	}
-	return quartetList, nil
+	return genetreeList, nil
 }
