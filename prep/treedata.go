@@ -7,18 +7,20 @@ import (
 )
 
 type TreeData struct {
-	Tree     *tree.Tree
-	Root     *tree.Node
-	Children [][]*tree.Node
-	LCA      [][]uint
-	Leafsets [][]bool
+	Tree        *tree.Tree
+	Root        *tree.Node
+	Children    [][]*tree.Node
+	LCA         [][]uint
+	Leafsets    [][]bool
+	QuartetSets [][]*Quartet
 }
 
-func PreprocessTreeData(tre *tree.Tree) *TreeData {
+func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	lca, leafsets := lcaAndLeafset(tre, children)
-	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets}
+	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
+	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, QuartetSets: quartetSets}
 }
 
 /* verify that tree still has the same root, and thus the data is still applicable */
@@ -89,8 +91,32 @@ func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]uint, [][]bool)
 	return lca, leafset
 }
 
-func IsBinary(tree *tree.Tree) bool {
-	root := tree.Root()
+func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]bool) [][]*Quartet {
+	quartetSets := make([][]*Quartet, len(tre.Nodes()))
+	n := len(tre.Tips())
+	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+		quartetSets[cur.Id()] = make([]*Quartet, 0)
+		for _, q := range quartets {
+			add := true
+			for i := 0; i < 4; i++ {
+				if q.taxa[i] >= uint(n) {
+					panic("cannot map quartet taxa to constraint tree")
+				} else if !leafsets[cur.Id()][q.taxa[i]] {
+					add = false
+					break
+				}
+			}
+			if add {
+				quartetSets[cur.Id()] = append(quartetSets[cur.Id()], q)
+			}
+		}
+		return true
+	})
+	return quartetSets
+}
+
+func IsBinary(tre *tree.Tree) bool {
+	root := tre.Root()
 	neighbors := root.Neigh()
 	if len(neighbors) != 2 {
 		return false

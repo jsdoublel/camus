@@ -9,9 +9,9 @@ import (
 	"camus/prep"
 )
 
-func CAMUS(tre *tree.Tree, rawQuartets []*tree.Tree) ([][2]int, error) {
+func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) ([][2]int, error) {
 	fmt.Fprint(os.Stderr, "beginning data preprocessing")
-	quartets, td, err := prep.Preprocess(tre, rawQuartets)
+	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
 		return nil, fmt.Errorf("Preprocess error: %w", err)
 	}
@@ -23,7 +23,7 @@ func CAMUS(tre *tree.Tree, rawQuartets []*tree.Tree) ([][2]int, error) {
 	td.Tree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
 			lID, rID := td.Children[cur.Id()][0].Id(), td.Children[cur.Id()][1].Id()
-			score, branch, back := score(cur, dp, td, quartets)
+			score, branch, back := score(cur, dp, td)
 			noEdgeScore := dp[lID] + dp[rID]
 			if score > noEdgeScore {
 				dp[cur.Id()] = score
@@ -40,7 +40,7 @@ func CAMUS(tre *tree.Tree, rawQuartets []*tree.Tree) ([][2]int, error) {
 	return result, nil
 }
 
-func score(alpha *tree.Node, dp []uint, td *prep.TreeData, qSet []*prep.Quartet) (uint, [2]int, []int) {
+func score(alpha *tree.Node, dp []uint, td *prep.TreeData) (uint, [2]int, []int) {
 	return 0, [2]int{0, 0}, []int{}
 }
 

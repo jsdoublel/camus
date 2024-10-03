@@ -90,14 +90,17 @@ func sortQuartet(q1, q2 *Quartet) int {
 
 func TestProcessTreeData(t *testing.T) {
 	testCases := []struct {
-		name    string
-		tre     string
-		lca     map[string][][]string
-		leafset map[string][]string
+		name        string
+		tre         string
+		quartets    []string
+		lca         map[string][][]string
+		leafset     map[string][]string
+		quartetSets map[string][]string
 	}{
 		{
-			name: "basic",
-			tre:  "((((A,B)a,C)b,D)c,F)r;",
+			name:     "basic",
+			tre:      "((((A,B)a,C)b,D)c,F)r;",
+			quartets: []string{"((A,C),(B,D));"},
 			lca: map[string][][]string{
 				"a": {
 					{"A", "B"},
@@ -124,6 +127,12 @@ func TestProcessTreeData(t *testing.T) {
 				"c": {"A", "B", "C", "D"},
 				"r": {"A", "B", "C", "D", "F"},
 			},
+			quartetSets: map[string][]string{
+				"a": {},
+				"b": {},
+				"c": {"((A,C),(B,D));"},
+				"r": {"((A,C),(B,D));"},
+			},
 		},
 	}
 	for _, test := range testCases {
@@ -132,10 +141,20 @@ func TestProcessTreeData(t *testing.T) {
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
 			}
+			q := make([]*tree.Tree, 0)
+			for _, s := range test.quartets {
+				tmp, err := newick.NewParser(strings.NewReader(s)).Parse()
+				if err != nil {
+					t.Error("invalid newick tree; test is written wrong")
+				}
+				q = append(q, tmp)
+			}
 			tre.UpdateTipIndex()
-			treeData := PreprocessTreeData(tre)
+			qs, err := processQuartets(q, tre)
+			treeData := PreprocessTreeData(tre, qs)
 			lca := treeData.LCA
 			leafset := treeData.Leafsets
+			quartetSets := treeData.QuartetSets
 			nLeaves := len(lca)
 			for i := 0; i < nLeaves; i++ {
 				for j := 0; j < nLeaves; j++ {
@@ -154,6 +173,12 @@ func TestProcessTreeData(t *testing.T) {
 			} else if !b {
 				t.Error("leafset != expected")
 			}
+			if b, err := quartetSetEqualityTester(quartetSets, test.quartetSets, tre); err != nil {
+				t.Error(err.Error())
+			} else if !b {
+				t.Error("quartetSets != expected")
+			}
+
 		})
 	}
 }
@@ -168,14 +193,11 @@ func lcaEqualityTester(lca [][]uint, testLCA map[string][][]string, tre *tree.Tr
 			tipIndexPanic("lca test", err)
 			id2, err := tre.TipIndex(pair[1])
 			tipIndexPanic("lca test", err)
-			nodeList, err := tre.SelectNodes(k)
+			node, err := getNode(k, tre)
 			if err != nil {
-				panic(err)
+				return false, err
 			}
-			if len(nodeList) != 1 {
-				return false, fmt.Errorf("more or less than one internal node with the required label; test is written wrong")
-			}
-			if lca[id1][id2] != uint(nodeList[0].Id()) {
+			if lca[id1][id2] != uint(node.Id()) {
 				return false, nil
 			}
 		}
@@ -185,14 +207,11 @@ func lcaEqualityTester(lca [][]uint, testLCA map[string][][]string, tre *tree.Tr
 
 func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tre *tree.Tree) (bool, error) {
 	for k, v := range testLeafset {
-		nodeList, err := tre.SelectNodes(k)
+		node, err := getNode(k, tre)
 		if err != nil {
-			panic(err)
+			return false, err
 		}
-		if len(nodeList) != 1 {
-			return false, fmt.Errorf("more or less than one internal node with the required label; test is written wrong")
-		}
-		leafsetList := leafset[nodeList[0].Id()]
+		leafsetList := leafset[node.Id()]
 		for _, leaf := range v {
 			id, err := tre.TipIndex(leaf)
 			tipIndexPanic("leafset test", err)
@@ -202,4 +221,44 @@ func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tr
 		}
 	}
 	return true, nil
+}
+
+func quartetSetEqualityTester(quartetSets [][]*Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
+	for k, v := range testQS {
+		node, err := getNode(k, tre)
+		if err != nil {
+			return false, err
+		}
+		for _, quartetString := range v {
+			qTree, err := newick.NewParser(strings.NewReader(quartetString)).Parse()
+			if err != nil {
+				return false, fmt.Errorf("cannot parse %s as newick tree. %w", quartetString, err)
+			}
+			q1, err := NewQuartet(qTree, tre)
+			if err != nil {
+				return false, err
+			}
+			found := false
+			for _, q2 := range quartetSets[node.Id()] {
+				if q1.Compare(q2) == Q_EQ {
+					found = true
+				}
+			}
+			if !found {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
+func getNode(label string, tre *tree.Tree) (*tree.Node, error) {
+	nodeList, err := tre.SelectNodes(label)
+	if err != nil {
+		panic(err)
+	}
+	if len(nodeList) != 1 {
+		return nil, fmt.Errorf("more or less than one internal node with the required label; test is written wrong")
+	}
+	return nodeList[0], nil
 }

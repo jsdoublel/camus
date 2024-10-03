@@ -22,17 +22,17 @@ returns:
 	[][]uint   (LCA matrix)
 	[][]uint   (leaf sets)
 */
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) ([]*Quartet, *TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
 	if !IsBinary(tre) {
-		return nil, nil, errors.New("Constraint tree is not binary")
+		return nil, errors.New("Constraint tree is not binary")
 	}
 	quartets, err := processQuartets(geneTrees, tre)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	treeData := PreprocessTreeData(tre)
-	return quartets, treeData, nil
+	treeData := PreprocessTreeData(tre, quartets)
+	return treeData, nil
 }
 
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) ([]*Quartet, error) {
