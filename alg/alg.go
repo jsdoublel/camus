@@ -41,7 +41,17 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) ([][2]int, error) {
 }
 
 func score(alpha *tree.Node, dp []uint, td *prep.TreeData) (uint, [2]int, []int) {
+	// loop over all possible values of u for a given alpha
+	//		scoreU(u, ...) + dp lookup on path from v to u
 	return 0, [2]int{0, 0}, []int{}
+}
+
+/* score branch u -> w (for w in subtree under sub); returns score, best w */
+func scoreU(u, sub *tree.Node, qSet []*prep.Quartet, td *prep.TreeData) (uint, int) {
+	// solve topology for every quartet in the quartet set
+	//		loop over all leaves in subtree
+	//		score edge directly above leaf
+	return 0, 0
 }
 
 func traceback(branches [][2]int, backtrace [][]int) [][2]int {
