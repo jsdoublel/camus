@@ -134,3 +134,17 @@ func isBinaryRecusive(node *tree.Node) bool {
 	}
 	return isBinaryRecusive(children[0]) && isBinaryRecusive(children[1])
 }
+
+func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
+	// assumes binary tree
+	p, err := node.Parent()
+	if err != nil {
+		panic(err)
+	}
+	for _, c := range td.Children[p.Id()] {
+		if c != node {
+			return c
+		}
+	}
+	panic("failed to find node sibling")
+}
