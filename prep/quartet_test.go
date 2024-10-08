@@ -175,7 +175,7 @@ func TestQuartetsFromTree(t *testing.T) {
 	}
 }
 
-func (tq *TestQuartet) topology(tre *tree.Tree) uint8 {
+func (tq *TestQuartet) Topology(tre *tree.Tree) uint8 {
 	ids := make([]int, 4)
 	partition := make(map[int]bool)
 	for i := 0; i < 4; i++ {
@@ -203,7 +203,7 @@ func (tq *TestQuartet) topology(tre *tree.Tree) uint8 {
 }
 
 func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) bool {
-	result := q.topology ^ tq.topology(tre)
+	result := q.Topology ^ tq.Topology(tre)
 	return result == 0b0000 || result == 0b1111
 }
 

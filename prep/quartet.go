@@ -8,8 +8,8 @@ import (
 )
 
 type Quartet struct {
-	taxa     [4]uint // should be in sorted order
-	topology uint8
+	Taxa     [4]uint // should be in sorted order
+	Topology uint8
 }
 
 /* possible results for quartet comparison */
@@ -50,7 +50,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 		idToBool[uint(ti)] = r == qTree.Root()
 	}
 	topo := setTopology(&taxaIDs, idToBool)
-	return &Quartet{taxa: taxaIDs, topology: topo}, nil
+	return &Quartet{Taxa: taxaIDs, Topology: topo}, nil
 }
 
 func setTopology(taxaIDs *[4]uint, idToBool map[uint]bool) uint8 {
@@ -107,7 +107,7 @@ func quartetFromTreeQ(tq *tree.Quartet, constMap map[uint]uint) *Quartet {
 	idToBool := make(map[uint]bool)
 	idToBool[taxaIDs[0]] = true
 	idToBool[taxaIDs[1]] = true
-	return &Quartet{taxa: taxaIDs, topology: setTopology(&taxaIDs, idToBool)}
+	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs, idToBool)}
 }
 
 func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[uint]uint, error) {
@@ -140,10 +140,10 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	}
 	qString := "|"
 	for i := 0; i < 4; i++ {
-		if (q.topology>>i)%2 == 0 {
-			qString += names[q.taxa[i]]
+		if (q.Topology>>i)%2 == 0 {
+			qString += names[q.Taxa[i]]
 		} else {
-			qString = names[q.taxa[i]] + qString
+			qString = names[q.Taxa[i]] + qString
 		}
 	}
 	return qString
@@ -157,11 +157,11 @@ func (q *Quartet) String(tre *tree.Tree) string {
 */
 func (q1 *Quartet) Compare(q2 *Quartet) int {
 	for i := 0; i < 4; i++ {
-		if q1.taxa[i] != q2.taxa[i] {
+		if q1.Taxa[i] != q2.Taxa[i] {
 			return Q_DIFF
 		}
 	}
-	if q1.topology^q2.topology != 0b1111 && q1.topology^q2.topology != 0b0000 {
+	if q1.Topology^q2.Topology != 0b1111 && q1.Topology^q2.Topology != 0b0000 {
 		return Q_NEQ
 	} else {
 		return Q_EQ

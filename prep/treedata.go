@@ -7,12 +7,12 @@ import (
 )
 
 type TreeData struct {
-	Tree        *tree.Tree
-	Root        *tree.Node
-	Children    [][]*tree.Node
-	LCA         [][]uint
-	Leafsets    [][]bool
-	QuartetSets [][]*Quartet
+	Tree       *tree.Tree
+	Root       *tree.Node
+	Children   [][]*tree.Node
+	LCA        [][]uint
+	Leafsets   [][]bool
+	QuartetSet [][]*Quartet
 }
 
 func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
@@ -20,7 +20,7 @@ func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	children := children(tre)
 	lca, leafsets := lcaAndLeafset(tre, children)
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
-	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, QuartetSets: quartetSets}
+	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, QuartetSet: quartetSets}
 }
 
 /* verify that tree still has the same root, and thus the data is still applicable */
@@ -99,9 +99,9 @@ func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]boo
 		for _, q := range quartets {
 			add := true
 			for i := 0; i < 4; i++ {
-				if q.taxa[i] >= uint(n) {
+				if q.Taxa[i] >= uint(n) {
 					panic("cannot map quartet taxa to constraint tree")
-				} else if !leafsets[cur.Id()][q.taxa[i]] {
+				} else if !leafsets[cur.Id()][q.Taxa[i]] {
 					add = false
 					break
 				}

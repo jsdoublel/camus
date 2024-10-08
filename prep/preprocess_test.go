@@ -80,11 +80,11 @@ func sortQuartet(q1, q2 *Quartet) int {
 	sum1 := 0
 	sum2 := 0
 	for i := 0; i < 4; i++ {
-		sum1 += int(q1.taxa[i])
-		sum2 += int(q2.taxa[i])
+		sum1 += int(q1.Taxa[i])
+		sum2 += int(q2.Taxa[i])
 	}
-	sum1 += int(q1.topology)
-	sum2 += int(q2.topology)
+	sum1 += int(q1.Topology)
+	sum2 += int(q2.Topology)
 	return sum1 - sum2
 }
 
@@ -154,7 +154,7 @@ func TestProcessTreeData(t *testing.T) {
 			treeData := PreprocessTreeData(tre, qs)
 			lca := treeData.LCA
 			leafset := treeData.Leafsets
-			quartetSets := treeData.QuartetSets
+			quartetSets := treeData.QuartetSet
 			nLeaves := len(lca)
 			for i := 0; i < nLeaves; i++ {
 				for j := 0; j < nLeaves; j++ {
