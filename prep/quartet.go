@@ -8,7 +8,7 @@ import (
 )
 
 type Quartet struct {
-	Taxa     [4]uint // should be in sorted order
+	Taxa     [4]int // should be in sorted order
 	Topology uint8
 }
 
@@ -36,24 +36,24 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	if qTree.Root().Nneigh() != 3 {
 		return nil, errors.New("probably does not contain bipartition")
 	}
-	taxaIDs := [4]uint{}
+	taxaIDs := [4]int{}
 	leaves := qTree.Tips()
-	idToBool := make(map[uint]bool) // true is one side of the bipartition, false is the other
+	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
 		ti, err := tre.TipIndex(l.Name())
 		tipIndexPanic("convertQuartet", err)
-		taxaIDs[i] = uint(ti)
+		taxaIDs[i] = ti
 		r, err := l.Parent()
 		if err != nil && err.Error() == "The node has more than one parent" { // we ignore the error produced when cur = root
 			panic(fmt.Errorf("convertQuartet: %w", err))
 		}
-		idToBool[uint(ti)] = r == qTree.Root()
+		idToBool[ti] = r == qTree.Root()
 	}
 	topo := setTopology(&taxaIDs, idToBool)
 	return &Quartet{Taxa: taxaIDs, Topology: topo}, nil
 }
 
-func setTopology(taxaIDs *[4]uint, idToBool map[uint]bool) uint8 {
+func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
 	}
@@ -77,7 +77,7 @@ func setTopology(taxaIDs *[4]uint, idToBool map[uint]bool) uint8 {
 	return topo
 }
 
-func sortTaxa(arr *[4]uint) {
+func sortTaxa(arr *[4]int) {
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
 			if arr[i] > arr[j] {
@@ -102,21 +102,21 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]bool, error) {
 }
 
 /* create quartet from gotree *tree.Quartet */
-func quartetFromTreeQ(tq *tree.Quartet, constMap map[uint]uint) *Quartet {
-	taxaIDs := [...]uint{constMap[tq.T1], constMap[tq.T2], constMap[tq.T3], constMap[tq.T4]}
-	idToBool := make(map[uint]bool)
+func quartetFromTreeQ(tq *tree.Quartet, constMap map[int]int) *Quartet {
+	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
+	idToBool := make(map[int]bool)
 	idToBool[taxaIDs[0]] = true
 	idToBool[taxaIDs[1]] = true
 	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs, idToBool)}
 }
 
-func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[uint]uint, error) {
-	idMap := make(map[uint]uint)
+func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[int]int, error) {
+	idMap := make(map[int]int)
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
 		tipIndexPanic("mapIDsFromConstTree", err)
 		gTreeID, err := gtre.TipIndex(name)
-		idMap[uint(gTreeID)] = uint(constTreeID)
+		idMap[gTreeID] = constTreeID
 		if err != nil {
 			return nil, fmt.Errorf("tip index panic, maybe the gene tree and constraint tree labels don't match? %w", err)
 		}
@@ -132,11 +132,11 @@ func tipIndexPanic(context string, err error) {
 
 /* Not efficent, do no use except for testing !!! */
 func (q *Quartet) String(tre *tree.Tree) string {
-	names := make(map[uint]string)
+	names := make(map[int]string)
 	for _, u := range tre.Tips() {
 		ti, err := tre.TipIndex(u.Name())
 		tipIndexPanic("String", err)
-		names[uint(ti)] = u.Name()
+		names[ti] = u.Name()
 	}
 	qString := "|"
 	for i := 0; i < 4; i++ {

@@ -25,10 +25,10 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) ([][2]int, error) {
 	fmt.Fprint(os.Stderr, "preprocessing finished, beginning CAMUS")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), Backtrace: make([][]int, n), TreeData: td}
-	return dp.RunDP()
+	return dp.RunDP(), nil
 }
 
-func (dp *DP) RunDP() ([][2]int, error) {
+func (dp *DP) RunDP() [][2]int {
 	dp.TreeData.Tree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
 			lID, rID := dp.TreeData.Children[cur.Id()][0].Id(), dp.TreeData.Children[cur.Id()][1].Id()
@@ -45,7 +45,7 @@ func (dp *DP) RunDP() ([][2]int, error) {
 		return true
 	})
 	result := dp.traceback()
-	return result, nil
+	return result
 }
 
 /* calculates score for given top node v; returns score, best edge, and dp lookups*/
@@ -83,42 +83,96 @@ func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) {
 	var bestScore uint
 	var bestW int
-	SubtreePreOrder(sub, func(cur *tree.Node) {
-		score := dp.scoreEdge(u, cur, v) + pathScores[cur.Id()]
+	SubtreePreOrder(sub, func(w *tree.Node) {
+		score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()]
 		if score >= bestScore {
 			bestScore = score
-			bestW = cur.Id()
+			bestW = w.Id()
 		}
 	})
 	return pathScores[u.Id()] + bestScore, bestW
 }
 
-func (dp *DP) scoreEdge(u, w, v *tree.Node) uint {
+func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.QuartetSet[v.Id()] {
-		if dp.quartetScore(q, u, w, v) {
+		if dp.quartetScore(q, u, w, v, wSub) {
 			score += 1
 		}
 	}
 	return score
 }
 
-func (dp *DP) quartetScore(q *prep.Quartet, u, w, v *tree.Node) bool {
-	numLeaves := uint(len(dp.TreeData.Leafsets[0]))
-	bottom := numLeaves
-	bIdx := -1
+func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
+	bottom := -1
+	bi := -1 // bottom index (0 - 3)
 	for i, t := range q.Taxa {
-		if dp.TreeData.Leafsets[w.Id()][t] && bottom == numLeaves {
+		if dp.TreeData.Leafsets[w.Id()][t] && bottom == -1 {
 			bottom = t
-			bIdx = i
+			bi = i
 		} else if dp.TreeData.Leafsets[w.Id()][t] {
 			return false
 		}
 	}
-	// TODO: check that all taxa are on separate subtrees coming off of the cycle
-	neighbor := neighborTaxaQ(q, bIdx)
-	vl, vr := dp.TreeData.Children[v.Id()][0], dp.TreeData.Children[v.Id()][1]
-	return false
+	lcaSet := make(map[uint]bool)
+	for _, t := range q.Taxa {
+		lcaSet[dp.TreeData.LCA[bottom][t]] = true
+	}
+	if len(lcaSet) != 4 {
+		return false
+	}
+	neighbor := neighborTaxaQ(q, bi)
+	var lcaDepths [4]int
+	i := 0
+	for k, v := range lcaSet {
+		if v {
+			d, err := dp.TreeData.IdToNodes[k].Depth()
+			if err != nil {
+				panic(err)
+			}
+			lcaDepths[i] = d
+			i++
+		}
+	}
+	nLeaves := len(dp.TreeData.Leafsets[0])
+	maxW, minU, bestTaxa := -1, nLeaves, -1
+	taxaInU := false
+	for i, t := range q.Taxa {
+		d, err := dp.TreeData.IdToNodes[t].Depth()
+		if err != nil {
+			panic(err)
+		}
+		if !taxaInU && dp.TreeData.Leafsets[wSub.Id()][t] && d > maxW {
+			maxW = d
+			bestTaxa = i
+		} else if !dp.TreeData.Leafsets[wSub.Id()][t] && d < minU {
+			taxaInU = true
+			minU = d
+			bestTaxa = i
+		}
+	}
+	return (!taxaInU && q.Taxa[bestTaxa] == neighbor) || (taxaInU && q.Taxa[bestTaxa] == neighbor)
+}
+
+func min(vals [4]int) int {
+	m := vals[0]
+	for i := 1; i < 4; i++ {
+		if vals[i] > m {
+			m = vals[i]
+		}
+	}
+	return m
+}
+
+/* return neighbor of taxa at index i in quartet */
+func neighborTaxaQ(q *prep.Quartet, i int) int {
+	b := (q.Topology >> (i - 1)) % 2
+	for j := 0; j < 4; j++ {
+		if (q.Topology>>(j-1))%2 == b {
+			return j
+		}
+	}
+	panic("invalid quartet!!")
 }
 
 func (dp *DP) traceback() [][2]int {

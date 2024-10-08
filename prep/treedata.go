@@ -12,6 +12,7 @@ type TreeData struct {
 	Children   [][]*tree.Node
 	LCA        [][]uint
 	Leafsets   [][]bool
+	IdToNodes  []*tree.Node
 	QuartetSet [][]*Quartet
 }
 
@@ -19,8 +20,18 @@ func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	lca, leafsets := lcaAndLeafset(tre, children)
+	idMap := mapIdToNodes(tre)
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
-	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, QuartetSet: quartetSets}
+	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, IdToNodes: idMap, QuartetSet: quartetSets}
+}
+
+func mapIdToNodes(tre *tree.Tree) []*tree.Node {
+	idMap := make([]*tree.Node, len(tre.Nodes()))
+	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+		idMap[cur.Id()] = cur
+		return true
+	})
+	return idMap
 }
 
 /* verify that tree still has the same root, and thus the data is still applicable */
@@ -99,7 +110,7 @@ func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]boo
 		for _, q := range quartets {
 			add := true
 			for i := 0; i < 4; i++ {
-				if q.Taxa[i] >= uint(n) {
+				if q.Taxa[i] >= n {
 					panic("cannot map quartet taxa to constraint tree")
 				} else if !leafsets[cur.Id()][q.Taxa[i]] {
 					add = false
