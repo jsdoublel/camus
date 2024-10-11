@@ -15,16 +15,16 @@ type DP struct {
 	TreeData *prep.TreeData // preprocessed data for our constraint tree
 }
 
-func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) ([][2]int, error) {
+func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
 	fmt.Fprint(os.Stderr, "beginning data preprocessing")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
-		return nil, fmt.Errorf("Preprocess error: %w", err)
+		return nil, nil, fmt.Errorf("Preprocess error: %w", err)
 	}
 	fmt.Fprint(os.Stderr, "preprocessing finished, beginning CAMUS")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
-	return dp.RunDP(), nil
+	return td, dp.RunDP(), nil
 }
 
 func (dp *DP) RunDP() [][2]int {
@@ -181,14 +181,38 @@ func (dp *DP) traceback() [][2]int {
 }
 
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
-	// 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
-	// 		curBranch := dp.Branches[curNode.Id()]
-	// 		if curBranch == [2]int{0, 0} {
-	// 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
-	// 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
-	// 		} else {
-	// 			u, w := curBranch[0], curBranch[1]
-	// 		}
-	// 	}
+	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
+		curBranch := dp.Branches[curNode.Id()]
+		if curBranch == [2]int{0, 0} {
+			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
+				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
+		} else {
+			u, w := dp.TreeData.IdToNodes[curBranch[0]], dp.TreeData.IdToNodes[curBranch[1]]
+			traceback := dp.tracebackRecursive(w)
+			if u != curNode {
+				traceback = append(traceback, dp.tracebackRecursive(u)...)
+				traceback = append(traceback, dp.tracePath(u, curNode)...)
+			}
+			traceback = append(traceback, dp.tracePath(w, curNode)...)
+			return traceback
+		}
+	}
 	return [][2]int{}
+}
+
+func (dp *DP) tracePath(start, end *tree.Node) [][2]int {
+	if start == end {
+		panic("in tracePath start should not equal end!")
+	}
+	trace := dp.tracebackRecursive(start)
+	cur := start
+	for cur != end {
+		trace = append(trace, dp.tracebackRecursive(dp.TreeData.Sibling(cur))...)
+		var err error
+		cur, err = cur.Parent()
+		if err != nil {
+			panic(err)
+		}
+	}
+	return trace
 }

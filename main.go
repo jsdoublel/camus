@@ -34,10 +34,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error importing file data:\n%+v\n", err)
 		os.Exit(2)
 	}
-	branches, err := alg.CAMUS(tre, quartets)
+	td, branches, err := alg.CAMUS(tre, quartets)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Sisyphus was not happy :(\n%+v\n", err)
 		os.Exit(3)
 	}
-	fmt.Println(branches)
+	// fmt.Println(branches)
+	fmt.Fprintf(os.Stdout, io.MakeNetwork(td, branches))
 }
