@@ -7,22 +7,24 @@ import (
 )
 
 type TreeData struct {
-	Tree       *tree.Tree
-	Root       *tree.Node
-	Children   [][]*tree.Node
-	LCA        [][]uint
-	Leafsets   [][]bool
-	IdToNodes  []*tree.Node
-	QuartetSet [][]*Quartet
+	Tree       *tree.Tree     // Tree object
+	Root       *tree.Node     // Root for which data is calculated
+	Children   [][]*tree.Node // Children for each node
+	LCA        [][]uint       // LCA for each pair of node id
+	Leafsets   [][]bool       // Leaves under each node
+	LeafRep    []*tree.Node   // A single leaf that can be looked up for each node (used for LCAs between internal nodes)
+	IdToNodes  []*tree.Node   // Mapping between id and node pointer
+	QuartetSet [][]*Quartet   // Quartets relevant for each subtree
 }
 
 func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	root := tre.Root()
 	children := children(tre)
-	lca, leafsets := lcaAndLeafset(tre, children)
+	lca, leafsets, leafReps := lcaAndLeafset(tre, children)
 	idMap := mapIdToNodes(tre)
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
-	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca, Leafsets: leafsets, IdToNodes: idMap, QuartetSet: quartetSets}
+	return &TreeData{Tree: tre, Root: root, Children: children, LCA: lca,
+		Leafsets: leafsets, LeafRep: leafReps, IdToNodes: idMap, QuartetSet: quartetSets}
 }
 
 func mapIdToNodes(tre *tree.Tree) []*tree.Node {
@@ -73,7 +75,7 @@ func getChildren(node *tree.Node) []*tree.Node {
 }
 
 /* calculates the LCA for all pairs of leaves as well as the leaf set for every node */
-func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]uint, [][]bool) {
+func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]uint, [][]bool, []*tree.Node) {
 	nLeaves := len(tre.Tips())
 	nNodes := len(tre.Nodes())
 	lca := make([][]uint, nLeaves)
@@ -81,11 +83,13 @@ func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]uint, [][]bool)
 		lca[i] = make([]uint, nLeaves)
 	}
 	leafset := make([][]bool, nNodes)
+	repLeaves := make([]*tree.Node, nNodes)
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		leafset[cur.Id()] = make([]bool, nLeaves)
 		if cur.Tip() {
 			leafset[cur.Id()][cur.TipIndex()] = true
 			lca[cur.TipIndex()][cur.TipIndex()] = uint(cur.Id())
+			repLeaves[cur.Id()] = cur
 		} else {
 			for i := 0; i < nLeaves; i++ {
 				leafset[cur.Id()][i] = leafset[children[cur.Id()][0].Id()][i] || leafset[children[cur.Id()][1].Id()][i]
@@ -96,10 +100,11 @@ func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]uint, [][]bool)
 					}
 				}
 			}
+			repLeaves[cur.Id()] = repLeaves[children[cur.Id()][0].Id()]
 		}
 		return true
 	})
-	return lca, leafset
+	return lca, leafset, repLeaves
 }
 
 func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]bool) [][]*Quartet {
