@@ -23,6 +23,11 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 			panic(err)
 		}
 		td.Tree.GraftTipOnEdge(r, wEdge)
+		p, err := r.Parent()
+		if err != nil {
+			panic(err)
+		}
+		p.SetName(fmt.Sprintf("#%d", i))
 	}
 	return fixNetwork(td.Tree.Newick())
 }
