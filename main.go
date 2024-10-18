@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"camus/alg"
-	"camus/io"
+	"camus/netio"
 )
 
 type args struct {
@@ -29,7 +29,7 @@ func parseArgs() args {
 
 func main() {
 	args := parseArgs()
-	tre, quartets, err := io.ReadInputFiles(args.treeFile, args.geneTreeFile)
+	tre, quartets, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error importing file data:\n%+v\n", err)
 		os.Exit(2)
@@ -39,6 +39,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Sisyphus was not happy :(\n%+v\n", err)
 		os.Exit(3)
 	}
-	// fmt.Println(branches)
-	fmt.Fprintf(os.Stdout, io.MakeNetwork(td, branches))
+	fmt.Fprintf(os.Stdout, netio.MakeNetwork(td, branches))
 }
