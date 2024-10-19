@@ -25,7 +25,6 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 			panic(fmt.Sprintf("error in MakeNetwork getting w: %s", err))
 		}
 		td.Tree.GraftTipOnEdge(r, wEdge)
-		td.Tree.ReinitIndexes()
 		p, err := r.Parent()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork after grafting w: %s", err))
