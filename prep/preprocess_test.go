@@ -153,7 +153,7 @@ func TestProcessTreeData(t *testing.T) {
 			qs, err := processQuartets(q, tre)
 			treeData := PreprocessTreeData(tre, qs)
 			lca := treeData.lca
-			leafset := treeData.Leafsets
+			leafset := treeData.leafsets
 			quartetSets := treeData.QuartetSet
 			nLeaves := len(lca)
 			for i := 0; i < nLeaves; i++ {
