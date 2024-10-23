@@ -94,7 +94,7 @@ func validateQuartet(rawQuartet, tre *tree.Tree) (*Quartet, error) {
 func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	result := "{"
 	tips := td.Tree.AllTipNames()
-	for i, t := range td.Leafsets[n.Id()] {
+	for i, t := range td.leafsets[n.Id()] {
 		if t {
 			result += tips[i] + ","
 		}

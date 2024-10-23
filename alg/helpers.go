@@ -6,7 +6,7 @@ func SubtreePostOrder(cur *tree.Node, f func(cur, otherSubtree *tree.Node)) {
 	if !cur.Tip() {
 		children := make([]*tree.Node, 0)
 		for _, n := range cur.Neigh() {
-			if p, err := cur.Parent(); err != nil {
+			if p, err := cur.Parent(); err != nil && err.Error() != "The node has no parent : May be the root?" {
 				panic(err)
 			} else if n != p {
 				children = append(children, n)
@@ -34,7 +34,7 @@ func subtreePostOrderHelper(cur, otherSubtree *tree.Node, f func(cur, otherSubtr
 func SubtreePreOrder(cur *tree.Node, f func(cur *tree.Node)) {
 	f(cur)
 	for _, n := range cur.Neigh() {
-		if p, err := cur.Parent(); err != nil {
+		if p, err := cur.Parent(); err != nil && err.Error() != "The node has no parent : May be the root?" {
 			panic(err)
 		} else if n != p {
 			SubtreePreOrder(n, f)

@@ -43,6 +43,8 @@ func (dp *DP) RunDP() [][2]int {
 		return true
 	})
 	result := dp.traceback()
+	fmt.Println(dp.DP)
+	fmt.Println(result)
 	return result
 }
 
@@ -68,14 +70,12 @@ func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 	pathScores := make(map[int]uint)
 	SubtreePreOrder(v, func(cur *tree.Node) {
-		dp.TreeData.Verify()
-		// if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
-		if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
-			panic(err)
-		} else if p == nil {
-			panic("parent is nil")
-		} else if p != v {
-			pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[dp.TreeData.Sibling(cur).Id()]
+		if cur != v {
+			if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
+				panic(err)
+			} else if p != v && cur != dp.TreeData.Root {
+				pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[dp.TreeData.Sibling(cur).Id()]
+			}
 		}
 	})
 	return pathScores
@@ -98,6 +98,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.QuartetSet[v.Id()] {
+		// fmt.Println(q.String(dp.TreeData.Tree))
 		if dp.quartetScore(q, u, w, wSub) {
 			score += 1
 		}
@@ -110,16 +111,17 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 	if !unique || bottom == -1 {
 		return false
 	}
+	// fmt.Printf("u: %s, w %s, bottom %s\n", dp.TreeData.LeafsetAsString(u), dp.TreeData.LeafsetAsString(w), dp.TreeData.IdToNodes[bottom].Name())
 	_, _, unique = dp.uniqueTaxaBelowNodeFromQ(u, q)
 	if !unique {
 		return false
 	}
-	lcaSet := make(map[uint]bool)
+	lcaSet := make(map[int]bool)
 	for _, t := range q.Taxa {
-		if dp.TreeData.Leafsets[wSub.Id()][t] {
-			dp.TreeData.LCA(bottom, t)
+		if dp.TreeData.InLeafset(wSub.Id(), t) {
+			lcaSet[dp.TreeData.LCA(bottom, t)] = true
 		} else {
-			dp.TreeData.LCA(u.Id(), t)
+			lcaSet[dp.TreeData.LCA(u.Id(), t)] = true
 		}
 	}
 	if len(lcaSet) != 4 {
@@ -138,15 +140,16 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 			i++
 		}
 	}
-	nLeaves := len(dp.TreeData.Leafsets[0])
+	nLeaves := dp.TreeData.NLeaves()
+	// nLeaves := len(dp.TreeData.Leafsets[0])
 	maxW, minU, bestTaxa := -1, nLeaves, -1
 	taxaInU := false
 	for i, t := range q.Taxa {
 		d := lcaDepths[i]
-		if !taxaInU && dp.TreeData.Leafsets[wSub.Id()][t] && d > maxW {
+		if !taxaInU && dp.TreeData.InLeafset(wSub.Id(), t) && d > maxW {
 			maxW = d
 			bestTaxa = i
-		} else if !dp.TreeData.Leafsets[wSub.Id()][t] && d < minU {
+		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d < minU {
 			taxaInU = true
 			minU = d
 			bestTaxa = i
@@ -159,9 +162,9 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *prep.Quartet) (int, int, bool) {
 	taxaID, taxaIndex := -1, -1
 	for i, t := range q.Taxa {
-		if dp.TreeData.Leafsets[n.Id()][t] && taxaID == -1 {
+		if dp.TreeData.InLeafset(n.Id(), t) && taxaID == -1 {
 			taxaID, taxaIndex = t, i
-		} else if dp.TreeData.Leafsets[n.Id()][t] {
+		} else if dp.TreeData.InLeafset(n.Id(), t) {
 			return taxaID, taxaIndex, false
 		}
 	}
@@ -180,12 +183,14 @@ func neighborTaxaQ(q *prep.Quartet, i int) int {
 }
 
 func (dp *DP) traceback() [][2]int {
+	// fmt.Println(dp.DP[dp.TreeData.Root.Id()])
 	return dp.tracebackRecursive(dp.TreeData.Root)
 }
 
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
+		// fmt.Printf("%s %s\n", dp.TreeData.LeafsetAsString(dp.TreeData.IdToNodes[dp.Branches[curNode.Id()][0]]), dp.TreeData.LeafsetAsString(dp.TreeData.IdToNodes[dp.Branches[curNode.Id()][1]]))
 		if curBranch == [2]int{0, 0} {
 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)

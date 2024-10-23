@@ -10,9 +10,9 @@ type TreeData struct {
 	Tree        *tree.Tree     // Tree object
 	Root        *tree.Node     // Root for which data is calculated
 	Children    [][]*tree.Node // Children for each node
-	Leafsets    [][]bool       // Leaves under each node
 	IdToNodes   []*tree.Node   // Mapping between id and node pointer
 	QuartetSet  [][]*Quartet   // Quartets relevant for each subtree
+	leafsets    [][]bool       // Leaves under each node
 	leafRep     []*tree.Node   // A single leaf that can be looked up for each node (used for LCAs between internal nodes)
 	lca         [][]int        // LCA for each pair of node id
 	tipIndexMap map[int]int
@@ -26,7 +26,7 @@ func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: tre, Root: root, Children: children, lca: lca,
-		Leafsets: leafsets, leafRep: leafReps, IdToNodes: idMap,
+		leafsets: leafsets, leafRep: leafReps, IdToNodes: idMap,
 		QuartetSet: quartetSets, tipIndexMap: tipIndexMap}
 }
 
@@ -166,6 +166,10 @@ func isBinaryRecusive(node *tree.Node) bool {
 	return isBinaryRecusive(children[0]) && isBinaryRecusive(children[1])
 }
 
+func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
+	return td.leafsets[n1ID][td.tipIndexMap[n2ID]]
+}
+
 /* takes in the node ids of two nodes (not the tip indices) and returns the id of the LCA */
 func (td *TreeData) LCA(n1ID, n2ID int) int {
 	n1, n2 := td.IdToNodes[n1ID], td.IdToNodes[n2ID]
@@ -175,7 +179,6 @@ func (td *TreeData) LCA(n1ID, n2ID int) int {
 	if !n2.Tip() {
 		n2 = td.leafRep[n2ID]
 	}
-	fmt.Printf("lca %s %s\n", n1.Name(), n2.Name())
 	return td.lca[td.tipIndexMap[n1.Id()]][td.tipIndexMap[n2.Id()]]
 }
 
@@ -191,4 +194,8 @@ func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
 		}
 	}
 	panic("failed to find node sibling")
+}
+
+func (td *TreeData) NLeaves() int {
+	return len(td.leafsets[0])
 }
