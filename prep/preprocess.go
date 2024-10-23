@@ -24,6 +24,7 @@ returns:
 */
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
+	tre.ComputeDepths()
 	if !IsBinary(tre) {
 		return nil, errors.New("Constraint tree is not binary")
 	}
@@ -88,4 +89,15 @@ func validateQuartet(rawQuartet, tre *tree.Tree) (*Quartet, error) {
 		return nil, err
 	}
 	return quartet, nil
+}
+
+func (td *TreeData) LeafsetAsString(n *tree.Node) string {
+	result := "{"
+	tips := td.Tree.AllTipNames()
+	for i, t := range td.Leafsets[n.Id()] {
+		if t {
+			result += tips[i] + ","
+		}
+	}
+	return result[:len(result)-1] + "}"
 }

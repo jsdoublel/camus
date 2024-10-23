@@ -16,12 +16,12 @@ type DP struct {
 }
 
 func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
-	fmt.Fprint(os.Stderr, "beginning data preprocessing")
+	fmt.Fprint(os.Stderr, "beginning data preprocessing\n")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Preprocess error: %w", err)
 	}
-	fmt.Fprint(os.Stderr, "preprocessing finished, beginning CAMUS")
+	fmt.Fprint(os.Stderr, "preprocessing finished, beginning CAMUS\n")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
 	return td, dp.RunDP(), nil
@@ -68,8 +68,12 @@ func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 	pathScores := make(map[int]uint)
 	SubtreePreOrder(v, func(cur *tree.Node) {
+		dp.TreeData.Verify()
+		// if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
 		if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
 			panic(err)
+		} else if p == nil {
+			panic("parent is nil")
 		} else if p != v {
 			pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[dp.TreeData.Sibling(cur).Id()]
 		}
@@ -103,7 +107,7 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 
 func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 	bottom, bi, unique := dp.uniqueTaxaBelowNodeFromQ(w, q)
-	if !unique {
+	if !unique || bottom == -1 {
 		return false
 	}
 	_, _, unique = dp.uniqueTaxaBelowNodeFromQ(u, q)
@@ -111,12 +115,11 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 		return false
 	}
 	lcaSet := make(map[uint]bool)
-	uRep := dp.TreeData.LeafRep[u.Id()].Id()
 	for _, t := range q.Taxa {
 		if dp.TreeData.Leafsets[wSub.Id()][t] {
-			lcaSet[dp.TreeData.LCA[bottom][t]] = true
+			dp.TreeData.LCA(bottom, t)
 		} else {
-			lcaSet[dp.TreeData.LCA[uRep][t]] = true
+			dp.TreeData.LCA(u.Id(), t)
 		}
 	}
 	if len(lcaSet) != 4 {

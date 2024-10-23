@@ -152,7 +152,7 @@ func TestProcessTreeData(t *testing.T) {
 			tre.UpdateTipIndex()
 			qs, err := processQuartets(q, tre)
 			treeData := PreprocessTreeData(tre, qs)
-			lca := treeData.LCA
+			lca := treeData.lca
 			leafset := treeData.Leafsets
 			quartetSets := treeData.QuartetSet
 			nLeaves := len(lca)
@@ -183,7 +183,7 @@ func TestProcessTreeData(t *testing.T) {
 	}
 }
 
-func lcaEqualityTester(lca [][]uint, testLCA map[string][][]string, tre *tree.Tree) (bool, error) {
+func lcaEqualityTester(lca [][]int, testLCA map[string][][]string, tre *tree.Tree) (bool, error) {
 	for k, v := range testLCA {
 		for _, pair := range v {
 			if len(pair) != 2 {
@@ -197,7 +197,7 @@ func lcaEqualityTester(lca [][]uint, testLCA map[string][][]string, tre *tree.Tr
 			if err != nil {
 				return false, err
 			}
-			if lca[id1][id2] != uint(node.Id()) {
+			if lca[id1][id2] != node.Id() {
 				return false, nil
 			}
 		}
