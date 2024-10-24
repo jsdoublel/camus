@@ -141,7 +141,6 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 		}
 	}
 	nLeaves := dp.TreeData.NLeaves()
-	// nLeaves := len(dp.TreeData.Leafsets[0])
 	maxW, minU, bestTaxa := -1, nLeaves, -1
 	taxaInU := false
 	for i, t := range q.Taxa {
@@ -183,20 +182,19 @@ func neighborTaxaQ(q *prep.Quartet, i int) int {
 }
 
 func (dp *DP) traceback() [][2]int {
-	// fmt.Println(dp.DP[dp.TreeData.Root.Id()])
 	return dp.tracebackRecursive(dp.TreeData.Root)
 }
 
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
-		// fmt.Printf("%s %s\n", dp.TreeData.LeafsetAsString(dp.TreeData.IdToNodes[dp.Branches[curNode.Id()][0]]), dp.TreeData.LeafsetAsString(dp.TreeData.IdToNodes[dp.Branches[curNode.Id()][1]]))
 		if curBranch == [2]int{0, 0} {
 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
 		} else {
 			u, w := dp.TreeData.IdToNodes[curBranch[0]], dp.TreeData.IdToNodes[curBranch[1]]
-			traceback := dp.tracebackRecursive(w)
+			traceback := [][2]int{curBranch}
+			traceback = append(traceback, dp.tracebackRecursive(w)...)
 			if u != curNode {
 				traceback = append(traceback, dp.tracebackRecursive(u)...)
 				traceback = append(traceback, dp.tracePath(u, curNode)...)
