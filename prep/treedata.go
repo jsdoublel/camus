@@ -100,7 +100,7 @@ func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]int, [][]bool, 
 			for i := 0; i < nLeaves; i++ {
 				leafset[cur.Id()][i] = leafset[children[cur.Id()][0].Id()][i] || leafset[children[cur.Id()][1].Id()][i]
 				for j := 0; j < nLeaves; j++ {
-					if leafset[children[cur.Id()][0].Id()][i] == leafset[children[cur.Id()][1].Id()][j] {
+					if leafset[children[cur.Id()][0].Id()][i] && leafset[children[cur.Id()][1].Id()][j] {
 						lca[i][j] = cur.Id()
 						lca[j][i] = cur.Id()
 					}
@@ -167,19 +167,17 @@ func isBinaryRecusive(node *tree.Node) bool {
 }
 
 func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
-	return td.leafsets[n1ID][td.tipIndexMap[n2ID]]
+	return td.leafsets[n1ID][n2ID]
 }
 
-/* takes in the node ids of two nodes (not the tip indices) and returns the id of the LCA */
-func (td *TreeData) LCA(n1ID, n2ID int) int {
-	n1, n2 := td.IdToNodes[n1ID], td.IdToNodes[n2ID]
+/* takes in the node ids of two nodes (THE SECOND ONE IS A TIP ID) and returns the id of the LCA */
+func (td *TreeData) LCA(n1ID, n2IDtip int) int {
+	n1 := td.IdToNodes[n1ID]
+	n1IDtip := n1.TipIndex()
 	if !n1.Tip() {
-		n1 = td.leafRep[n1ID]
+		n1IDtip = td.leafRep[n1ID].TipIndex()
 	}
-	if !n2.Tip() {
-		n2 = td.leafRep[n2ID]
-	}
-	return td.lca[td.tipIndexMap[n1.Id()]][td.tipIndexMap[n2.Id()]]
+	return td.lca[n1IDtip][n2IDtip]
 }
 
 func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
@@ -198,4 +196,15 @@ func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
 
 func (td *TreeData) NLeaves() int {
 	return len(td.leafsets[0])
+}
+
+func (td *TreeData) LeafsetAsString(n *tree.Node) string {
+	result := "{"
+	tips := td.Tree.AllTipNames()
+	for i, t := range td.leafsets[n.Id()] {
+		if t {
+			result += tips[i] + ","
+		}
+	}
+	return result[:len(result)-1] + "}"
 }

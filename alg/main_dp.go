@@ -43,8 +43,6 @@ func (dp *DP) RunDP() [][2]int {
 		return true
 	})
 	result := dp.traceback()
-	fmt.Println(dp.DP)
-	fmt.Println(result)
 	return result
 }
 
@@ -98,7 +96,6 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.QuartetSet[v.Id()] {
-		// fmt.Println(q.String(dp.TreeData.Tree))
 		if dp.quartetScore(q, u, w, wSub) {
 			score += 1
 		}
@@ -111,7 +108,6 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 	if !unique || bottom == -1 {
 		return false
 	}
-	// fmt.Printf("u: %s, w %s, bottom %s\n", dp.TreeData.LeafsetAsString(u), dp.TreeData.LeafsetAsString(w), dp.TreeData.IdToNodes[bottom].Name())
 	_, _, unique = dp.uniqueTaxaBelowNodeFromQ(u, q)
 	if !unique {
 		return false
@@ -119,7 +115,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 	lcaSet := make(map[int]bool)
 	for _, t := range q.Taxa {
 		if dp.TreeData.InLeafset(wSub.Id(), t) {
-			lcaSet[dp.TreeData.LCA(bottom, t)] = true
+			lcaSet[dp.TreeData.LCA(w.Id(), t)] = true
 		} else {
 			lcaSet[dp.TreeData.LCA(u.Id(), t)] = true
 		}
@@ -175,7 +171,7 @@ func neighborTaxaQ(q *prep.Quartet, i int) int {
 	b := (q.Topology >> i) % 2
 	for j := 0; j < 4; j++ {
 		if j != i && (q.Topology>>j)%2 == b {
-			return j
+			return q.Taxa[j]
 		}
 	}
 	panic("invalid quartet or bad i")
