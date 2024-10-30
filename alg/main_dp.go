@@ -42,6 +42,7 @@ func (dp *DP) RunDP() [][2]int {
 		}
 		return true
 	})
+	fmt.Println(dp.DP)
 	result := dp.traceback()
 	return result
 }
@@ -104,23 +105,22 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 }
 
 func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
+	fmt.Println(q.String(dp.TreeData.Tree), dp.TreeData.LeafsetAsString(u), dp.TreeData.LeafsetAsString(w))
 	bottom, bi, unique := dp.uniqueTaxaBelowNodeFromQ(w, q)
 	if !unique || bottom == -1 {
-		return false
-	}
-	_, _, unique = dp.uniqueTaxaBelowNodeFromQ(u, q)
-	if !unique {
+		fmt.Println("bottom not unique or found")
 		return false
 	}
 	lcaSet := make(map[int]bool)
 	for _, t := range q.Taxa {
-		if dp.TreeData.InLeafset(wSub.Id(), t) {
+		if dp.TreeData.InLeafset(wSub.Id(), t) || dp.TreeData.InLeafset(u.Id(), bottom) {
 			lcaSet[dp.TreeData.LCA(w.Id(), t)] = true
 		} else {
 			lcaSet[dp.TreeData.LCA(u.Id(), t)] = true
 		}
 	}
 	if len(lcaSet) != 4 {
+		fmt.Println("lca != 4")
 		return false
 	}
 	neighbor := neighborTaxaQ(q, bi)
@@ -150,6 +150,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 			bestTaxa = i
 		}
 	}
+	fmt.Printf("result: %v\n", q.Taxa[bestTaxa] == neighbor)
 	return q.Taxa[bestTaxa] == neighbor
 }
 
