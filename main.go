@@ -12,19 +12,21 @@ import (
 type args struct {
 	treeFile     string
 	geneTreeFile string
+	outputFile   string
 }
 
 func parseArgs() args {
 	flag.NewFlagSet("CAMUS", flag.ContinueOnError)
 	treeFile := flag.String("t", "", "constraint tree")
 	geneTreeFile := flag.String("g", "", "gene tree file")
+	outputFile := flag.String("o", "", "output extended newick file")
 	flag.Parse()
-	if *treeFile == "" || *geneTreeFile == "" {
-		fmt.Fprintln(os.Stderr, "Error: both -t and -g are required")
+	if *treeFile == "" || *geneTreeFile == "" || *outputFile == "" {
+		fmt.Fprintln(os.Stderr, "Error: both -t, -g, and -o are required")
 		flag.Usage()
 		os.Exit(1)
 	}
-	return args{treeFile: *treeFile, geneTreeFile: *geneTreeFile}
+	return args{treeFile: *treeFile, geneTreeFile: *geneTreeFile, outputFile: *outputFile}
 }
 
 func main() {
@@ -39,5 +41,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Sisyphus was not happy :(\n%+v\n", err)
 		os.Exit(3)
 	}
-	fmt.Fprintf(os.Stdout, netio.MakeNetwork(td, branches))
+	out := []byte(netio.MakeNetwork(td, branches))
+	err = os.WriteFile(args.outputFile, out, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing output:\n%+v\n", err)
+		os.Exit(4)
+	}
 }
