@@ -85,10 +85,12 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 	var bestScore uint
 	var bestW int
 	SubtreePreOrder(sub, func(w *tree.Node) {
-		score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()]
-		if score >= bestScore {
-			bestScore = score
-			bestW = w.Id()
+		if u != w {
+			score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()]
+			if score >= bestScore {
+				bestScore = score
+				bestW = w.Id()
+			}
 		}
 	})
 	return pathScores[u.Id()] + bestScore, bestW
@@ -113,10 +115,12 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
 	}
 	lcaSet := make(map[int]bool)
 	for _, t := range q.Taxa {
+		// TODO: get node id for t
+		tID := dp.TreeData.NodeID(t)
 		if dp.TreeData.InLeafset(wSub.Id(), t) || dp.TreeData.InLeafset(u.Id(), bottom) {
-			lcaSet[dp.TreeData.LCA(w.Id(), t)] = true
+			lcaSet[dp.TreeData.LCA(w.Id(), tID)] = true
 		} else {
-			lcaSet[dp.TreeData.LCA(u.Id(), t)] = true
+			lcaSet[dp.TreeData.LCA(u.Id(), tID)] = true
 		}
 	}
 	if len(lcaSet) != 4 {
