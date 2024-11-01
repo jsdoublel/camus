@@ -42,7 +42,6 @@ func (dp *DP) RunDP() [][2]int {
 		}
 		return true
 	})
-	fmt.Println(dp.DP)
 	result := dp.traceback()
 	return result
 }
@@ -107,55 +106,48 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 }
 
 func (dp *DP) quartetScore(q *prep.Quartet, u, w, wSub *tree.Node) bool {
-	fmt.Println(q.String(dp.TreeData.Tree), dp.TreeData.LeafsetAsString(u), dp.TreeData.LeafsetAsString(w))
 	bottom, bi, unique := dp.uniqueTaxaBelowNodeFromQ(w, q)
 	if !unique || bottom == -1 {
-		fmt.Println("bottom not unique or found")
 		return false
 	}
 	lcaSet := make(map[int]bool)
+	taxaToLCA := make(map[int]int) // tip index -> lca
 	for _, t := range q.Taxa {
-		// TODO: get node id for t
 		tID := dp.TreeData.NodeID(t)
+		var lca int
 		if dp.TreeData.InLeafset(wSub.Id(), t) || dp.TreeData.InLeafset(u.Id(), bottom) {
-			lcaSet[dp.TreeData.LCA(w.Id(), tID)] = true
+			lca = dp.TreeData.LCA(w.Id(), tID)
 		} else {
-			lcaSet[dp.TreeData.LCA(u.Id(), tID)] = true
+			lca = dp.TreeData.LCA(u.Id(), tID)
 		}
+		lcaSet[lca] = true
+		taxaToLCA[t] = lca
 	}
 	if len(lcaSet) != 4 {
-		fmt.Println("lca != 4")
 		return false
 	}
 	neighbor := neighborTaxaQ(q, bi)
-	var lcaDepths [4]int
-	i := 0
+	lcaDepths := make(map[int]int) // node ID -> depth
 	for k, v := range lcaSet {
 		if v {
-			d, err := dp.TreeData.IdToNodes[k].Depth()
-			if err != nil {
-				panic(err)
-			}
-			lcaDepths[i] = d
-			i++
+			lcaDepths[k] = dp.TreeData.Depths[k]
 		}
 	}
 	nLeaves := dp.TreeData.NLeaves()
 	maxW, minU, bestTaxa := -1, nLeaves, -1
 	taxaInU := false
-	for i, t := range q.Taxa {
-		d := lcaDepths[i]
+	for _, t := range q.Taxa {
+		d := lcaDepths[taxaToLCA[t]]
 		if !taxaInU && dp.TreeData.InLeafset(wSub.Id(), t) && d > maxW {
 			maxW = d
-			bestTaxa = i
+			bestTaxa = t
 		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d < minU {
 			taxaInU = true
 			minU = d
-			bestTaxa = i
+			bestTaxa = t
 		}
 	}
-	fmt.Printf("result: %v\n", q.Taxa[bestTaxa] == neighbor)
-	return q.Taxa[bestTaxa] == neighbor
+	return bestTaxa == neighbor
 }
 
 /* returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa) */

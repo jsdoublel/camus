@@ -24,7 +24,6 @@ returns:
 */
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
-	tre.ComputeDepths()
 	if !IsBinary(tre) {
 		return nil, errors.New("Constraint tree is not binary")
 	}

@@ -7,14 +7,14 @@ import (
 )
 
 type TreeData struct {
-	Tree       *tree.Tree     // Tree object
-	Root       *tree.Node     // Root for which data is calculated
-	Children   [][]*tree.Node // Children for each node
-	IdToNodes  []*tree.Node   // Mapping between id and node pointer
-	QuartetSet [][]*Quartet   // Quartets relevant for each subtree
-	leafsets   [][]bool       // Leaves under each node
-	// leafRep     []*tree.Node   // A single leaf that can be looked up for each node (used for LCAs between internal nodes)
-	lca         [][]int // LCA for each pair of node id
+	Tree        *tree.Tree     // Tree object
+	Root        *tree.Node     // Root for which data is calculated
+	Children    [][]*tree.Node // Children for each node
+	IdToNodes   []*tree.Node   // Mapping between id and node pointer
+	QuartetSet  [][]*Quartet   // Quartets relevant for each subtree
+	Depths      []int          // Distance from all nodes to the root (which as it turns out is the correct definition gotree!!!)
+	leafsets    [][]bool       // Leaves under each node
+	lca         [][]int        // LCA for each pair of node id
 	tipIndexMap map[int]int
 }
 
@@ -22,13 +22,14 @@ func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	// lca, leafsets, leafReps := lcaAndLeafset(tre, children)
-	leafsets := makeLeafset(tre, children)
+	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
+	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: tre, Root: root, Children: children, lca: lca,
-		leafsets: leafsets, IdToNodes: idMap,
+		leafsets: leafsets, IdToNodes: idMap, Depths: depths,
 		QuartetSet: quartetSets, tipIndexMap: tipIndexMap}
 }
 
@@ -47,7 +48,6 @@ func (td *TreeData) Verify() {
 	if root != td.Root {
 		panic("TreeData root is wrong!")
 	}
-	// return root == td.Root
 }
 
 func children(tre *tree.Tree) [][]*tree.Node {
@@ -65,7 +65,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 	return children
 }
 
-/* panics (array out of bounds) if tree is not binary */
+/* can panic (array out of bounds) if tree is not binary */
 func getChildren(node *tree.Node) []*tree.Node {
 	children := make([]*tree.Node, 2)
 	p, err := node.Parent()
@@ -83,7 +83,7 @@ func getChildren(node *tree.Node) []*tree.Node {
 }
 
 /* calculates the leafset for every node */
-func makeLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
+func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
 	nLeaves, nNodes := len(tre.Tips()), len(tre.Nodes())
 	leafset := make([][]bool, nNodes)
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
@@ -126,6 +126,17 @@ func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 		return true
 	})
 	return lca
+}
+
+func calcDepths(tre *tree.Tree) []int {
+	depths := make([]int, len(tre.Nodes()))
+	tre.PreOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+		if cur != tre.Root() {
+			depths[cur.Id()] = depths[prev.Id()] + 1
+		}
+		return true
+	})
+	return depths
 }
 
 // /* calculates the LCA for all pairs of leaves as well as the leaf set for every node */
