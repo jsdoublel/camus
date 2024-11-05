@@ -189,15 +189,19 @@ func lcaEqualityTester(lca [][]int, testLCA map[string][][]string, tre *tree.Tre
 			if len(pair) != 2 {
 				return false, fmt.Errorf("lca is not a pair; test is written wrong")
 			}
-			id1, err := tre.TipIndex(pair[0])
-			tipIndexPanic("lca test", err)
-			id2, err := tre.TipIndex(pair[1])
-			tipIndexPanic("lca test", err)
-			node, err := getNode(k, tre)
+			node1, err := getNode(pair[0], tre)
 			if err != nil {
 				return false, err
 			}
-			if lca[id1][id2] != node.Id() {
+			node2, err := getNode(pair[1], tre)
+			if err != nil {
+				return false, err
+			}
+			lcaNode, err := getNode(k, tre)
+			if err != nil {
+				return false, err
+			}
+			if lca[node1.Id()][node2.Id()] != lcaNode.Id() {
 				return false, nil
 			}
 		}
