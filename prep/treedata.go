@@ -139,58 +139,22 @@ func calcDepths(tre *tree.Tree) []int {
 	return depths
 }
 
-// /* calculates the LCA for all pairs of leaves as well as the leaf set for every node */
-// func lcaAndLeafset(tre *tree.Tree, children [][]*tree.Node) ([][]int, [][]bool, []*tree.Node) {
-// 	nLeaves := len(tre.Tips())
-// 	nNodes := len(tre.Nodes())
-// 	lca := make([][]int, nLeaves)
-// 	for i := range nLeaves {
-// 		lca[i] = make([]int, nLeaves)
-// 	}
-// 	leafset := make([][]bool, nNodes)
-// 	repLeaves := make([]*tree.Node, nNodes)
-// 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-// 		leafset[cur.Id()] = make([]bool, nLeaves)
-// 		if cur.Tip() {
-// 			leafset[cur.Id()][cur.TipIndex()] = true
-// 			lca[cur.TipIndex()][cur.TipIndex()] = cur.Id()
-// 			repLeaves[cur.Id()] = cur
-// 		} else {
-// 			for i := 0; i < nLeaves; i++ {
-// 				leafset[cur.Id()][i] = leafset[children[cur.Id()][0].Id()][i] || leafset[children[cur.Id()][1].Id()][i]
-// 				for j := 0; j < nLeaves; j++ {
-// 					if leafset[children[cur.Id()][0].Id()][i] && leafset[children[cur.Id()][1].Id()][j] {
-// 						lca[i][j] = cur.Id()
-// 						lca[j][i] = cur.Id()
-// 					}
-// 				}
-// 			}
-// 			repLeaves[cur.Id()] = repLeaves[children[cur.Id()][0].Id()]
-// 		}
-// 		return true
-// 	})
-// 	return lca, leafset, repLeaves
-// }
-
+/* maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex */
 func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]bool) [][]*Quartet {
 	quartetSets := make([][]*Quartet, len(tre.Nodes()))
-	// for i := range len(tre.Nodes()) {
-	// 	quartetSets[i] = quartets
-	// }
 	n := len(tre.Tips())
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		quartetSets[cur.Id()] = make([]*Quartet, 0)
 		for _, q := range quartets {
-			add := true
-			for i := 0; i < 4; i++ {
+			found := 0
+			for i := range 4 {
 				if q.Taxa[i] >= n {
 					panic("cannot map quartet taxa to constraint tree")
-				} else if !leafsets[cur.Id()][q.Taxa[i]] {
-					add = false
-					break
+				} else if leafsets[cur.Id()][q.Taxa[i]] {
+					found++
 				}
 			}
-			if add {
+			if found >= 3 {
 				quartetSets[cur.Id()] = append(quartetSets[cur.Id()], q)
 			}
 		}
