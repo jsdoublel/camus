@@ -42,10 +42,7 @@ func (dp *DP) RunDP() [][2]int {
 		}
 		return true
 	})
-	fmt.Println(dp.DP)
-	fmt.Println(dp.Branches)
 	result := dp.traceback()
-	fmt.Println(result)
 	return result
 }
 
@@ -125,16 +122,9 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 		} else {
 			lca = dp.TreeData.LCA(u.Id(), tID)
 		}
-		// if dp.TreeData.LCA(v.Id(), lca) != v.Id() {
-		// 	return false
-		// }
 		cycleNodes[lca] = true
 		taxaToLCA[t] = lca
 	}
-	// fmt.Println("v", dp.TreeData.LeafsetAsString(v), "u", dp.TreeData.LeafsetAsString(u), "w", dp.TreeData.LeafsetAsString(w), "q", q.String(dp.TreeData.Tree))
-	// for n := range cycleNodes {
-	// 	fmt.Println(dp.TreeData.LeafsetAsString(dp.TreeData.IdToNodes[n]))
-	// }
 	if len(cycleNodes) != 4 {
 		return false
 	}
@@ -146,16 +136,16 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 		}
 	}
 	nLeaves := dp.TreeData.NLeaves()
-	maxW, minU, bestTaxa := -1, nLeaves, -1
+	minW, maxU, bestTaxa := nLeaves, -1, -1
 	taxaInU := false
 	for _, t := range q.Taxa {
 		d := lcaDepths[taxaToLCA[t]]
-		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d > maxW) || taxaToLCA[t] == v.Id() {
-			maxW = d
+		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) || taxaToLCA[t] == v.Id() {
+			minW = d
 			bestTaxa = t
-		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d < minU {
+		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d > maxU {
 			taxaInU = true
-			minU = d
+			maxU = d
 			bestTaxa = t
 		}
 	}
@@ -193,13 +183,11 @@ func (dp *DP) traceback() [][2]int {
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
-		// fmt.Println(curBranch)
 		if curBranch == [2]int{0, 0} {
 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
 		} else {
 			u, w := dp.TreeData.IdToNodes[curBranch[0]], dp.TreeData.IdToNodes[curBranch[1]]
-			// fmt.Println(u.Id(), w.Id())
 			traceback := [][2]int{curBranch}
 			traceback = append(traceback, dp.tracebackRecursive(w)...)
 			if u != curNode {

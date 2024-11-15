@@ -24,7 +24,6 @@ func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	// lca, leafsets, leafReps := lcaAndLeafset(tre, children)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
-	fmt.Println(lca)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
 	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
@@ -132,44 +131,6 @@ func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 	})
 	return lca
 }
-
-// /* caculates the LCA for every pair of nodes */
-// func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
-// 	nNodes := len(tre.Nodes())
-// 	lca, below := make([][]int, nNodes), make([][]bool, nNodes) // below[i][j] = true means node j is below node i
-// 	for i := range nNodes {
-// 		lca[i] = make([]int, nNodes)
-// 		below[i] = make([]bool, nNodes)
-// 	}
-// 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-// 		below[cur.Id()][cur.Id()] = true
-// 		if cur.Tip() {
-// 			lca[cur.Id()][cur.Id()] = cur.Id()
-// 		} else {
-// 			for i := range nNodes {
-// 				if i != cur.Id() {
-// 					below[cur.Id()][i] = below[children[cur.Id()][0].Id()][i] || below[children[cur.Id()][1].Id()][i]
-// 				}
-// 				for j := range nNodes {
-// 					if (below[children[cur.Id()][0].Id()][i] && below[children[cur.Id()][1].Id()][j]) || i == j {
-// 						lca[i][j] = cur.Id()
-// 						lca[j][i] = cur.Id()
-// 					}
-// 				}
-// 			}
-// 		}
-// 		return true
-// 	})
-// 	return lca
-// }
-
-// func recursiveNodeSet(subtree *tree.Node, children [][]*tree.Node) []int {
-// 	if subtree.Tip() {
-// 		return []int{subtree.Id()}
-// 	}
-// 	return append(recursiveNodeSet(children[subtree.Id()][0], children),
-// 		recursiveNodeSet(children[subtree.Id()][1], children)...)
-// }
 
 func calcDepths(tre *tree.Tree) []int {
 	depths := make([]int, len(tre.Nodes()))
