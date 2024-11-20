@@ -21,7 +21,6 @@ type TreeData struct {
 func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
 	root := tre.Root()
 	children := children(tre)
-	// lca, leafsets, leafReps := lcaAndLeafset(tre, children)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
@@ -171,7 +170,6 @@ func makeTipIndexMap(tre *tree.Tree) map[int]int {
 	tips := tre.Tips()
 	tipMap := make(map[int]int, len(tips))
 	for _, t := range tips {
-		// tipMap[t.Id()] = t.TipIndex()
 		tipMap[t.TipIndex()] = t.Id()
 	}
 	return tipMap
@@ -203,11 +201,6 @@ func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
 
 /* takes in the node ids of two nodes and returns the id of the LCA */
 func (td *TreeData) LCA(n1ID, n2ID int) int {
-	// n1 := td.IdToNodes[n1ID]
-	// n1IDtip := n1.TipIndex()
-	// if !n1.Tip() {
-	// 	n1IDtip = td.leafRep[n1ID].TipIndex()
-	// }
 	return td.lca[n1ID][n2ID]
 }
 

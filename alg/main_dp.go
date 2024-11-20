@@ -116,7 +116,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 		tID := dp.TreeData.NodeID(t)
 		var lca int
 		if !dp.TreeData.InLeafset(v.Id(), t) {
-			lca = v.Id()
+			lca = 0
 		} else if dp.TreeData.InLeafset(wSub.Id(), t) || dp.TreeData.InLeafset(u.Id(), bottom) {
 			lca = dp.TreeData.LCA(w.Id(), tID)
 		} else {
@@ -140,7 +140,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 	taxaInU := false
 	for _, t := range q.Taxa {
 		d := lcaDepths[taxaToLCA[t]]
-		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) || taxaToLCA[t] == v.Id() {
+		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) || taxaToLCA[t] == 0 {
 			minW = d
 			bestTaxa = t
 		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d > maxU {
