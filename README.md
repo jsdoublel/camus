@@ -1,2 +1,1 @@
-# CAMUS (Constrained Algorithm Maximizing qUartets from SNPs)
-
+# CAMUS (Constrained Algorithm Maximizing qUartetS)
