@@ -22,7 +22,7 @@ func parseArgs() args {
 	outputFile := flag.String("o", "", "output extended newick file")
 	flag.Parse()
 	if *treeFile == "" || *geneTreeFile == "" || *outputFile == "" {
-		fmt.Fprintln(os.Stderr, "Error: both -t, -g, and -o are required")
+		fmt.Fprintln(os.Stderr, "Error: arguments -t, -g, and -o are required")
 		flag.Usage()
 		os.Exit(1)
 	}

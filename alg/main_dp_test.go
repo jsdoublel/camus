@@ -34,6 +34,15 @@ func TestCAMUS(t *testing.T) {
 			},
 			result: "(((A)#0,((((B,(C)#1),(#1,D)),E),F)),(G,(#0,H)));",
 		},
+		{
+			name:      "two-edge two",
+			constTree: "(a,(b,(c,(d,(e,(f,(g,(h,(i,j)))))))));",
+			geneTrees: []string{
+				"((j,g),(h,i));",
+				"((c,g),(e,f));",
+			},
+			result: "(a,(b,(c,(d,((e)#0,((#0,f),(g,((h)#1,((#1,i),j)))))))));",
+		},
 	}
 	for _, test := range testCases {
 		constTree, err := newick.NewParser(strings.NewReader(test.constTree)).Parse()

@@ -43,6 +43,7 @@ func (dp *DP) RunDP() [][2]int {
 		return true
 	})
 	result := dp.traceback()
+	fmt.Fprintf(os.Stderr, "%d edges identified\n", len(result))
 	return result
 }
 
@@ -183,17 +184,17 @@ func (dp *DP) traceback() [][2]int {
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
-		if curBranch == [2]int{0, 0} {
+		if curBranch == [2]int{0, 0} { // there is no edge
 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
 		} else {
 			u, w := dp.TreeData.IdToNodes[curBranch[0]], dp.TreeData.IdToNodes[curBranch[1]]
 			traceback := [][2]int{curBranch}
-			traceback = append(traceback, dp.tracebackRecursive(w)...)
 			if u != curNode {
 				traceback = append(traceback, dp.tracebackRecursive(u)...)
 				traceback = append(traceback, dp.tracePath(u, curNode)...)
 			}
+			traceback = append(traceback, dp.tracebackRecursive(w)...)
 			traceback = append(traceback, dp.tracePath(w, curNode)...)
 			return traceback
 		}
@@ -205,15 +206,17 @@ func (dp *DP) tracePath(start, end *tree.Node) [][2]int {
 	if start == end {
 		panic("in tracePath start should not equal end!")
 	}
-	cur, err := start.Parent()
+	cur := start
+	p, err := start.Parent()
 	if err != nil {
 		panic(err)
 	}
 	trace := make([][2]int, 0)
-	for cur != end {
+	for p != end {
 		trace = append(trace, dp.tracebackRecursive(dp.TreeData.Sibling(cur))...)
 		var err error
-		cur, err = cur.Parent()
+		cur = p
+		p, err = cur.Parent()
 		if err != nil {
 			panic(err)
 		}
