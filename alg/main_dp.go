@@ -43,6 +43,9 @@ func (dp *DP) RunDP() [][2]int {
 		return true
 	})
 	result := dp.traceback()
+	// fmt.Printf("DEBUG: %v\n", dp.DP)
+	// fmt.Printf("DEBUG: %v\n", dp.Branches)
+	// fmt.Printf("DEBUG: %v\n", result)
 	fmt.Fprintf(os.Stderr, "%d edges identified\n", len(result))
 	return result
 }
@@ -141,7 +144,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 	taxaInU := false
 	for _, t := range q.Taxa {
 		d := lcaDepths[taxaToLCA[t]]
-		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) || taxaToLCA[t] == 0 {
+		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) {
 			minW = d
 			bestTaxa = t
 		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d > maxU {
@@ -150,6 +153,15 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 			bestTaxa = t
 		}
 	}
+	// TODO: remove debug print
+	// if bestTaxa == neighbor {
+	// 	fmt.Printf("quartet: %s\nv %s, w: %s, u: %s\n",
+	// 		q.String(dp.TreeData.Tree),
+	// 		dp.TreeData.LeafsetAsString(v),
+	// 		dp.TreeData.LeafsetAsString(w),
+	// 		dp.TreeData.LeafsetAsString(u),
+	// 	)
+	// }
 	return bestTaxa == neighbor
 }
 
