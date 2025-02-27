@@ -20,7 +20,7 @@ func TestMakeNetwork(t *testing.T) {
 			name:      "basic",
 			constTree: "[&R]((A,(B,(C,F)a)b)c,(D,E)d)e;",
 			edges:     [][2]string{{"F", "E"}},
-			result:    "((A,(B,(C,(#0,F))a)b)c,(D,(E)#0)d)e;",
+			result:    "((A,(B,(C,(#H0,F))a)b)c,(D,(E)#H0)d)e;",
 		},
 	}
 	for _, test := range testCases {

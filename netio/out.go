@@ -16,7 +16,7 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 			panic(fmt.Sprintf("error in MakeNetwork getting u (id %d): %s", u.Id(), err))
 		}
 		r := td.Tree.NewNode()
-		r.SetName(fmt.Sprintf("#%d", i))
+		r.SetName(fmt.Sprintf("#H%d", i))
 		td.Tree.GraftTipOnEdge(r, uEdge)
 		r = td.Tree.NewNode()
 		r.SetName("####")
@@ -29,7 +29,7 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork after grafting w: %s", err))
 		}
-		p.SetName(fmt.Sprintf("#%d", i))
+		p.SetName(fmt.Sprintf("#H%d", i))
 	}
 	deleteAllBranchLengths(td.Tree)
 	return fixNetwork(td.Tree.Newick())

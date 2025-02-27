@@ -23,7 +23,7 @@ func TestCAMUS(t *testing.T) {
 				"(a,(b,(c,d)));",
 				"(b,(c,d),e);",
 			},
-			result: "(a,(b,((c)#0,((#0,d),(e,(f,(g,(h,(i,j)))))))));",
+			result: "(a,(b,((c)#H0,((#H0,d),(e,(f,(g,(h,(i,j)))))))));",
 		},
 		{
 			name:      "basic two-edges",
@@ -32,7 +32,7 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((G,F),(A,H));",
 			},
-			result: "(((A)#0,((((B,(C)#1),(#1,D)),E),F)),(G,(#0,H)));",
+			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
 		},
 		{
 			name:      "two-edge two",
@@ -41,7 +41,7 @@ func TestCAMUS(t *testing.T) {
 				"((j,g),(h,i));",
 				"((c,g),(e,f));",
 			},
-			result: "(a,(b,(c,(d,((e)#0,((#0,f),(g,((h)#1,((#1,i),j)))))))));",
+			result: "(a,(b,(c,(d,((e)#H0,((#H0,f),(g,((h)#H1,((#H1,i),j)))))))));",
 		},
 		{
 			name:      "two-edge case two",
@@ -50,7 +50,7 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((A,F),(G,E));",
 			},
-			result: "(((A)#0,((((B,(C)#1),(#1,D)),E),(#0,F))),(G,H));",
+			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),(#H0,F))),(G,H));",
 		},
 		{
 			name:      "one-sided cycle test",
@@ -62,7 +62,7 @@ func TestCAMUS(t *testing.T) {
 				"((B,D),(A,E));",
 				"((C,D),(A,E));",
 			},
-			result: "((#0,((((A)#0,B),C),D)),E);",
+			result: "((#H0,((((A)#H0,B),C),D)),E);",
 		},
 	}
 	for _, test := range testCases {
