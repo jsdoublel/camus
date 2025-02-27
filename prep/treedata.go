@@ -7,14 +7,15 @@ import (
 )
 
 type TreeData struct {
-	Tree        *tree.Tree     // Tree object
-	Root        *tree.Node     // Root for which data is calculated
-	Children    [][]*tree.Node // Children for each node
-	IdToNodes   []*tree.Node   // Mapping between id and node pointer
-	QuartetSet  [][]*Quartet   // Quartets relevant for each subtree
-	Depths      []int          // Distance from all nodes to the root (which as it turns out is the correct definition gotree!!!)
-	leafsets    [][]bool       // Leaves under each node
-	lca         [][]int        // LCA for each pair of node id
+	Tree       *tree.Tree     // Tree object
+	Root       *tree.Node     // Root for which data is calculated
+	Children   [][]*tree.Node // Children for each node
+	IdToNodes  []*tree.Node   // Mapping between id and node pointer
+	QuartetSet [][]*Quartet   // Quartets relevant for each subtree
+	// TODO: add QuartetCounts
+	Depths      []int    // Distance from all nodes to the root
+	leafsets    [][]bool // Leaves under each node
+	lca         [][]int  // LCA for each pair of node id
 	tipIndexMap map[int]int
 }
 
