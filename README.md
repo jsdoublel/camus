@@ -16,3 +16,12 @@ Requires [gotree](https://github.com/evolbioinfo/gotree). Dependencies can be in
   -t string
         constraint tree
 ```
+
+## TODO
+
+- [x] code algorithm
+- [ ] fix error message when gene tree has multiple of the same label
+- [x] test case when edge connects down to ancestor 
+- [ ] test case when two edges connect to the same edge in the constraint tree
+- [ ] fix nil pointer if `isBinary` probably because node had only one child
+- [x] improve logging
