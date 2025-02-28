@@ -2,7 +2,6 @@ package alg
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/evolbioinfo/gotree/tree"
 
@@ -16,20 +15,23 @@ type DP struct {
 }
 
 func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
-	fmt.Fprint(os.Stderr, "beginning data preprocessing\n")
+	fmt.Print("beginning data preprocessing\n")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Preprocess error: %w", err)
 	}
-	fmt.Fprint(os.Stderr, "preprocessing finished, beginning CAMUS\n")
+	fmt.Print("preprocessing finished, beginning CAMUS\n")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
 	return td, dp.RunDP(), nil
 }
 
 func (dp *DP) RunDP() [][2]int {
+	count := 0
 	dp.TreeData.Tree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
+			count++
+			fmt.Printf("processing dp cell %d of %d\n", count, len(dp.DP)-len(dp.TreeData.Tree.Tips()))
 			lID, rID := dp.TreeData.Children[cur.Id()][0].Id(), dp.TreeData.Children[cur.Id()][1].Id()
 			score, branch := dp.score(cur)
 			noEdgeScore := dp.DP[lID] + dp.DP[rID]
@@ -43,7 +45,7 @@ func (dp *DP) RunDP() [][2]int {
 		return true
 	})
 	result := dp.traceback()
-	fmt.Fprintf(os.Stderr, "%d edges identified\n", len(result))
+	fmt.Printf("%d edges identified\n", len(result))
 	return result
 }
 
