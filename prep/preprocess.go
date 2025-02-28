@@ -3,7 +3,7 @@ package prep
 import (
 	"errors"
 	"fmt"
-	"os"
+	"log"
 
 	"github.com/evolbioinfo/gotree/tree"
 )
@@ -62,7 +62,8 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) ([]*Quartet, error)
 		countRetained++
 		quartets = append(quartets, &q)
 	}
-	fmt.Fprintf(os.Stderr, "%d quartets provided\n%d were not in constraint tree\n%d retained after removing duplicates\n", countTotal, countNew, countRetained)
+	// log.Printf("%d quartets provided, %d were not in constraint tree, and from those there were %d unique topologie(s)\n", countTotal, countNew, countRetained)
+	log.Printf("%d quartets provided, %d were not in constraint tree\n", countTotal, countNew)
 	return quartets, nil
 }
 
