@@ -24,7 +24,7 @@ returns:
 */
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
-	if !IsBinary(tre) {
+	if !IsBinary(tre.Root()) {
 		return nil, errors.New("Constraint tree is not binary")
 	}
 	quartets, err := processQuartets(geneTrees, tre)

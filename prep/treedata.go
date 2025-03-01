@@ -176,16 +176,7 @@ func makeTipIndexMap(tre *tree.Tree) map[int]int {
 	return tipMap
 }
 
-func IsBinary(tre *tree.Tree) bool {
-	root := tre.Root()
-	neighbors := root.Neigh()
-	if len(neighbors) != 2 {
-		return false
-	}
-	return isBinaryRecusive(neighbors[0]) && isBinaryRecusive(neighbors[1])
-}
-
-func isBinaryRecusive(node *tree.Node) bool {
+func IsBinary(node *tree.Node) bool {
 	if node.Tip() {
 		return true
 	}
@@ -193,7 +184,7 @@ func isBinaryRecusive(node *tree.Node) bool {
 	if len(children) != 2 {
 		return false
 	}
-	return isBinaryRecusive(children[0]) && isBinaryRecusive(children[1])
+	return IsBinary(children[0]) && IsBinary(children[1])
 }
 
 func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
