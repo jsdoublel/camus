@@ -46,6 +46,7 @@ func (dp *DP) RunDP() [][2]int {
 		}
 		return true
 	})
+	log.Printf("dp scored %d at root\n", dp.DP[dp.TreeData.Tree.Root().Id()])
 	result := dp.traceback()
 	log.Printf("%d edges identified\n", len(result))
 	return result
@@ -90,7 +91,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 	var bestW int
 	SubtreePreOrder(sub, func(w *tree.Node) {
 		if u != w {
-			score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()]
+			score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()] + dp.DP[w.Id()]
 			if score >= bestScore {
 				bestScore = score
 				bestW = w.Id()
@@ -173,7 +174,7 @@ func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *prep.Quartet) (int, int,
 /* return neighbor of taxa at index i in quartet */
 func neighborTaxaQ(q *prep.Quartet, i int) int {
 	b := (q.Topology >> i) % 2
-	for j := 0; j < 4; j++ {
+	for j := range 4 {
 		if j != i && (q.Topology>>j)%2 == b {
 			return q.Taxa[j]
 		}
@@ -197,6 +198,9 @@ func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 			if u != curNode {
 				traceback = append(traceback, dp.tracebackRecursive(u)...)
 				traceback = append(traceback, dp.tracePath(u, curNode)...)
+			}
+			if w == curNode {
+				panic("w should not be current node")
 			}
 			traceback = append(traceback, dp.tracebackRecursive(w)...)
 			traceback = append(traceback, dp.tracePath(w, curNode)...)

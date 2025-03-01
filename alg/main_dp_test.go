@@ -64,6 +64,23 @@ func TestCAMUS(t *testing.T) {
 			},
 			result: "((#H0,((((A)#H0,B),C),D)),E);",
 		},
+		{
+			name:      "double one-sided cycle test",
+			constTree: "(((((((((A,B),C),D),E),F),G),H),I),J);",
+			geneTrees: []string{
+				"((B,C),(D,A));",
+				"((B,C),(D,E));",
+				"((B,C),(A,E));",
+				"((B,D),(A,E));",
+				"((C,D),(A,E));",
+				"((G,H),(I,D));",
+				"((G,H),(I,J));",
+				"((G,H),(D,J));",
+				"((G,I),(D,J));",
+				"((H,I),(D,J));",
+			},
+			result: "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
+		},
 	}
 	for _, test := range testCases {
 		constTree, err := newick.NewParser(strings.NewReader(test.constTree)).Parse()
