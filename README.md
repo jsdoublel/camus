@@ -27,3 +27,4 @@ Requires [gotree](https://github.com/evolbioinfo/gotree). Dependencies can be in
 - [x] improve logging
 - [ ] generally improve error handling
 - [ ] add benchmark
+- [ ] update comments for functions to at least make sure they're accurate
