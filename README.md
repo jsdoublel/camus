@@ -20,9 +20,10 @@ Requires [gotree](https://github.com/evolbioinfo/gotree). Dependencies can be in
 ## TODO
 
 - [x] code algorithm
-- [ ] fix error message when gene tree has multiple of the same label
+- [ ] fix error message when gene tree has multiple of the same label or if there is a label in the gene tree not in the constraint tree
 - [x] test case when edge connects down to ancestor 
 - [x] test case when two edges connect to the same edge in the constraint tree
 - [ ] fix nil pointer if `isBinary` probably because node had only one child (try to replicate)
 - [x] improve logging
 - [ ] generally improve error handling
+- [ ] add benchmark

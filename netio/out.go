@@ -44,6 +44,7 @@ func fixNetwork(nwk string) string {
 func deleteAllBranchLengths(tre *tree.Tree) {
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if e != nil {
+			e.SetSupport(tree.NIL_SUPPORT)
 			e.SetLength(tree.NIL_LENGTH)
 		}
 		return true

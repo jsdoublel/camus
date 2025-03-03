@@ -63,7 +63,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) ([]*Quartet, error)
 		quartets = append(quartets, &q)
 	}
 	// log.Printf("%d quartets provided, %d were not in constraint tree, and from those there were %d unique topologie(s)\n", countTotal, countNew, countRetained)
-	log.Printf("%d quartets provided, %d were not in constraint tree\n", countTotal, countNew)
+	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
 	return quartets, nil
 }
 

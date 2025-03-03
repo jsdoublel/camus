@@ -104,3 +104,15 @@ func TestCAMUS(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkCAMUS(b *testing.B) {
+	constTreeFile := "../testdata/benchmark/CA-2189.iq-part+mf.pruned.tre"
+	geneTreeFile := "../testdata/benchmark/iqtree+MF.1123.rooted.trees"
+	tre, quartets, err := netio.ReadInputFiles(constTreeFile, geneTreeFile)
+	if err != nil {
+		b.Fatalf("Could not read input files for benchmark (error %s)", err)
+	}
+	for i := 0; i < b.N; i++ {
+		CAMUS(tre, quartets)
+	}
+}
