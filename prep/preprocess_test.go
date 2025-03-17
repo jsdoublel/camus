@@ -3,7 +3,6 @@ package prep
 import (
 	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
 
@@ -55,7 +54,7 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
-			expected := []*Quartet{}
+			expectedList := []*Quartet{}
 			for _, nwk := range test.expected {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 				if err != nil {
@@ -65,12 +64,15 @@ func TestProcessQuartets(t *testing.T) {
 				if err != nil {
 					t.Errorf("invalid newick tree %s; test is written wrong", nwk)
 				}
-				expected = append(expected, q)
+				expectedList = append(expectedList, q)
 			}
-			slices.SortFunc(result, sortQuartet)
-			slices.SortFunc(expected, sortQuartet)
+			expected := make(map[Quartet]uint)
+			for _, q := range expectedList {
+				expected[*q] += 1
+			}
 			if !reflect.DeepEqual(result, expected) {
-				t.Errorf("actual %s != expected %s", listToString(result, tre), listToString(expected, tre))
+				// t.Errorf("actual %s != expected %s", listToString(result, tre), listToString(expected, tre))
+				t.Errorf("actual %s != expected %s", setToString(result, tre), setToString(expected, tre))
 			}
 		})
 	}

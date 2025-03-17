@@ -27,44 +27,42 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	if !IsBinary(tre.Root()) {
 		return nil, errors.New("Constraint tree is not binary")
 	}
-	quartets, err := processQuartets(geneTrees, tre)
+	qCounts, err := processQuartets(geneTrees, tre)
 	if err != nil {
 		return nil, err
 	}
-	treeData := PreprocessTreeData(tre, quartets)
+	treeData := PreprocessTreeData(tre, qCounts)
 	return treeData, nil
 }
 
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) ([]*Quartet, error) {
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, error) {
 	treeQuartets, err := QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qSet := make(map[Quartet]bool)
+	qCounts := make(map[Quartet]uint)
 	countTotal := len(geneTrees)
 	countNew := 0
-	countRetained := 0
 	for _, gt := range geneTrees {
 		gt.UpdateTipIndex()
 		newQuartets, err := QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, err
 		}
-		for q, b := range newQuartets {
-			if b && !treeQuartets[q] {
-				countNew++
-				qSet[q] = true
+		for quartet, count := range newQuartets {
+			if count < 0 {
+				panic(fmt.Sprintf("negative quartet count %d", count))
+			}
+			if treeQuartets[quartet] == 0 {
+				if qCounts[quartet] == 0 {
+					countNew++
+				}
+				qCounts[quartet] += count
 			}
 		}
 	}
-	quartets := make([]*Quartet, 0, len(qSet)) // convert to slice for better performance
-	for q := range qSet {
-		countRetained++
-		quartets = append(quartets, &q)
-	}
-	// log.Printf("%d quartets provided, %d were not in constraint tree, and from those there were %d unique topologie(s)\n", countTotal, countNew, countRetained)
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
-	return quartets, nil
+	return qCounts, nil
 }
 
 /*

@@ -178,7 +178,7 @@ func TestQuartetsFromTree(t *testing.T) {
 func (tq *TestQuartet) Topology(tre *tree.Tree) uint8 {
 	ids := make([]int, 4)
 	partition := make(map[int]bool)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if i < 2 {
 			ti, err := tre.TipIndex(tq.set1[i])
 			tipIndexPanic("testQuartet topology", err)
@@ -211,24 +211,24 @@ func (tq *TestQuartet) String() string {
 	return fmt.Sprintf("%s%s|%s%s", tq.set1[0], tq.set1[1], tq.set2[0], tq.set2[1])
 }
 
-func setToString(qSet map[Quartet]bool, tre *tree.Tree) string {
+func setToString(qSet map[Quartet]uint, tre *tree.Tree) string {
 	str := "{"
-	for q := range qSet {
-		str += q.String(tre) + ", "
+	for q, c := range qSet {
+		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)
 	}
-	return str + "}"
+	return str[:len(str)-2] + "}"
 }
 
-func listToString(qList []*Quartet, tre *tree.Tree) string {
-	str := "{"
-	for _, q := range qList {
-		str += q.String(tre) + ", "
-	}
-	return str + "}"
-}
+// func listToString(qList []*Quartet, tre *tree.Tree) string {
+// 	str := "{"
+// 	for _, q := range qList {
+// 		str += q.String(tre) + ", "
+// 	}
+// 	return str + "}"
+// }
 
-func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]bool, error) {
-	qSet := make(map[Quartet]bool)
+func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint, error) {
+	qSet := make(map[Quartet]uint)
 	for _, nwk := range list {
 		tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 		if err != nil {
@@ -238,7 +238,7 @@ func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]bool, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
 		}
-		qSet[*q] = true
+		qSet[*q] += 1
 	}
 	return qSet, nil
 }

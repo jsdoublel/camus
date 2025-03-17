@@ -88,15 +88,15 @@ func sortTaxa(arr *[4]int) {
 }
 
 /* returns hashmap containing quartets from tree */
-func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]bool, error) {
+func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	tre.UnRoot()                           // some quartets are missed if tree is rooted
-	treeQuartets := make(map[Quartet]bool) // get quartets from tree
+	treeQuartets := make(map[Quartet]uint) // get quartets from tree
 	taxaIDsMap, err := mapIDsFromConstTree(tre, constTree)
 	if err != nil {
 		return nil, err
 	}
-	tre.Quartets(false, func(q *tree.Quartet) { // TODO: I don't think this code from gotree works
-		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = true
+	tre.Quartets(false, func(q *tree.Quartet) {
+		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = 1
 	})
 	return treeQuartets, nil
 }
@@ -114,11 +114,13 @@ func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[int]int, error) {
 	idMap := make(map[int]int)
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
-		tipIndexPanic("mapIDsFromConstTree", err)
+		if err != nil {
+			return nil, fmt.Errorf("tip name mismatch! Maybe the gene tree and constraint tree labels don't match? %w", err)
+		}
 		gTreeID, err := gtre.TipIndex(name)
 		idMap[gTreeID] = constTreeID
 		if err != nil {
-			return nil, fmt.Errorf("tip index panic, maybe the gene tree and constraint tree labels don't match? %w", err)
+			return nil, fmt.Errorf("tip name mismatch! Maybe the gene tree and constraint tree labels don't match? %w", err)
 		}
 	}
 	return idMap, nil

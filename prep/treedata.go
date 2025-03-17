@@ -7,30 +7,30 @@ import (
 )
 
 type TreeData struct {
-	Tree       *tree.Tree     // Tree object
-	Root       *tree.Node     // Root for which data is calculated
-	Children   [][]*tree.Node // Children for each node
-	IdToNodes  []*tree.Node   // Mapping between id and node pointer
-	QuartetSet [][]*Quartet   // Quartets relevant for each subtree
-	// TODO: add QuartetCounts
-	Depths      []int    // Distance from all nodes to the root
-	leafsets    [][]bool // Leaves under each node
-	lca         [][]int  // LCA for each pair of node id
-	tipIndexMap map[int]int
+	Tree          *tree.Tree       // Tree object
+	Root          *tree.Node       // Root for which data is calculated
+	Children      [][]*tree.Node   // Children for each node
+	IdToNodes     []*tree.Node     // Mapping between id and node pointer
+	QuartetSet    [][]*Quartet     // Quartets relevant for each subtree
+	QuartetCounts map[Quartet]uint // Count of each unqiue quartet topology
+	Depths        []int            // Distance from all nodes to the root
+	leafsets      [][]bool         // Leaves under each node
+	lca           [][]int          // LCA for each pair of node id
+	tipIndexMap   map[int]int
 }
 
-func PreprocessTreeData(tre *tree.Tree, quartets []*Quartet) *TreeData {
+func PreprocessTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
-	quartetSets := mapQuartetsToVertices(tre, quartets, leafsets)
+	qSets := mapQuartetsToVertices(tre, qCounts, leafsets)
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: tre, Root: root, Children: children, lca: lca,
 		leafsets: leafsets, IdToNodes: idMap, Depths: depths,
-		QuartetSet: quartetSets, tipIndexMap: tipIndexMap}
+		QuartetSet: qSets, QuartetCounts: qCounts, tipIndexMap: tipIndexMap}
 }
 
 func mapIdToNodes(tre *tree.Tree) []*tree.Node {
@@ -144,11 +144,15 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 /* maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex */
-func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]bool) [][]*Quartet {
-	quartetSets := make([][]*Quartet, len(tre.Nodes()))
+func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
+	quartets := make([]*Quartet, 0, len(qCounts))
+	for q := range qCounts {
+		quartets = append(quartets, &q)
+	}
+	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n := len(tre.Tips())
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-		quartetSets[cur.Id()] = make([]*Quartet, 0)
+		qSets[cur.Id()] = make([]*Quartet, 0)
 		for _, q := range quartets {
 			found := 0
 			for i := range 4 {
@@ -159,12 +163,12 @@ func mapQuartetsToVertices(tre *tree.Tree, quartets []*Quartet, leafsets [][]boo
 				}
 			}
 			if found >= 3 {
-				quartetSets[cur.Id()] = append(quartetSets[cur.Id()], q)
+				qSets[cur.Id()] = append(qSets[cur.Id()], q)
 			}
 		}
 		return true
 	})
-	return quartetSets
+	return qSets
 }
 
 func makeTipIndexMap(tre *tree.Tree) map[int]int {

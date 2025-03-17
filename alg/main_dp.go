@@ -105,7 +105,7 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.QuartetSet[v.Id()] {
 		if dp.quartetScore(q, u, w, v, wSub) {
-			score += 1
+			score += dp.TreeData.QuartetCounts[*q]
 		}
 	}
 	return score
