@@ -91,7 +91,7 @@ func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
 		if cur.Tip() {
 			leafset[cur.Id()][cur.TipIndex()] = true
 		} else {
-			for i := 0; i < nLeaves; i++ {
+			for i := range nLeaves {
 				leafset[cur.Id()][i] = leafset[children[cur.Id()][0].Id()][i] || leafset[children[cur.Id()][1].Id()][i]
 			}
 		}
@@ -145,15 +145,11 @@ func calcDepths(tre *tree.Tree) []int {
 
 /* maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex */
 func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
-	quartets := make([]*Quartet, 0, len(qCounts))
-	for q := range qCounts {
-		quartets = append(quartets, &q)
-	}
 	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n := len(tre.Tips())
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		qSets[cur.Id()] = make([]*Quartet, 0)
-		for _, q := range quartets {
+		for q := range qCounts {
 			found := 0
 			for i := range 4 {
 				if q.Taxa[i] >= n {
@@ -163,7 +159,7 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []
 				}
 			}
 			if found >= 3 {
-				qSets[cur.Id()] = append(qSets[cur.Id()], q)
+				qSets[cur.Id()] = append(qSets[cur.Id()], &q)
 			}
 		}
 		return true

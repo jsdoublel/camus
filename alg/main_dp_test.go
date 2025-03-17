@@ -18,12 +18,12 @@ func TestCAMUS(t *testing.T) {
 	}{
 		{
 			name:      "basic one-edge",
-			constTree: "(a,(b,(c,(d,(e,(f,(g,(h,(i,j)))))))));",
+			constTree: "(A,(B,(C,(D,(E,(F,(G,(H,(I,J)))))))));",
 			geneTrees: []string{
-				"(a,(b,(c,d)));",
-				"(b,(c,d),e);",
+				"(A,(B,(C,D)));",
+				"(B,(C,D),E);",
 			},
-			result: "(a,(b,((c)#H0,((#H0,d),(e,(f,(g,(h,(i,j)))))))));",
+			result: "(A,(B,((C)#H0,((#H0,D),(E,(F,(G,(H,(I,J)))))))));",
 		},
 		{
 			name:      "basic two-edges",
@@ -36,12 +36,12 @@ func TestCAMUS(t *testing.T) {
 		},
 		{
 			name:      "two-edge two",
-			constTree: "(a,(b,(c,(d,(e,(f,(g,(h,(i,j)))))))));",
+			constTree: "(A,(B,(C,(D,(E,(F,(G,(H,(I,J)))))))));",
 			geneTrees: []string{
-				"((j,g),(h,i));",
-				"((c,g),(e,f));",
+				"((J,G),(H,I));",
+				"((C,G),(E,F));",
 			},
-			result: "(a,(b,(c,(d,((e)#H0,((#H0,f),(g,((h)#H1,((#H1,i),j)))))))));",
+			result: "(A,(B,(C,(D,((E)#H0,((#H0,F),(G,((H)#H1,((#H1,I),J)))))))));",
 		},
 		{
 			name:      "two-edge case two",
@@ -80,6 +80,30 @@ func TestCAMUS(t *testing.T) {
 				"((H,I),(D,J));",
 			},
 			result: "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
+		},
+		{
+			name:      "duplicate quartet basic",
+			constTree: "(((((A,B),C),D),E),F);",
+			geneTrees: []string{
+				"((E,D),(F,C));",
+				"((C,B),(A,D));",
+				"((D,C),(A,E));",
+				"((D,C),(A,E));",
+				"((D,C),(A,E));",
+			},
+			result: "(((#H0,((((A)#H0,B),C),D)),E),F);",
+		},
+		{
+			name:      "duplicate quartet basic 2",
+			constTree: "(((((A,B),C),D),E),F);",
+			geneTrees: []string{
+				"((E,C),(F,B));",
+				"((E,C),(F,B));",
+				"((E,C),(F,B));",
+				"((C,B),(A,D));",
+				"((D,C),(A,E));",
+			},
+			result: "((#H0,(((((A,B))#H0,C),D),E)),F);",
 		},
 	}
 	for _, test := range testCases {
