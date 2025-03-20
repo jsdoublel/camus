@@ -6,7 +6,7 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	"camus/prep"
+	"github.com/jsdoublel/camus/prep"
 )
 
 type DP struct {

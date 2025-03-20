@@ -40,4 +40,4 @@ simply run `go build` to build the project.
 - [ ] leaves appear in the cosntraint tree, but not in any input trees
 - [ ] leaves appear in input trees, but not in constraint tree
 - [ ] profile cpu and memory usage
-- [ ] look into creating proper package url
+- [x] look into creating proper module url

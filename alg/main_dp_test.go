@@ -1,12 +1,13 @@
 package alg
 
 import (
-	"camus/netio"
 	"strings"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/netio"
 )
 
 func TestCAMUS(t *testing.T) {

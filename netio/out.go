@@ -1,11 +1,12 @@
 package netio
 
 import (
-	"camus/prep"
 	"fmt"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/prep"
 )
 
 func MakeNetwork(td *prep.TreeData, branches [][2]int) string {

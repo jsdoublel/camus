@@ -1,4 +1,4 @@
-module camus
+module github.com/jsdoublel/camus
 
 go 1.22.3
 

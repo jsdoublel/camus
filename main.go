@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"camus/alg"
-	"camus/netio"
+	"github.com/jsdoublel/camus/alg"
+	"github.com/jsdoublel/camus/netio"
 )
 
 type args struct {
@@ -17,14 +17,14 @@ type args struct {
 
 func parseArgs() args {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: camus [-h] <constraint_tree> <gene_tree>")
+		fmt.Fprintln(os.Stderr, "usage: github.com/jsdoublel/camus [-h] <constraint_tree> <gene_tree>")
 		fmt.Fprintln(os.Stderr, "\npositional arguments (required):")
 		fmt.Fprintln(os.Stderr, "  <constraint_tree>        constraint newick tree")
 		fmt.Fprintln(os.Stderr, "  <gene_tree>              gene tree newick file")
 		fmt.Fprintln(os.Stderr, "\nflags:")
 		flag.PrintDefaults()
 		fmt.Fprintln(os.Stderr, "\nexample:")
-		fmt.Fprintln(os.Stderr, "  camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt")
+		fmt.Fprintln(os.Stderr, "  github.com/jsdoublel/camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt")
 	}
 	help := flag.Bool("h", false, "prints this message")
 	flag.Parse()

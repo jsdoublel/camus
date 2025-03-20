@@ -1,12 +1,13 @@
 package netio
 
 import (
-	"camus/prep"
 	"strings"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/prep"
 )
 
 func TestMakeNetwork(t *testing.T) {
