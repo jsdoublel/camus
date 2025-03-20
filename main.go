@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"camus/alg"
@@ -12,39 +13,42 @@ import (
 type args struct {
 	treeFile     string
 	geneTreeFile string
-	outputFile   string
 }
 
 func parseArgs() args {
-	flag.NewFlagSet("CAMUS", flag.ContinueOnError)
-	treeFile := flag.String("t", "", "constraint tree")
-	geneTreeFile := flag.String("g", "", "gene tree file")
-	outputFile := flag.String("o", "", "output extended newick file")
+	flag.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: camus [-h] <constraint_tree> <gene_tree>")
+		fmt.Fprintln(os.Stderr, "\npositional arguments (required):")
+		fmt.Fprintln(os.Stderr, "  <constraint_tree>        constraint newick tree")
+		fmt.Fprintln(os.Stderr, "  <gene_tree>              gene tree newick file")
+		fmt.Fprintln(os.Stderr, "\nflags:")
+		flag.PrintDefaults()
+		fmt.Fprintln(os.Stderr, "\nexample:")
+		fmt.Fprintln(os.Stderr, "  camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt")
+	}
+	help := flag.Bool("h", false, "prints this message")
 	flag.Parse()
-	if *treeFile == "" || *geneTreeFile == "" || *outputFile == "" {
-		fmt.Fprintln(os.Stderr, "Error: arguments -t, -g, and -o are required")
+	if *help {
+		flag.Usage()
+		os.Exit(0)
+	}
+	if flag.NArg() != 2 {
+		fmt.Fprintln(os.Stderr, "error: two required positional arguments <constraint_tree> <gene_tree_file>")
 		flag.Usage()
 		os.Exit(1)
 	}
-	return args{treeFile: *treeFile, geneTreeFile: *geneTreeFile, outputFile: *outputFile}
+	return args{treeFile: flag.Arg(0), geneTreeFile: flag.Arg(1)}
 }
 
 func main() {
 	args := parseArgs()
 	tre, quartets, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error importing file data:\n%+v\n", err)
-		os.Exit(2)
+		log.Fatalf("error importing file data -- %s\n", err)
 	}
 	td, branches, err := alg.CAMUS(tre, quartets)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Sisyphus was not happy :(\n%+v\n", err)
-		os.Exit(3)
+		log.Fatalf("Sisyphus was not happy :( %s\n", err)
 	}
-	out := []byte(netio.MakeNetwork(td, branches))
-	err = os.WriteFile(args.outputFile, out, 0644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing output:\n%+v\n", err)
-		os.Exit(4)
-	}
+	fmt.Println(netio.MakeNetwork(td, branches))
 }
