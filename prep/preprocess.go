@@ -8,6 +8,8 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 )
 
+var ErrInvalidTree = errors.New("invalid tree")
+
 /*
 	preprocess input data
 
@@ -25,7 +27,7 @@ returns:
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
 	if !IsBinary(tre.Root()) {
-		return nil, errors.New("Constraint tree is not binary")
+		return nil, fmt.Errorf("%w constraint tree is not binary", ErrInvalidTree)
 	}
 	qCounts, err := processQuartets(geneTrees, tre)
 	if err != nil {
@@ -63,28 +65,4 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 	}
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
 	return qCounts, nil
-}
-
-/*
-checks that newick tree is a valid input quartet and returns *Quartet
-
-errors:
-
-	Does not have four leaves
-	Isn't formatted correctly (does not contain bipartition)
-	Contains taxa not in our tree
-*/
-func validateQuartet(rawQuartet, tre *tree.Tree) (*Quartet, error) {
-	for _, leaf := range rawQuartet.AllTipNames() {
-		if b, err := tre.ExistsTip(leaf); err != nil {
-			panic(fmt.Errorf("validate quartets %w", err))
-		} else if !b {
-			return nil, errors.New("contains taxa not in constraint tree")
-		}
-	}
-	quartet, err := NewQuartet(rawQuartet, tre)
-	if err != nil {
-		return nil, err
-	}
-	return quartet, nil
 }

@@ -41,14 +41,15 @@ func parseArgs() args {
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
-	tre, quartets, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
+	constTree, geneTrees, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
 		log.Fatalf("error importing file data -- %s\n", err)
 	}
-	td, branches, err := alg.CAMUS(tre, quartets)
+	td, branches, err := alg.CAMUS(constTree, geneTrees)
 	if err != nil {
-		log.Fatalf("Sisyphus was not happy :( %s\n", err)
+		log.Fatalf("Sisyphus was not happy :( -- %s\n", err)
 	}
 	fmt.Println(netio.MakeNetwork(td, branches))
 }

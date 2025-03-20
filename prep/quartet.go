@@ -19,6 +19,11 @@ const (
 	Q_DIFF        // quartets on different taxa set
 )
 
+var (
+	ErrTipNameMismatch = errors.New("tip name mismatch! maybe the gene tree and constraint tree labels don't match?")
+	ErrInvalidQuartet  = errors.New("invalid newick for quartet")
+)
+
 /*
 	create new quartet
 
@@ -30,18 +35,20 @@ args:
 func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	qTaxa := qTree.AllTipNames()
 	if len(qTaxa) != 4 {
-		return nil, fmt.Errorf("tree has %d != 4 leaves", len(qTaxa))
+		return nil, fmt.Errorf("%w, tree has %d != 4 leaves", ErrInvalidQuartet, len(qTaxa))
 	}
 	qTree.UnRoot()
 	if qTree.Root().Nneigh() != 3 {
-		return nil, errors.New("probably does not contain bipartition")
+		return nil, fmt.Errorf("%w, probably does not contain bipartition", ErrInvalidQuartet)
 	}
 	taxaIDs := [4]int{}
 	leaves := qTree.Tips()
 	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
 		ti, err := tre.TipIndex(l.Name())
-		tipIndexPanic("convertQuartet", err)
+		if err != nil {
+			panic(err)
+		}
 		taxaIDs[i] = ti
 		r, err := l.Parent()
 		if err != nil && err.Error() == "The node has more than one parent" { // we ignore the error produced when cur = root
@@ -71,7 +78,7 @@ func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
 	if count != 2 {
 		panic("quartet didn't define bipartition properly, probably due to a bug")
 	}
-	if topo%2 != 0 {
+	if topo%2 != 0 { // normalize quartet (i.e., so that there are three topologies instead of six)
 		topo ^= 0b1111
 	}
 	return topo
@@ -115,21 +122,15 @@ func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[int]int, error) {
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
 		if err != nil {
-			return nil, fmt.Errorf("tip name mismatch! Maybe the gene tree and constraint tree labels don't match? %w", err)
+			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
 		gTreeID, err := gtre.TipIndex(name)
 		idMap[gTreeID] = constTreeID
 		if err != nil {
-			return nil, fmt.Errorf("tip name mismatch! Maybe the gene tree and constraint tree labels don't match? %w", err)
+			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
 	}
 	return idMap, nil
-}
-
-func tipIndexPanic(context string, err error) {
-	if err != nil {
-		panic(fmt.Errorf("%s TipIndex panic: %w", context, err))
-	}
 }
 
 /* Not efficent, do no use except for testing !!! */
@@ -137,11 +138,13 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	names := make(map[int]string)
 	for _, u := range tre.Tips() {
 		ti, err := tre.TipIndex(u.Name())
-		tipIndexPanic("String", err)
+		if err != nil {
+			panic(err)
+		}
 		names[ti] = u.Name()
 	}
 	qString := "|"
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if (q.Topology>>i)%2 == 0 {
 			qString += names[q.Taxa[i]]
 		} else {
@@ -158,7 +161,7 @@ func (q *Quartet) String(tre *tree.Tree) string {
 		- Q_EQ   (they have the same topology)
 */
 func (q1 *Quartet) Compare(q2 *Quartet) int {
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if q1.Taxa[i] != q2.Taxa[i] {
 			return Q_DIFF
 		}

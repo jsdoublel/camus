@@ -59,7 +59,9 @@ func TestNewQuartet(t *testing.T) {
 				t.Errorf("produced err %+v", err)
 			}
 			t.Logf("\nquartet %s\ntest quartet %s", q.String(tre), test.quartet.String())
-			if !testQuartetEqual(q, test.quartet, tre) {
+			if b, err := testQuartetEqual(q, test.quartet, tre); err != nil {
+				t.Fatal(err)
+			} else if !b {
 				t.Errorf("quartet has wrong topology (%s != %s)", q.String(tre), test.quartet.String())
 			}
 		})
@@ -175,18 +177,22 @@ func TestQuartetsFromTree(t *testing.T) {
 	}
 }
 
-func (tq *TestQuartet) Topology(tre *tree.Tree) uint8 {
+func (tq *TestQuartet) Topology(tre *tree.Tree) (uint8, error) {
 	ids := make([]int, 4)
 	partition := make(map[int]bool)
 	for i := range 4 {
 		if i < 2 {
 			ti, err := tre.TipIndex(tq.set1[i])
-			tipIndexPanic("testQuartet topology", err)
+			if err != nil {
+				return 0, err
+			}
 			ids[i] = ti
 			partition[ti] = true
 		} else {
 			ti, err := tre.TipIndex(tq.set2[i-2])
-			tipIndexPanic("testQuartet topology", err)
+			if err != nil {
+				return 0, err
+			}
 			ids[i] = ti
 		}
 	}
@@ -199,12 +205,16 @@ func (tq *TestQuartet) Topology(tre *tree.Tree) uint8 {
 		}
 		power *= 2
 	}
-	return topo
+	return topo, nil
 }
 
-func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) bool {
-	result := q.Topology ^ tq.Topology(tre)
-	return result == 0b0000 || result == 0b1111
+func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) (bool, error) {
+	tqTopo, err := tq.Topology(tre)
+	if err != nil {
+		return false, err
+	}
+	result := q.Topology ^ tqTopo
+	return result == 0b0000 || result == 0b1111, nil
 }
 
 func (tq *TestQuartet) String() string {

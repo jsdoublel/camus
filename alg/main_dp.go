@@ -16,11 +16,10 @@ type DP struct {
 }
 
 func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Print("beginning data preprocessing\n")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Preprocess error: %w", err)
+		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	log.Print("preprocessing finished, beginning CAMUS\n")
 	n := len(td.Tree.Nodes())

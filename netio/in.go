@@ -2,12 +2,18 @@ package netio
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
+)
+
+var (
+	ErrInvalidConstTree = errors.New("invalid constraint tree")
+	ErrInvalidNewick    = errors.New("invalid newick format")
 )
 
 func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, error) {
@@ -25,14 +31,14 @@ func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, e
 func readTreeFile(treeFile string) (*tree.Tree, error) {
 	treStr, err := os.ReadFile(treeFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading tree file:\n%w", err)
+		return nil, fmt.Errorf("error reading constraint tree file: %w", err)
 	}
 	if strings.Count(string(treStr), ";") != 1 {
-		return nil, fmt.Errorf("There should only be exactly one newick tree in tree file: %s", treeFile)
+		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in constraint tree file %s", ErrInvalidConstTree, treeFile)
 	}
 	tre, err := newick.NewParser(strings.NewReader(string(treStr))).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing tree newick string:\n%w", err)
+		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s", ErrInvalidNewick, treeFile, err.Error())
 	}
 	return tre, nil
 }
@@ -40,7 +46,7 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 	file, err := os.Open(genetreesFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error opening %s:\n%w", genetreesFile, err)
+		return nil, fmt.Errorf("error opening %s, %w", genetreesFile, err)
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
@@ -50,7 +56,7 @@ func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 		if line != "" {
 			genetree, err := newick.NewParser(strings.NewReader(line)).Parse()
 			if err != nil {
-				return nil, fmt.Errorf("Error reading gene tree on line %d:\n%w", i, err)
+				return nil, fmt.Errorf("%w, error reading gene tree on line %d in %s: %s", ErrInvalidNewick, i, genetreesFile, err.Error())
 			}
 			genetreeList = append(genetreeList, genetree)
 		}

@@ -220,7 +220,9 @@ func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tr
 		leafsetList := leafset[node.Id()]
 		for _, leaf := range v {
 			id, err := tre.TipIndex(leaf)
-			tipIndexPanic("leafset test", err)
+			if err != nil {
+				return false, err
+			}
 			if !leafsetList[id] {
 				return false, nil
 			}
