@@ -15,8 +15,8 @@ func TestReadInputFiles(t *testing.T) {
 	}{
 		{
 			name:        "basic",
-			treeFile:    "../testdata/netio/tree.tree",
-			quartetFile: "../testdata/netio/q.trees",
+			treeFile:    "../testdata/netio/constraint.nwk",
+			quartetFile: "../testdata/netio/quartets.nwk",
 			taxaset:     []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
 			nQuartets:   2,
 		},
