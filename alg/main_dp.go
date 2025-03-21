@@ -1,3 +1,7 @@
+// Package implementing the CAMUS dynamic programming algorithm. We use the
+// following naming convention for some variables throughout. v always
+// represents the vertex corresponding to the current subproblem. At vertex v
+// we consider adding a directed edge from u -> w.
 package alg
 
 import (

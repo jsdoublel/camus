@@ -1,3 +1,4 @@
+// Package used for preprocessing necessary data for the CAMUS algorithm
 package prep
 
 import (

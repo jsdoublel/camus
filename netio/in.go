@@ -1,3 +1,5 @@
+// Package implementing functions for reading and validating trees, as well as
+// writing networks as extended newick files
 package netio
 
 import (
