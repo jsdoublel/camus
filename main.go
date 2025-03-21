@@ -17,14 +17,21 @@ type args struct {
 
 func parseArgs() args {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: camus [-h] <constraint_tree> <gene_tree>")
-		fmt.Fprintln(os.Stderr, "\npositional arguments (required):")
-		fmt.Fprintln(os.Stderr, "  <constraint_tree>        constraint newick tree")
-		fmt.Fprintln(os.Stderr, "  <gene_tree>              gene tree newick file")
-		fmt.Fprintln(os.Stderr, "\nflags:")
+		fmt.Fprintln(os.Stderr,
+			"usage: camus [-h] <constraint_tree> <gene_tree>\n",
+			"\n",
+			"positional arguments (required):\n",
+			"  <constraint_tree>        constraint newick tree\n",
+			"  <gene_tree>              gene tree newick file\n",
+			"\n",
+			"flags:",
+		)
 		flag.PrintDefaults()
-		fmt.Fprintln(os.Stderr, "\nexample:")
-		fmt.Fprintln(os.Stderr, "  github.com/jsdoublel/camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt")
+		fmt.Fprintln(os.Stderr,
+			"\n",
+			"example:\n",
+			"  github.com/jsdoublel/camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt",
+		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
 	flag.Parse()
