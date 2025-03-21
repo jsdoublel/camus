@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrInvalidConstTree = errors.New("invalid constraint tree")
-	ErrInvalidNewick    = errors.New("invalid newick format")
+	ErrInvalidTree   = errors.New("invalid tree")
+	ErrInvalidNewick = errors.New("invalid newick format")
 )
 
 func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, error) {
@@ -29,14 +29,15 @@ func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, e
 }
 
 func readTreeFile(treeFile string) (*tree.Tree, error) {
-	treStr, err := os.ReadFile(treeFile)
+	treBytes, err := os.ReadFile(treeFile)
 	if err != nil {
 		return nil, fmt.Errorf("error reading constraint tree file: %w", err)
 	}
-	if strings.Count(string(treStr), ";") != 1 {
-		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in constraint tree file %s", ErrInvalidConstTree, treeFile)
+	treStr := strings.TrimSpace(string(treBytes))
+	if strings.Count(treStr, "\n") != 0 || treStr == "" {
+		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in constraint tree file %s", ErrInvalidTree, treeFile)
 	}
-	tre, err := newick.NewParser(strings.NewReader(string(treStr))).Parse()
+	tre, err := newick.NewParser(strings.NewReader(treStr)).Parse()
 	if err != nil {
 		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s", ErrInvalidNewick, treeFile, err.Error())
 	}
@@ -60,6 +61,9 @@ func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 			}
 			genetreeList = append(genetreeList, genetree)
 		}
+	}
+	if len(genetreeList) < 1 {
+		return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidTree, genetreesFile)
 	}
 	return genetreeList, nil
 }
