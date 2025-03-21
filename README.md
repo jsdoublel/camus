@@ -15,6 +15,8 @@ tested on Linux. It is implemented in the Go programming language (which can be
 installed [here](https://go.dev/doc/install)) and additionally requires
 [gotree](https://github.com/evolbioinfo/gotree).
 
+There is three methods for installing go. 
+
 ### Using Go's package manager
 
 After installing Go, run
@@ -38,6 +40,12 @@ cd camus
 go mod download
 go build
 ```
+
+### Download the binaries
+
+The GitHub [releases](https://github.com/jsdoublel/camus/releases) contain
+binaries compiled on my personal computer (i.e., Linux x86). 
+
 ## Usage
 
 **Input**
