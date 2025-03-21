@@ -19,7 +19,7 @@ type TreeData struct {
 	tipIndexMap   map[int]int
 }
 
-func PreprocessTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
+func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
@@ -174,17 +174,6 @@ func makeTipIndexMap(tre *tree.Tree) map[int]int {
 		tipMap[t.TipIndex()] = t.Id()
 	}
 	return tipMap
-}
-
-func IsBinary(node *tree.Node) bool {
-	if node.Tip() {
-		return true
-	}
-	children := getChildren(node)
-	if len(children) != 2 {
-		return false
-	}
-	return IsBinary(children[0]) && IsBinary(children[1])
 }
 
 func (td *TreeData) InLeafset(n1ID, n2ID int) bool {

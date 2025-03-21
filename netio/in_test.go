@@ -29,7 +29,7 @@ func TestReadInputFiles(t *testing.T) {
 			quartetFile: "../testdata/netio/quartets.nwk",
 			taxaset:     []string{},
 			nQuartets:   -1,
-			expectedErr: ErrInvalidTree,
+			expectedErr: ErrInvalidTreeFile,
 		},
 		{
 			name:        "bad const tree",
@@ -53,7 +53,7 @@ func TestReadInputFiles(t *testing.T) {
 			quartetFile: "../testdata/netio/quartets.nwk",
 			taxaset:     []string{},
 			nQuartets:   -1,
-			expectedErr: ErrInvalidTree,
+			expectedErr: ErrInvalidTreeFile,
 		},
 		{
 			name:        "bad gene tree trees",
@@ -69,7 +69,7 @@ func TestReadInputFiles(t *testing.T) {
 			quartetFile: "../testdata/netio/empty.nwk",
 			taxaset:     []string{},
 			nQuartets:   -1,
-			expectedErr: ErrInvalidTree,
+			expectedErr: ErrInvalidTreeFile,
 		},
 	}
 	for _, test := range testCases {

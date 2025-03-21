@@ -26,14 +26,20 @@ returns:
 */
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
-	if !IsBinary(tre.Root()) {
-		return nil, fmt.Errorf("%w constraint tree is not binary", ErrInvalidTree)
+	if !tre.Rooted() {
+		return nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
+	}
+	if !TreeIsBinary(tre) {
+		return nil, fmt.Errorf("%w, constraint tree is not binary", ErrInvalidTree)
+	}
+	if !IsSingleCopy(tre) {
+		return nil, fmt.Errorf("%w, constraint tree has duplicate labels", ErrInvalidTree)
 	}
 	qCounts, err := processQuartets(geneTrees, tre)
 	if err != nil {
 		return nil, err
 	}
-	treeData := PreprocessTreeData(tre, qCounts)
+	treeData := MakeTreeData(tre, qCounts)
 	return treeData, nil
 }
 
@@ -45,7 +51,10 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 	qCounts := make(map[Quartet]uint)
 	countTotal := len(geneTrees)
 	countNew := 0
-	for _, gt := range geneTrees {
+	for i, gt := range geneTrees {
+		if !IsSingleCopy(gt) {
+			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
+		}
 		gt.UpdateTipIndex()
 		newQuartets, err := QuartetsFromTree(gt, tre)
 		if err != nil {
@@ -65,4 +74,34 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 	}
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
 	return qCounts, nil
+}
+
+func TreeIsBinary(tre *tree.Tree) bool {
+	if !tre.Rooted() {
+		return false
+	}
+	neighbors := tre.Root().Neigh()
+	if len(neighbors) != 2 {
+		panic("tree is not rooted (even though it is??)")
+	}
+	return isBinary(neighbors[0]) && isBinary(neighbors[1])
+}
+
+func isBinary(node *tree.Node) bool {
+	if node.Tip() {
+		return true
+	}
+	if node.Nneigh() != 3 {
+		return false
+	}
+	children := getChildren(node)
+	return isBinary(children[0]) && isBinary(children[1])
+}
+
+func IsSingleCopy(tre *tree.Tree) bool {
+	labels := make(map[string]bool)
+	for _, l := range tre.Tips() {
+		labels[l.Name()] = true
+	}
+	return len(labels) == len(tre.Tips())
 }

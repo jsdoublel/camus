@@ -1,6 +1,7 @@
 package prep
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -9,6 +10,106 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 )
+
+func TestIsBinary(t *testing.T) {
+	testCases := []struct {
+		name     string
+		tre      string
+		expected bool
+	}{
+		{
+			name:     "basic true",
+			tre:      "((a,b),(c,d));",
+			expected: true,
+		},
+		{
+			name:     "basic false",
+			tre:      "(a,b,c,d);",
+			expected: false,
+		},
+		{
+			name:     "unifurcation",
+			tre:      "(((a,b)),(c,d));",
+			expected: false,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
+			if err != nil {
+				t.Fatal("invalid newick tree; test is written wrong")
+			}
+			if !TreeIsBinary(tre) == test.expected {
+				t.Errorf("got %t expected %t", !TreeIsBinary(tre), test.expected)
+			}
+		})
+	}
+}
+
+func TestPreprocess_Errors(t *testing.T) {
+	testCases := []struct {
+		name        string
+		tre         string
+		gtrees      []string
+		expectedErr error
+	}{
+		{
+			name:        "unrooted",
+			tre:         "((a,b),(c,d),e);",
+			gtrees:      []string{},
+			expectedErr: ErrInvalidTree,
+		},
+		{
+			name:        "non-binary",
+			tre:         "(a,b,c,d);",
+			gtrees:      []string{},
+			expectedErr: ErrInvalidTree,
+		},
+		{
+			name:        "multree",
+			tre:         "((a,a),(a,a));",
+			gtrees:      []string{},
+			expectedErr: ErrInvalidTree,
+		},
+		{
+			name:        "multree gtree",
+			tre:         "((a,b),(c,d));",
+			gtrees:      []string{"((a,a),(a,a));"},
+			expectedErr: ErrInvalidTree,
+		},
+		{
+			name: "missing const labels",
+			tre:  "((a,b),(c,d));",
+			gtrees: []string{
+				"((a,b),(c,d));",
+				"(((a,b),(c,d)),e);",
+			},
+			expectedErr: ErrTipNameMismatch,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
+			if err != nil {
+				t.Fatal("invalid newick tree; test is written wrong")
+			}
+			gtrees := make([]*tree.Tree, len(test.gtrees))
+			for i, gt := range test.gtrees {
+				tmp, err := newick.NewParser(strings.NewReader(gt)).Parse()
+				if err != nil {
+					t.Fatal("invalid newick tree; test is written wrong")
+				}
+				gtrees[i] = tmp
+			}
+			_, err = Preprocess(tre, gtrees)
+			if !errors.Is(err, test.expectedErr) {
+				t.Errorf("unexpected error %v", err)
+			} else {
+				t.Logf("%s", err)
+			}
+		})
+	}
+}
 
 func TestProcessQuartets(t *testing.T) {
 	testCases := []struct {
@@ -39,7 +140,7 @@ func TestProcessQuartets(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
 			if err != nil {
-				t.Error("invalid newick tree; test is written wrong")
+				t.Fatal("invalid newick tree; test is written wrong")
 			}
 			tre.UpdateTipIndex()
 			rqList := []*tree.Tree{}
@@ -71,23 +172,10 @@ func TestProcessQuartets(t *testing.T) {
 				expected[*q] += 1
 			}
 			if !reflect.DeepEqual(result, expected) {
-				// t.Errorf("actual %s != expected %s", listToString(result, tre), listToString(expected, tre))
 				t.Errorf("actual %s != expected %s", setToString(result, tre), setToString(expected, tre))
 			}
 		})
 	}
-}
-
-func sortQuartet(q1, q2 *Quartet) int {
-	sum1 := 0
-	sum2 := 0
-	for i := 0; i < 4; i++ {
-		sum1 += int(q1.Taxa[i])
-		sum2 += int(q2.Taxa[i])
-	}
-	sum1 += int(q1.Topology)
-	sum2 += int(q2.Topology)
-	return sum1 - sum2
 }
 
 func TestProcessTreeData(t *testing.T) {
@@ -153,13 +241,13 @@ func TestProcessTreeData(t *testing.T) {
 			}
 			tre.UpdateTipIndex()
 			qs, err := processQuartets(q, tre)
-			treeData := PreprocessTreeData(tre, qs)
+			treeData := MakeTreeData(tre, qs)
 			lca := treeData.lca
 			leafset := treeData.leafsets
 			quartetSets := treeData.QuartetSet
 			nLeaves := len(lca)
-			for i := 0; i < nLeaves; i++ {
-				for j := 0; j < nLeaves; j++ {
+			for i := range nLeaves {
+				for j := range nLeaves {
 					if lca[i][j] != lca[j][i] {
 						t.Error("lca structure problem")
 					}
