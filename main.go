@@ -35,11 +35,11 @@ type args struct {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr,
-			"usage: camus [-h] <constraint_tree> <gene_tree>\n",
+			"usage: camus [-h] <constraint_tree> <gene_trees>\n",
 			"\n",
 			"positional arguments (required):\n",
 			"  <constraint_tree>        constraint newick tree\n",
-			"  <gene_tree>              gene tree newick file\n",
+			"  <gene_trees>             gene tree newick file\n",
 			"\n",
 			"flags:",
 		)
