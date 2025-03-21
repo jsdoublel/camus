@@ -16,6 +16,9 @@ var (
 	ErrInvalidNewick   = errors.New("invalid newick format")
 )
 
+// Reads in and validates constraint tree and gene tree input files.
+// Returns an error if the newick format is invalid, or the file is invalid for
+// some other reason (e.g., more than one constraint tree)
 func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, error) {
 	tre, err := readTreeFile(treeFile)
 	if err != nil {
@@ -28,6 +31,7 @@ func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, e
 	return tre, genetrees, nil
 }
 
+// reads and validates constraint tree file
 func readTreeFile(treeFile string) (*tree.Tree, error) {
 	treBytes, err := os.ReadFile(treeFile)
 	if err != nil {
@@ -44,6 +48,7 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 	return tre, nil
 }
 
+// reads and validates gene tree file
 func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 	file, err := os.Open(genetreesFile)
 	if err != nil {

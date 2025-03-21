@@ -9,10 +9,10 @@ import (
 
 type Quartet struct {
 	Taxa     [4]int // should be in sorted order
-	Topology uint8
+	Topology uint8  // represents one of three possible quartet topologies
 }
 
-/* possible results for quartet comparison */
+// Possible results for quartet comparison (currently unused)
 const (
 	Q_EQ   = iota // quartets equal
 	Q_NEQ         // quartets not equal
@@ -24,14 +24,7 @@ var (
 	ErrInvalidQuartet  = errors.New("invalid newick for quartet")
 )
 
-/*
-	create new quartet
-
-args:
-
-	*tree.Tree qTree (quartet tree)
-	*tree.Tree tre   (reference tree with taxa set)
-*/
+// Generates quartet from four leaf newick tree (only used for testing)
 func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	qTaxa := qTree.AllTipNames()
 	if len(qTaxa) != 4 {
@@ -60,6 +53,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	return &Quartet{Taxa: taxaIDs, Topology: topo}, nil
 }
 
+// Generate unit8 representing quartet topology
 func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
@@ -84,6 +78,7 @@ func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
 	return topo
 }
 
+// Short 4 long int array (no build in array sort in go)
 func sortTaxa(arr *[4]int) {
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
@@ -94,7 +89,7 @@ func sortTaxa(arr *[4]int) {
 	}
 }
 
-/* returns hashmap containing quartets from tree */
+// Returns hashmap containing quartets from tree
 func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	tre.UnRoot()                           // some quartets are missed if tree is rooted
 	treeQuartets := make(map[Quartet]uint) // get quartets from tree
@@ -108,7 +103,7 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	return treeQuartets, nil
 }
 
-/* create quartet from gotree *tree.Quartet */
+// Create quartet from gotree *tree.Quartet
 func quartetFromTreeQ(tq *tree.Quartet, constMap map[int]int) *Quartet {
 	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
 	idToBool := make(map[int]bool)
@@ -154,12 +149,11 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	return qString
 }
 
-/*
-	 compares two quartets; there are three possible results:
-		- Q_DIFF (they contain different taxa)
-		- Q_NEQ  (they have a different topology)
-		- Q_EQ   (they have the same topology)
-*/
+// Compares two quartets (currently unused).
+// There are three possible results:
+//   - Q_DIFF (they contain different taxa)
+//   - Q_NEQ  (they have a different topology)
+//   - Q_EQ   (they have the same topology)
 func (q1 *Quartet) Compare(q2 *Quartet) int {
 	for i := range 4 {
 		if q1.Taxa[i] != q2.Taxa[i] {

@@ -51,7 +51,7 @@ func (dp *DP) RunDP() [][2]int {
 	return result
 }
 
-/* calculates score for given top node v; returns score, best edge, and dp lookups*/
+// Calculates score for given top node v; returns score, best edge, and dp lookups
 func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 	bestScore := uint(0)
 	bestEdge := [2]int{0, 0}
@@ -70,6 +70,7 @@ func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 	return bestScore, bestEdge
 }
 
+// Add up dp scores along path from v ~> w
 func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 	pathScores := make(map[int]uint)
 	SubtreePreOrder(v, func(cur *tree.Node) {
@@ -84,7 +85,7 @@ func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 	return pathScores
 }
 
-/* score branch u -> w (for w in subtree under sub); returns score, best w */
+// Score branch u -> w (for w in subtree under sub); returns score, best w
 func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) {
 	var bestScore uint
 	var bestW int
@@ -157,7 +158,7 @@ func (dp *DP) quartetScore(q *prep.Quartet, u, w, v, wSub *tree.Node) bool {
 	return bestTaxa == neighbor
 }
 
-/* returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa) */
+// Returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa)
 func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *prep.Quartet) (int, int, bool) {
 	taxaID, taxaIndex := -1, -1
 	for i, t := range q.Taxa {
@@ -170,7 +171,7 @@ func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *prep.Quartet) (int, int,
 	return taxaID, taxaIndex, true
 }
 
-/* return neighbor of taxa at index i in quartet */
+// Return neighbor of taxa at index i in quartet
 func neighborTaxaQ(q *prep.Quartet, i int) int {
 	b := (q.Topology >> i) % 2
 	for j := range 4 {
@@ -188,7 +189,7 @@ func (dp *DP) traceback() [][2]int {
 func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
-		if curBranch == [2]int{0, 0} { // there is no edge
+		if curBranch == [2]int{0, 0} { // there is no new edge
 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0]),
 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1])...)
 		} else {

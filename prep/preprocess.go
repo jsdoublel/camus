@@ -10,20 +10,8 @@ import (
 
 var ErrInvalidTree = errors.New("invalid tree")
 
-/*
-	preprocess input data
-
-args;
-
-	*tree.Tree   tre         (input constraint tree)
-	[]*tree.Tree geneTrees   (input gene trees)
-
-returns:
-
-	[]*Quartet (list of quartets)
-	[][]uint   (LCA matrix)
-	[][]uint   (leaf sets)
-*/
+// Preprocess necessary data. Returns an error if the constraint tree is not valid
+// (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
@@ -43,6 +31,8 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	return treeData, nil
 }
 
+// Returns map containing counts of quartets in input trees (after filtering out
+// quartets from constraint tree).
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, error) {
 	treeQuartets, err := QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {

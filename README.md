@@ -27,12 +27,13 @@ simply run `go build` to build the project.
 - [x] generally improve error handling
 - [x] test case when edge connects down to ancestor 
 - [x] test case when two edges connect to the same edge in the constraint tree
-- [x] fix nil pointer if `isBinary` probably because node had only one child (try to replicate)
+- [x] fix nil pointer if `isBinary` probably because node had only one child
+  (try to replicate)
 - [x] fix error message when gene tree has multiple of the same label or if
   there is a label in the gene tree not in the constraint tree
 - [x] improve logging
 - [x] add benchmark
-- [ ] update comments for functions to at least make sure they're accurate
+- [x] update comments for functions to at least make sure they're accurate
 - [x] check empty inputs
 - [ ] finish up readme
 - [x] more than one constraint tree

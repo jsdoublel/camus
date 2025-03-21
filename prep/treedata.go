@@ -33,6 +33,7 @@ func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
 		QuartetSet: qSets, QuartetCounts: qCounts, tipIndexMap: tipIndexMap}
 }
 
+// Create mapping from id to node pointer
 func mapIdToNodes(tre *tree.Tree) []*tree.Node {
 	idMap := make([]*tree.Node, len(tre.Nodes()))
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
@@ -42,7 +43,8 @@ func mapIdToNodes(tre *tree.Tree) []*tree.Node {
 	return idMap
 }
 
-/* verify that tree still has the same root, and thus the data is still applicable */
+// Verify that tree still has the same root, and thus the data is still
+// applicable
 func (td *TreeData) Verify() {
 	root := td.Tree.Root()
 	if root != td.Root {
@@ -50,6 +52,8 @@ func (td *TreeData) Verify() {
 	}
 }
 
+// Calculate children for each node for quick access (as gotree's Tree only
+// stores neighbors)
 func children(tre *tree.Tree) [][]*tree.Node {
 	nNodes := len(tre.Nodes())
 	children := make([][]*tree.Node, nNodes)
@@ -65,7 +69,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 	return children
 }
 
-/* can panic (array out of bounds) if tree is not binary */
+// Get children of node -- can panic (array out of bounds) if tree is not binary
 func getChildren(node *tree.Node) []*tree.Node {
 	children := make([]*tree.Node, 2)
 	p, err := node.Parent()
@@ -82,7 +86,7 @@ func getChildren(node *tree.Node) []*tree.Node {
 	return children
 }
 
-/* calculates the leafset for every node */
+// Calculates the leafset for every node
 func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
 	nLeaves, nNodes := len(tre.Tips()), len(tre.Nodes())
 	leafset := make([][]bool, nNodes)
@@ -100,7 +104,7 @@ func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
 	return leafset
 }
 
-/* caculates the LCA for every pair of nodes */
+// Caculates the LCA for every pair of nodes
 func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 	nNodes := len(tre.Nodes())
 	lca, below := make([][]int, nNodes), make([][]bool, nNodes) // below[i][j] = true means node j is below node i
@@ -132,6 +136,7 @@ func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 	return lca
 }
 
+// Calculate depths for all nodes in tree (slice index = node id)
 func calcDepths(tre *tree.Tree) []int {
 	depths := make([]int, len(tre.Nodes()))
 	tre.PreOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
@@ -143,7 +148,7 @@ func calcDepths(tre *tree.Tree) []int {
 	return depths
 }
 
-/* maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex */
+// Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
 func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
 	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n := len(tre.Tips())
@@ -180,11 +185,12 @@ func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
 	return td.leafsets[n1ID][n2ID]
 }
 
-/* takes in the node ids of two nodes and returns the id of the LCA */
+// Takes in the node ids of two nodes and returns the id of the LCA
 func (td *TreeData) LCA(n1ID, n2ID int) int {
 	return td.lca[n1ID][n2ID]
 }
 
+// Finds node's sibling -- assumes binary tree
 func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
 	// assumes binary tree
 	p, err := node.Parent()
@@ -203,6 +209,7 @@ func (td *TreeData) NLeaves() int {
 	return len(td.leafsets[0])
 }
 
+// Returns leafset as string for printing/testing
 func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	result := "{"
 	tips := td.Tree.AllTipNames()

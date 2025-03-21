@@ -9,6 +9,8 @@ import (
 	"github.com/jsdoublel/camus/prep"
 )
 
+// Makes extended newick network out of newick tree and branch data in somewhat
+// hacky way.
 func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 	for i, branch := range branches {
 		u, w := td.IdToNodes[branch[0]], td.IdToNodes[branch[1]]
@@ -33,15 +35,13 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
 	deleteAllBranchLengths(td.Tree)
-	return fixNetwork(td.Tree.Newick())
-}
-
-func fixNetwork(nwk string) string {
+	nwk := td.Tree.Newick()
 	nwk = strings.ReplaceAll(nwk, "####,", "")
 	nwk = strings.ReplaceAll(nwk, ",####", "")
 	return nwk
 }
 
+// Deletes all branch lengths and support values (since they might be missleading)
 func deleteAllBranchLengths(tre *tree.Tree) {
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if e != nil {
