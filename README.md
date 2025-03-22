@@ -44,7 +44,7 @@ go build
 ### Download the binaries
 
 The GitHub [releases](https://github.com/jsdoublel/camus/releases) contain
-binaries compiled on my personal computer (i.e., Linux x86). 
+binaries compiled on my personal computer (i.e., Linux x86_64). 
 
 ## Usage
 
