@@ -77,7 +77,7 @@ func TestReadInputFiles(t *testing.T) {
 			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile)
 			if !errors.Is(err, test.expectedErr) {
 				t.Errorf("Failed with unexpected error %+v", err)
-			} else if errors.Is(err, test.expectedErr) {
+			} else if errors.Is(err, test.expectedErr) && err != nil {
 				t.Logf("%s", err)
 			} else if test.expectedErr == nil {
 				taxaset := tre.AllTipNames()
