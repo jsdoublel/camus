@@ -41,7 +41,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 	}
 	qCounts := make(map[Quartet]uint)
 	countTotal := len(geneTrees)
-	countNew := 0
+	countNew := uint(0)
 	for i, gt := range geneTrees {
 		if !IsSingleCopy(gt) {
 			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
@@ -56,10 +56,8 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 				panic(fmt.Sprintf("negative quartet count %d", count))
 			}
 			if treeQuartets[quartet] == 0 {
-				if qCounts[quartet] == 0 {
-					countNew++
-				}
 				qCounts[quartet] += count
+				countNew += count
 			}
 		}
 	}
