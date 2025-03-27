@@ -27,6 +27,8 @@ import (
 	"github.com/jsdoublel/camus/netio"
 )
 
+var version = "v0.1.2"
+
 type args struct {
 	treeFile     string
 	geneTreeFile string
@@ -35,7 +37,7 @@ type args struct {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr,
-			"usage: camus [-h] <constraint_tree> <gene_trees>\n",
+			"usage: camus [-h| -v] <constraint_tree> <gene_trees>\n",
 			"\n",
 			"positional arguments (required):\n",
 			"  <constraint_tree>        constraint newick tree\n",
@@ -51,9 +53,15 @@ func parseArgs() args {
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
+	ver := flag.Bool("v", false, "prints version number and exits")
+
 	flag.Parse()
 	if *help {
 		flag.Usage()
+		os.Exit(0)
+	}
+	if *ver {
+		fmt.Printf("CAMUS version %s", version)
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
@@ -67,6 +75,7 @@ func parseArgs() args {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
+	log.Printf("CAMUS version %s", version)
 	constTree, geneTrees, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
 		log.Fatalf("error importing file data -- %s\n", err)
