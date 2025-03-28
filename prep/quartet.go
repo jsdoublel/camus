@@ -107,7 +107,12 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	// 	if cur.Tip() {
 	// 		leafsets[cur.Id()] = append(leafsets[cur.Id()], cur.Id())
 	// 	} else if cur != tre.Root() {
-	// 		leafsets[cur.Id()] = append(leafsets[cur.Id()], )
+	// 		children := make([]*tree.Node, 0)
+	// 		for _, c := range children {
+	// 			if c != prev {
+	// 				leafsets[cur.Id()] = append(leafsets[cur.Id()], leafsets[c.Id()]...)
+	// 			}
+	// 		}
 	// 	}
 	// 	return true
 	// })

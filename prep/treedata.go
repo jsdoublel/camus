@@ -1,10 +1,6 @@
 package prep
 
-import (
-	"fmt"
-
-	"github.com/evolbioinfo/gotree/tree"
-)
+import "github.com/evolbioinfo/gotree/tree"
 
 type TreeData struct {
 	Tree          *tree.Tree       // Tree object
@@ -69,17 +65,17 @@ func children(tre *tree.Tree) [][]*tree.Node {
 	return children
 }
 
-// Get children of node -- can panic (array out of bounds) if tree is not binary
+// Get children of node
 func getChildren(node *tree.Node) []*tree.Node {
-	children := make([]*tree.Node, 2)
+	children := make([]*tree.Node, 0)
 	p, err := node.Parent()
 	if err != nil && err.Error() == "The node has more than one parent" {
-		panic(fmt.Errorf("GetChildren %w", err))
+		panic(err)
 	}
 	i := 0
 	for _, u := range node.Neigh() {
 		if u != p {
-			children[i] = u
+			children = append(children, u)
 			i++
 		}
 	}
