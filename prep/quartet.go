@@ -131,7 +131,7 @@ func mapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
 	return idMap, nil
 }
 
-/* Not efficent, do no use except for testing !!! */
+// Not efficent, do no use except for testing !!!
 func (q *Quartet) String(tre *tree.Tree) string {
 	names := make(map[int]string)
 	for _, u := range tre.Tips() {
