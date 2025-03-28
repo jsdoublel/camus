@@ -3,17 +3,21 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [-h] <constraint_tree> <gene_tree>
+usage: camus [-h| -v] <constraint_tree> <gene_trees>
 
-	positional arguments (required):
-	  <constraint_tree>        constraint newick tree
-	  <gene_tree>              gene tree newick file
+positional arguments (required):
 
-	flags:
-	 -h	prints this message and exits
+	<constraint_tree>        constraint newick tree
+	<gene_trees>             gene tree newick file
 
-	example:
-	  camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt
+flags:
+
+	-h	prints this message and exits
+	-v	prints version number and exits
+
+example:
+
+	camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt
 */
 package main
 
@@ -22,6 +26,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/mattn/go-isatty"
 
 	"github.com/jsdoublel/camus/alg"
 	"github.com/jsdoublel/camus/netio"
@@ -36,20 +42,20 @@ type args struct {
 
 func parseArgs() args {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr,
+		fmt.Fprint(os.Stderr,
 			"usage: camus [-h| -v] <constraint_tree> <gene_trees>\n",
 			"\n",
-			"positional arguments (required):\n",
-			"  <constraint_tree>        constraint newick tree\n",
-			"  <gene_trees>             gene tree newick file\n",
+			"positional arguments (required):\n\n",
+			"\t<constraint_tree>        constraint newick tree\n",
+			"\t<gene_trees>             gene tree newick file\n",
 			"\n",
-			"flags:",
+			"flags:\n\n",
 		)
 		flag.PrintDefaults()
-		fmt.Fprintln(os.Stderr,
+		fmt.Fprint(os.Stderr,
 			"\n",
-			"example:\n",
-			"  camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt",
+			"example:\n\n",
+			"\tcamus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt",
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -65,7 +71,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
-		fmt.Fprintln(os.Stderr, "error: two required positional arguments <constraint_tree> <gene_tree_file>")
+		fmt.Fprintln(os.Stderr, red("invalid:"), "two positional arguments required: <constraint_tree> <gene_tree_file>")
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -77,12 +83,21 @@ func main() {
 	args := parseArgs()
 	log.Printf("CAMUS version %s", version)
 	constTree, geneTrees, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
+	errMsg := red("Sisyphus was not happy :(")
 	if err != nil {
-		log.Fatalf("error importing file data -- %s\n", err)
+		log.Fatalf(errMsg+" %s\n", err)
 	}
 	td, branches, err := alg.CAMUS(constTree, geneTrees)
 	if err != nil {
-		log.Fatalf("Sisyphus was not happy :( -- %s\n", err)
+		log.Fatalf(errMsg+" %s\n", err)
 	}
 	fmt.Println(netio.MakeNetwork(td, branches))
+}
+
+// makes text printed to terminal red
+func red(str string) string {
+	if isatty.IsTerminal(os.Stderr.Fd()) {
+		return fmt.Sprintf("\033[31m%s\033[0m", str)
+	}
+	return str
 }
