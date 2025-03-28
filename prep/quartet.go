@@ -49,7 +49,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 		}
 		idToBool[ti] = r == qTree.Root()
 	}
-	topo := setTopology(&taxaIDs, idToBool)
+	topo := setTopology(&taxaIDs)
 	return &Quartet{Taxa: taxaIDs, Topology: topo}, nil
 }
 
@@ -58,37 +58,34 @@ func setTopology(taxaIDs *[4]int) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
 	}
-	sortTaxa(taxaIDs) // sort ids so quartet topologies are equal if they are the same
-	count := 0        // only to varify we have exactly two taxa on each side
-	var power uint8 = 1
-	var topo uint8 = 0b0000
-	for _, id := range taxaIDs {
-		if idToBool[id] {
-			count++
-			topo |= power
-		}
-		power *= 2
-	}
-	if count != 2 {
-		panic("quartet didn't define bipartition properly, probably due to a bug")
-	}
-	if topo%2 != 0 { // normalize quartet (i.e., so that there are three topologies instead of six)
+	topo := sortTaxa(taxaIDs) // sort ids so quartet topologies are equal if they are the same
+	if topo%2 != 0 {          // normalize quartet (i.e., so that there are three topologies instead of six)
 		topo ^= 0b1111
+	}
+	if topo != 0b1100 && topo != 0b0110 && topo != 0b1010 {
+		panic(fmt.Sprintf("quartet didn't define bipartition properly, probably due to a bug: %b", topo))
 	}
 	return topo
 }
 
 // Short 4 long int array (no build in array sort in go)
-// returns new indices for what were originally the first two taxa
-func sortTaxa(arr *[4]int) [2]int {
+// returns the topology as uint8
+func sortTaxa(arr *[4]int) uint8 {
+	topo := uint8(0b0011)
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
 			if arr[i] > arr[j] {
+				bi := uint8(topo >> i & 1)
+				bj := uint8(topo >> j & 1)
+				if bi != bj {
+					m := uint8((1 << i) | (1 << j))
+					topo ^= m
+				}
 				arr[i], arr[j] = arr[j], arr[i]
 			}
 		}
 	}
-	panic("not implemented")
+	return topo
 }
 
 // Returns hashmap containing quartets from tree
