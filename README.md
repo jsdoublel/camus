@@ -14,7 +14,8 @@ number of quartets from $\mathcal{G}$ that respects the constraint tree $T$.
 CAMUS should be able to build on any operating system, though it has only been
 tested on Linux. It is implemented in the Go programming language (which can be
 installed [here](https://go.dev/doc/install)) and additionally requires
-[gotree](https://github.com/evolbioinfo/gotree).
+[gotree](https://github.com/evolbioinfo/gotree) and
+[go-isatty](https://github.com/mattn/go-isatty).
 
 There is three methods for installing go. 
 
@@ -22,7 +23,7 @@ There is three methods for installing go.
 
 After installing Go, run
 
-```sh
+```
 go install github.com/jsdoublel/camus@latest
 ```
 
@@ -35,7 +36,7 @@ directory make sure you add `$GOPATH/bin` to your `PATH` environmental variable.
 Once Go is installed, clone the repository, download dependencies, and build
 the project with the following commands
 
-```sh
+```
 git clone https://github.com/jsdoublel/camus.git
 cd camus
 go mod download
@@ -66,7 +67,7 @@ is written to `stdout` and `stderr` respectivly.
 
 Here is an example of how one might run CAMUS using example data from this repository.
 
-```sh
+```
 camus testdata/benchmark/constraint.nwk testdata/benchmark/gene-trees.nwk > out.nwk 2> log.txt
 ```
 

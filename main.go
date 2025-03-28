@@ -78,6 +78,14 @@ func parseArgs() args {
 	return args{treeFile: flag.Arg(0), geneTreeFile: flag.Arg(1)}
 }
 
+// makes text printed to terminal red
+func red(str string) string {
+	if isatty.IsTerminal(os.Stderr.Fd()) {
+		return fmt.Sprintf("\033[31m%s\033[0m", str)
+	}
+	return str
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
@@ -92,12 +100,4 @@ func main() {
 		log.Fatalf(errMsg+" %s\n", err)
 	}
 	fmt.Println(netio.MakeNetwork(td, branches))
-}
-
-// makes text printed to terminal red
-func red(str string) string {
-	if isatty.IsTerminal(os.Stderr.Fd()) {
-		return fmt.Sprintf("\033[31m%s\033[0m", str)
-	}
-	return str
 }
