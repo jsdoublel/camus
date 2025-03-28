@@ -88,7 +88,11 @@ func getChildren(node *tree.Node) []*tree.Node {
 
 // Calculates the leafset for every node
 func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
-	nLeaves, nNodes := len(tre.Tips()), len(tre.Nodes())
+	nLeaves, err := tre.NbTips()
+	if err != nil {
+		panic(err)
+	}
+	nNodes := len(tre.Nodes())
 	leafset := make([][]bool, nNodes)
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		leafset[cur.Id()] = make([]bool, nLeaves)
@@ -151,7 +155,10 @@ func calcDepths(tre *tree.Tree) []int {
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
 func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
 	qSets := make([][]*Quartet, len(tre.Nodes()))
-	n := len(tre.Tips())
+	n, err := tre.NbTips()
+	if err != nil {
+		panic(err)
+	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		qSets[cur.Id()] = make([]*Quartet, 0)
 		for q := range qCounts {

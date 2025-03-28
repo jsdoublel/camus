@@ -97,6 +97,20 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	if err != nil {
 		return nil, err
 	}
+	// n, err := tre.NbTips()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// leafsets := make([][]int, n)
+	// tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+	// 	leafsets[cur.Id()] = make([]int, 0)
+	// 	if cur.Tip() {
+	// 		leafsets[cur.Id()] = append(leafsets[cur.Id()], cur.Id())
+	// 	} else if cur != tre.Root() {
+	// 		leafsets[cur.Id()] = append(leafsets[cur.Id()], )
+	// 	}
+	// 	return true
+	// })
 	tre.Quartets(false, func(q *tree.Quartet) {
 		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = 1
 	})

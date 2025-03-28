@@ -32,11 +32,16 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, er
 }
 
 func (dp *DP) RunDP() [][2]int {
+	n, err := dp.TreeData.Tree.NbTips()
+	if err != nil {
+		panic(err)
+	}
 	count := 0
+	totalDP := len(dp.DP) - n
 	dp.TreeData.Tree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
 			count++
-			log.Printf("processing dp cell %d of %d\n", count, len(dp.DP)-len(dp.TreeData.Tree.Tips()))
+			log.Printf("processing dp cell %d of %d\n", count, totalDP)
 			lID, rID := dp.TreeData.Children[cur.Id()][0].Id(), dp.TreeData.Children[cur.Id()][1].Id()
 			score, branch := dp.score(cur)
 			noEdgeScore := dp.DP[lID] + dp.DP[rID]

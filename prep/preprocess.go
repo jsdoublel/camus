@@ -92,5 +92,6 @@ func IsSingleCopy(tre *tree.Tree) bool {
 	for _, l := range tre.Tips() {
 		labels[l.Name()] = true
 	}
+	// have to use less efficient tre.Tips() because of weird behavior of gotree with multrees
 	return len(labels) == len(tre.Tips())
 }
