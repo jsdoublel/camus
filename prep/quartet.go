@@ -54,7 +54,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 }
 
 // Generate unit8 representing quartet topology
-func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
+func setTopology(taxaIDs *[4]int) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
 	}
@@ -79,7 +79,8 @@ func setTopology(taxaIDs *[4]int, idToBool map[int]bool) uint8 {
 }
 
 // Short 4 long int array (no build in array sort in go)
-func sortTaxa(arr *[4]int) {
+// returns new indices for what were originally the first two taxa
+func sortTaxa(arr *[4]int) [2]int {
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
 			if arr[i] > arr[j] {
@@ -87,6 +88,7 @@ func sortTaxa(arr *[4]int) {
 			}
 		}
 	}
+	panic("not implemented")
 }
 
 // Returns hashmap containing quartets from tree
@@ -97,25 +99,6 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	if err != nil {
 		return nil, err
 	}
-	// n, err := tre.NbTips()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// leafsets := make([][]int, n)
-	// tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-	// 	leafsets[cur.Id()] = make([]int, 0)
-	// 	if cur.Tip() {
-	// 		leafsets[cur.Id()] = append(leafsets[cur.Id()], cur.Id())
-	// 	} else if cur != tre.Root() {
-	// 		children := make([]*tree.Node, 0)
-	// 		for _, c := range children {
-	// 			if c != prev {
-	// 				leafsets[cur.Id()] = append(leafsets[cur.Id()], leafsets[c.Id()]...)
-	// 			}
-	// 		}
-	// 	}
-	// 	return true
-	// })
 	tre.Quartets(false, func(q *tree.Quartet) {
 		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = 1
 	})
@@ -123,16 +106,20 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 }
 
 // Create quartet from gotree *tree.Quartet
-func quartetFromTreeQ(tq *tree.Quartet, constMap map[int]int) *Quartet {
+func quartetFromTreeQ(tq *tree.Quartet, constMap []int) *Quartet {
 	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
-	idToBool := make(map[int]bool)
-	idToBool[taxaIDs[0]] = true
-	idToBool[taxaIDs[1]] = true
-	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs, idToBool)}
+	// idToBool := make(map[int]bool)
+	// idToBool[taxaIDs[0]] = true
+	// idToBool[taxaIDs[1]] = true
+	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs)}
 }
 
-func mapIDsFromConstTree(gtre, tre *tree.Tree) (map[int]int, error) {
-	idMap := make(map[int]int)
+func mapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
+	nLeavesGtree, err := gtre.NbTips()
+	if err != nil {
+		panic(fmt.Sprintf("gene tree %s", err))
+	}
+	idMap := make([]int, nLeavesGtree)
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
 		if err != nil {

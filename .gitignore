@@ -2,4 +2,6 @@ camus
 scratch/
 .vscode
 *.pdf
+*.prof
+*.test
 
