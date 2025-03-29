@@ -7,7 +7,8 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/netio"
+	"github.com/jsdoublel/camus/net"
+	"github.com/jsdoublel/camus/prep"
 )
 
 func TestCAMUS(t *testing.T) {
@@ -123,7 +124,7 @@ func TestCAMUS(t *testing.T) {
 		if err != nil {
 			t.Errorf("CAMUS failed with error %s", err)
 		}
-		result := netio.MakeNetwork(td, edges)
+		result := net.MakeNetwork(td, edges).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}
@@ -133,7 +134,7 @@ func TestCAMUS(t *testing.T) {
 func BenchmarkCAMUS(b *testing.B) {
 	constTreeFile := "../testdata/benchmark/constraint.nwk"
 	geneTreeFile := "../testdata/benchmark/gene-trees.nwk"
-	tre, quartets, err := netio.ReadInputFiles(constTreeFile, geneTreeFile)
+	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile)
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
