@@ -1,4 +1,4 @@
-package prep
+package qrt
 
 import (
 	"fmt"
@@ -81,21 +81,21 @@ func TestCompare(t *testing.T) {
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, b), c), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_EQ,
+			result: Qeq,
 		},
 		{
 			name:   "not equal",
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, c), b), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_NEQ,
+			result: Qneq,
 		},
 		{
 			name:   "diff",
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, f), b), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_DIFF,
+			result: Qdiff,
 		},
 	}
 	for _, test := range testCases {
@@ -171,7 +171,7 @@ func TestQuartetsFromTree(t *testing.T) {
 				t.Error(err)
 			}
 			if !reflect.DeepEqual(qSet, expectedQSet) {
-				t.Errorf("actual %s != expected %s", setToString(qSet, tre), setToString(expectedQSet, tre))
+				t.Errorf("actual %s != expected %s", QSetToString(qSet, tre), QSetToString(expectedQSet, tre))
 			}
 		})
 	}
@@ -220,22 +220,6 @@ func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) (bool, error)
 func (tq *TestQuartet) String() string {
 	return fmt.Sprintf("%s%s|%s%s", tq.set1[0], tq.set1[1], tq.set2[0], tq.set2[1])
 }
-
-func setToString(qSet map[Quartet]uint, tre *tree.Tree) string {
-	str := "{"
-	for q, c := range qSet {
-		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)
-	}
-	return str[:len(str)-2] + "}"
-}
-
-// func listToString(qList []*Quartet, tre *tree.Tree) string {
-// 	str := "{"
-// 	for _, q := range qList {
-// 		str += q.String(tre) + ", "
-// 	}
-// 	return str + "}"
-// }
 
 func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint, error) {
 	qSet := make(map[Quartet]uint)

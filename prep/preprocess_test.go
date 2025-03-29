@@ -9,6 +9,8 @@ import (
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/qrt"
 )
 
 func TestIsBinary(t *testing.T) {
@@ -84,7 +86,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				"((a,b),(c,d));",
 				"(((a,b),(c,d)),e);",
 			},
-			expectedErr: ErrTipNameMismatch,
+			expectedErr: qrt.ErrTipNameMismatch,
 		},
 		{
 			name: "non-binary input trees",
@@ -163,24 +165,24 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
-			expectedList := []*Quartet{}
+			expectedList := []*qrt.Quartet{}
 			for _, nwk := range test.expected {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 				if err != nil {
 					t.Errorf("invalid newick tree %s; test is written wrong", nwk)
 				}
-				q, err := NewQuartet(tr, tre)
+				q, err := qrt.NewQuartet(tr, tre)
 				if err != nil {
 					t.Errorf("invalid newick tree %s; test is written wrong", nwk)
 				}
 				expectedList = append(expectedList, q)
 			}
-			expected := make(map[Quartet]uint)
+			expected := make(map[qrt.Quartet]uint)
 			for _, q := range expectedList {
 				expected[*q] += 1
 			}
-			if !reflect.DeepEqual(result, expected) {
-				t.Errorf("actual %s != expected %s", setToString(result, tre), setToString(expected, tre))
+			if !reflect.DeepEqual(*result, expected) {
+				t.Errorf("actual %s != expected %s", qrt.QSetToString(*result, tre), qrt.QSetToString(expected, tre))
 			}
 		})
 	}
@@ -327,7 +329,7 @@ func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tr
 	return true, nil
 }
 
-func quartetSetEqualityTester(quartetSets [][]*Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
+func quartetSetEqualityTester(quartetSets [][]*qrt.Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
 	for k, v := range testQS {
 		node, err := getNode(k, tre)
 		if err != nil {
@@ -338,13 +340,13 @@ func quartetSetEqualityTester(quartetSets [][]*Quartet, testQS map[string][]stri
 			if err != nil {
 				return false, fmt.Errorf("cannot parse %s as newick tree. %w", quartetString, err)
 			}
-			q1, err := NewQuartet(qTree, tre)
+			q1, err := qrt.NewQuartet(qTree, tre)
 			if err != nil {
 				return false, err
 			}
 			found := false
 			for _, q2 := range quartetSets[node.Id()] {
-				if q1.Compare(q2) == Q_EQ {
+				if q1.Compare(q2) == qrt.Qeq {
 					found = true
 				}
 			}

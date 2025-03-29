@@ -1,4 +1,4 @@
-package prep
+package qrt
 
 import (
 	"errors"
@@ -8,15 +8,22 @@ import (
 )
 
 type Quartet struct {
-	Taxa     [4]int // should be in sorted order
-	Topology uint8  // represents one of three possible quartet topologies
+	Taxa     [NTaxa]int // should be in sorted order
+	Topology uint8      // represents one of three possible quartet topologies
 }
 
-// Possible results for quartet comparison (currently unused)
 const (
-	Q_EQ   = iota // quartets equal
-	Q_NEQ         // quartets not equal
-	Q_DIFF        // quartets on different taxa set
+	NTaxa = 4
+	NTopo = 3
+
+	// Possible results for quartet comparison (currently unused)
+	Qeq   = iota // quartets equal
+	Qneq         // quartets not equal
+	Qdiff        // quartets on different taxa set
+
+	Qtopo1 = uint8(0b1100)
+	Qtopo2 = uint8(0b1010)
+	Qtopo3 = uint8(0b0110)
 )
 
 var (
@@ -152,20 +159,28 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	return qString
 }
 
+func QSetToString(qSet map[Quartet]uint, tre *tree.Tree) string {
+	str := "{"
+	for q, c := range qSet {
+		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)
+	}
+	return str[:len(str)-2] + "}"
+}
+
 // Compares two quartets (currently unused).
 // There are three possible results:
-//   - Q_DIFF (they contain different taxa)
-//   - Q_NEQ  (they have a different topology)
-//   - Q_EQ   (they have the same topology)
+//   - Qdiff (they contain different taxa)
+//   - Qneq  (they have a different topology)
+//   - Qeq   (they have the same topology)
 func (q1 *Quartet) Compare(q2 *Quartet) int {
 	for i := range 4 {
 		if q1.Taxa[i] != q2.Taxa[i] {
-			return Q_DIFF
+			return Qdiff
 		}
 	}
 	if q1.Topology^q2.Topology != 0b1111 && q1.Topology^q2.Topology != 0b0000 {
-		return Q_NEQ
+		return Qneq
 	} else {
-		return Q_EQ
+		return Qeq
 	}
 }

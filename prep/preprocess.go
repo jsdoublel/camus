@@ -7,6 +7,8 @@ import (
 	"log"
 
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/qrt"
 )
 
 var ErrInvalidTree = errors.New("invalid tree")
@@ -34,12 +36,12 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, error) {
-	treeQuartets, err := QuartetsFromTree(tre.Clone(), tre)
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]uint, error) {
+	treeQuartets, err := qrt.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qCounts := make(map[Quartet]uint)
+	qCounts := make(map[qrt.Quartet]uint)
 	countTotal := len(geneTrees)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
@@ -47,7 +49,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
 		gt.UpdateTipIndex()
-		newQuartets, err := QuartetsFromTree(gt, tre)
+		newQuartets, err := qrt.QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +64,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (map[Quartet]uint, 
 		}
 	}
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
-	return qCounts, nil
+	return &qCounts, nil
 }
 
 func TreeIsBinary(tre *tree.Tree) bool {
