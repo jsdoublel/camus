@@ -68,7 +68,7 @@ func setTopology(taxaIDs *[4]int) uint8 {
 	if topo%2 != 0 {          // normalize quartet (i.e., so that there are three topologies instead of six)
 		topo ^= 0b1111
 	}
-	if topo != 0b1100 && topo != 0b0110 && topo != 0b1010 {
+	if topo != Qtopo1 && topo != Qtopo2 && topo != Qtopo3 {
 		panic(fmt.Sprintf("quartet didn't define bipartition properly, probably due to a bug: %b", topo))
 	}
 	return topo
@@ -81,11 +81,8 @@ func sortTaxa(arr *[4]int) uint8 {
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
 			if arr[i] > arr[j] {
-				bi := uint8(topo >> i & 1)
-				bj := uint8(topo >> j & 1)
-				if bi != bj {
-					m := uint8((1 << i) | (1 << j))
-					topo ^= m
+				if topo>>i&1 != topo>>j&1 {
+					topo ^= (1 << i) | (1 << j)
 				}
 				arr[i], arr[j] = arr[j], arr[i]
 			}
