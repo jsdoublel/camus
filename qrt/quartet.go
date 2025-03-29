@@ -14,6 +14,7 @@ type Quartet struct {
 
 const (
 	NTaxa = 4
+	NTopo = 3
 
 	// Possible results for quartet comparison (currently unused)
 	Qeq   = iota // quartets equal
@@ -33,14 +34,14 @@ var (
 // Generates quartet from four leaf newick tree (only used for testing)
 func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	qTaxa := qTree.AllTipNames()
-	if len(qTaxa) != 4 {
+	if len(qTaxa) != NTaxa {
 		return nil, fmt.Errorf("%w, tree has %d != 4 leaves", ErrInvalidQuartet, len(qTaxa))
 	}
 	qTree.UnRoot()
 	if qTree.Root().Nneigh() != 3 {
 		return nil, fmt.Errorf("%w, probably does not contain bipartition", ErrInvalidQuartet)
 	}
-	taxaIDs := [4]int{}
+	taxaIDs := [NTaxa]int{}
 	leaves := qTree.Tips()
 	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
@@ -60,8 +61,8 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 }
 
 // Generate unit8 representing quartet topology
-func setTopology(taxaIDs *[4]int) uint8 {
-	if len(taxaIDs) != 4 {
+func setTopology(taxaIDs *[NTaxa]int) uint8 {
+	if len(taxaIDs) != NTaxa {
 		panic("taxaIDs len != 4 in setTopology")
 	}
 	topo := sortTaxa(taxaIDs) // sort ids so quartet topologies are equal if they are the same
@@ -76,7 +77,7 @@ func setTopology(taxaIDs *[4]int) uint8 {
 
 // Short 4 long int array (no build in array sort in go)
 // returns the topology as uint8
-func sortTaxa(arr *[4]int) uint8 {
+func sortTaxa(arr *[NTaxa]int) uint8 {
 	topo := uint8(0b0011)
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
@@ -142,7 +143,7 @@ func (q *Quartet) String(tre *tree.Tree) string {
 		names[ti] = u.Name()
 	}
 	qString := "|"
-	for i := range 4 {
+	for i := range NTaxa {
 		if (q.Topology>>i)%2 == 0 {
 			qString += names[q.Taxa[i]]
 		} else {
@@ -166,7 +167,7 @@ func QSetToString(qSet map[Quartet]uint, tre *tree.Tree) string {
 //   - Qneq  (they have a different topology)
 //   - Qeq   (they have the same topology)
 func (q1 *Quartet) Compare(q2 *Quartet) int {
-	for i := range 4 {
+	for i := range NTaxa {
 		if q1.Taxa[i] != q2.Taxa[i] {
 			return Qdiff
 		}

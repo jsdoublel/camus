@@ -15,28 +15,29 @@ var ErrInvalidTree = errors.New("invalid tree")
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, *qrt.QuartetStats, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
-		return nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
+		return nil, nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
 	}
 	if !TreeIsBinary(tre) {
-		return nil, fmt.Errorf("%w, constraint tree is not binary", ErrInvalidTree)
+		return nil, nil, fmt.Errorf("%w, constraint tree is not binary", ErrInvalidTree)
 	}
 	if !IsSingleCopy(tre) {
-		return nil, fmt.Errorf("%w, constraint tree has duplicate labels", ErrInvalidTree)
+		return nil, nil, fmt.Errorf("%w, constraint tree has duplicate labels", ErrInvalidTree)
 	}
-	qCounts, err := processQuartets(geneTrees, tre)
+	qCounts, qStats, err := processQuartets(geneTrees, tre)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	treeData := MakeTreeData(tre, qCounts)
-	return treeData, nil
+	return treeData, qStats, nil
 }
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]uint, error) {
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]uint, *qrt.QuartetStats, error) {
+	qStats := qrt.MakeQStats()
 	treeQuartets, err := qrt.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
@@ -46,17 +47,18 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]u
 	countNew := uint(0)
 	for i, gt := range geneTrees {
 		if !IsSingleCopy(gt) {
-			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
+			return nil, nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
 		gt.UpdateTipIndex()
 		newQuartets, err := qrt.QuartetsFromTree(gt, tre)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for quartet, count := range newQuartets {
 			if count < 0 {
 				panic(fmt.Sprintf("negative quartet count %d", count))
 			}
+			qStats.Count(&quartet, count)
 			if treeQuartets[quartet] == 0 {
 				qCounts[quartet] += count
 				countNew += count
@@ -64,7 +66,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]u
 		}
 	}
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
-	return &qCounts, nil
+	return &qCounts, qStats, nil
 }
 
 func TreeIsBinary(tre *tree.Tree) bool {

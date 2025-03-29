@@ -96,7 +96,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(errMsg+" %s\n", err)
 	}
-	td, branches, err := alg.CAMUS(constTree, geneTrees)
+	td, _, branches, err := alg.CAMUS(constTree, geneTrees)
 	if err != nil {
 		log.Fatalf(errMsg+" %s\n", err)
 	}

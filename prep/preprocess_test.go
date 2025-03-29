@@ -112,7 +112,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees)
+			_, _, err = Preprocess(tre, gtrees)
 			if !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else {
@@ -162,7 +162,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre)
+			result, _, err := processQuartets(rqList, tre)
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
@@ -251,7 +251,7 @@ func TestProcessTreeData(t *testing.T) {
 				q = append(q, tmp)
 			}
 			tre.UpdateTipIndex()
-			qs, err := processQuartets(q, tre)
+			qs, _, err := processQuartets(q, tre)
 			treeData := MakeTreeData(tre, qs)
 			lca := treeData.lca
 			leafset := treeData.leafsets

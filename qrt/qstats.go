@@ -14,15 +14,21 @@ var (
 
 // wrapper for recording quartet count stats
 type QuartetStats struct {
-	qstats map[[4]int][3]uint // map mapping hash of quartet taxa to list giving count of the three topologies
-	totals map[[4]int]uint
+	qstats map[[NTaxa]int]*[NTopo]uint // map mapping hash of quartet taxa to list giving count of the three topologies
+	totals map[[NTaxa]int]uint
+}
+
+// Makes empty QuartetStats struct
+func MakeQStats() *QuartetStats {
+	return &QuartetStats{qstats: make(map[[NTaxa]int]*[NTopo]uint), totals: make(map[[NTaxa]int]uint)}
 }
 
 // Add to count of particular quartet
 func (qs *QuartetStats) Count(q *Quartet, count uint) {
-	counter := qs.qstats[q.Taxa]
-	counter[mapper[q.Topology]] += count
-	qs.qstats[q.Taxa] = counter
+	if qs.qstats[q.Taxa] == nil {
+		qs.qstats[q.Taxa] = new([NTopo]uint)
+	}
+	qs.qstats[q.Taxa][mapper[q.Topology]] += count
 	qs.totals[q.Taxa] += count
 }
 
@@ -44,7 +50,11 @@ func (qs *QuartetStats) Percent(q *Quartet) float64 {
 	if err != nil {
 		panic(err)
 	}
-	return fNumerator / fTotal
+	result := fNumerator / fTotal
+	if result < 0 || result > 1 {
+		panic(fmt.Sprintf("percent value %f out of range", result))
+	}
+	return result
 }
 
 func uintToFloat64Safe(n uint) (float64, error) {

@@ -120,7 +120,7 @@ func TestCAMUS(t *testing.T) {
 				t.Errorf("cannot parse %s as newick tree", g)
 			}
 		}
-		td, edges, err := CAMUS(constTree, geneTrees)
+		td, _, edges, err := CAMUS(constTree, geneTrees)
 		if err != nil {
 			t.Errorf("CAMUS failed with error %s", err)
 		}
