@@ -7,13 +7,15 @@ import (
 	"log"
 
 	"github.com/evolbioinfo/gotree/tree"
+
+	"github.com/jsdoublel/camus/qrt"
 )
 
 var ErrInvalidTree = errors.New("invalid tree")
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, *QuartetStats, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, *qrt.QuartetStats, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
 		return nil, nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
@@ -34,13 +36,13 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, *QuartetStat
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[Quartet]uint, *QuartetStats, error) {
-	qStats := QuartetStats{qstats: make(map[[NTaxa]int]*[NTopo]uint), totals: make(map[[NTaxa]int]uint)}
-	treeQuartets, err := QuartetsFromTree(tre.Clone(), tre)
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]uint, *qrt.QuartetStats, error) {
+	qStats := qrt.MakeQStats()
+	treeQuartets, err := qrt.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qCounts := make(map[Quartet]uint)
+	qCounts := make(map[qrt.Quartet]uint)
 	countTotal := len(geneTrees)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
@@ -48,7 +50,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[Quartet]uint,
 			return nil, nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
 		gt.UpdateTipIndex()
-		newQuartets, err := QuartetsFromTree(gt, tre)
+		newQuartets, err := qrt.QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -64,7 +66,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[Quartet]uint,
 		}
 	}
 	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
-	return &qCounts, &qStats, nil
+	return &qCounts, qStats, nil
 }
 
 func TreeIsBinary(tre *tree.Tree) bool {

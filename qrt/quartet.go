@@ -1,4 +1,4 @@
-package prep
+package qrt
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 
 type Quartet struct {
 	Taxa     [NTaxa]int // should be in sorted order
-	Topology uint8       // represents one of three possible quartet topologies
+	Topology uint8      // represents one of three possible quartet topologies
 }
 
 const (
@@ -151,6 +151,14 @@ func (q *Quartet) String(tre *tree.Tree) string {
 		}
 	}
 	return qString
+}
+
+func QSetToString(qSet map[Quartet]uint, tre *tree.Tree) string {
+	str := "{"
+	for q, c := range qSet {
+		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)
+	}
+	return str[:len(str)-2] + "}"
 }
 
 // Compares two quartets (currently unused).

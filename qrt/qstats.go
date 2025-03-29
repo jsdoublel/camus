@@ -1,4 +1,4 @@
-package prep
+package qrt
 
 import (
 	"errors"
@@ -16,6 +16,11 @@ var (
 type QuartetStats struct {
 	qstats map[[NTaxa]int]*[NTopo]uint // map mapping hash of quartet taxa to list giving count of the three topologies
 	totals map[[NTaxa]int]uint
+}
+
+// Makes empty QuartetStats struct
+func MakeQStats() *QuartetStats {
+	return &QuartetStats{qstats: make(map[[NTaxa]int]*[NTopo]uint), totals: make(map[[NTaxa]int]uint)}
 }
 
 // Add to count of particular quartet
