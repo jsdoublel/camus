@@ -1,4 +1,4 @@
-package netio
+package net
 
 import (
 	"strings"
@@ -50,7 +50,7 @@ func TestMakeNetwork(t *testing.T) {
 				edges[i] = [2]int{u[0].Id(), w[0].Id()}
 			}
 			t.Logf("edges %v", edges)
-			result := MakeNetwork(td, edges)
+			result := MakeNetwork(td, edges).Newick()
 			if result != test.result {
 				t.Errorf("%s != %s", result, test.result)
 			}

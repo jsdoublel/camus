@@ -30,7 +30,8 @@ import (
 	"github.com/mattn/go-isatty"
 
 	"github.com/jsdoublel/camus/alg"
-	"github.com/jsdoublel/camus/netio"
+	"github.com/jsdoublel/camus/net"
+	"github.com/jsdoublel/camus/prep"
 )
 
 var version = "v0.1.2"
@@ -90,7 +91,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("CAMUS version %s", version)
-	constTree, geneTrees, err := netio.ReadInputFiles(args.treeFile, args.geneTreeFile)
+	constTree, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	errMsg := red("Sisyphus was not happy :(")
 	if err != nil {
 		log.Fatalf(errMsg+" %s\n", err)
@@ -99,5 +100,5 @@ func main() {
 	if err != nil {
 		log.Fatalf(errMsg+" %s\n", err)
 	}
-	fmt.Println(netio.MakeNetwork(td, branches))
+	fmt.Println(net.MakeNetwork(td, branches).Newick())
 }

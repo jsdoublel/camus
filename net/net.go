@@ -1,4 +1,4 @@
-package netio
+package net
 
 import (
 	"fmt"
@@ -9,9 +9,14 @@ import (
 	"github.com/jsdoublel/camus/prep"
 )
 
+type Network struct {
+	Backbone      *tree.Tree // computed data from dp
+	Reticulations [][2]int   // reticulation branches
+}
+
 // Makes extended newick network out of newick tree and branch data in somewhat
 // hacky way.
-func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
+func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
 	for i, branch := range branches {
 		u, w := td.IdToNodes[branch[0]], td.IdToNodes[branch[1]]
 		uEdge, err := u.ParentEdge()
@@ -35,7 +40,11 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) string {
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
 	deleteAllBranchLengths(td.Tree)
-	nwk := td.Tree.Newick()
+	return &Network{Backbone: td.Tree, Reticulations: branches}
+}
+
+func (ntw *Network) Newick() string {
+	nwk := ntw.Backbone.Newick()
 	nwk = strings.ReplaceAll(nwk, "####,", "")
 	nwk = strings.ReplaceAll(nwk, ",####", "")
 	return nwk
