@@ -3,19 +3,19 @@ package prep
 import "github.com/evolbioinfo/gotree/tree"
 
 type TreeData struct {
-	Tree          *tree.Tree       // Tree object
-	Root          *tree.Node       // Root for which data is calculated
-	Children      [][]*tree.Node   // Children for each node
-	IdToNodes     []*tree.Node     // Mapping between id and node pointer
-	QuartetSet    [][]*Quartet     // Quartets relevant for each subtree
-	QuartetCounts map[Quartet]uint // Count of each unqiue quartet topology
-	Depths        []int            // Distance from all nodes to the root
-	leafsets      [][]bool         // Leaves under each node
-	lca           [][]int          // LCA for each pair of node id
+	Tree          *tree.Tree        // Tree object
+	Root          *tree.Node        // Root for which data is calculated
+	Children      [][]*tree.Node    // Children for each node
+	IdToNodes     []*tree.Node      // Mapping between id and node pointer
+	QuartetSet    [][]*Quartet      // Quartets relevant for each subtree
+	QuartetCounts *map[Quartet]uint // Count of each unqiue quartet topology
+	Depths        []int             // Distance from all nodes to the root
+	leafsets      [][]bool          // Leaves under each node
+	lca           [][]int           // LCA for each pair of node id
 	tipIndexMap   map[int]int
 }
 
-func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
+func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
@@ -149,7 +149,7 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
+func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[Quartet]uint, leafsets [][]bool) [][]*Quartet {
 	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
@@ -157,7 +157,7 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []
 	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		qSets[cur.Id()] = make([]*Quartet, 0)
-		for q := range qCounts {
+		for q := range *qCounts {
 			found := 0
 			for i := range 4 {
 				if q.Taxa[i] >= n {

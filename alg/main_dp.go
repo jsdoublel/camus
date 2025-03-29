@@ -19,16 +19,18 @@ type DP struct {
 	TreeData *prep.TreeData // preprocessed data for our constraint tree
 }
 
-func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
+// Runs CAMUS algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
+// Errors returned come from preprocessing (invalid inputs, etc.).
+func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, *prep.QuartetStats, [][2]int, error) {
 	log.Print("beginning data preprocessing\n")
-	td, err := prep.Preprocess(tre, geneTrees)
+	td, qs, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
-		return nil, nil, fmt.Errorf("preprocess error: %w", err)
+		return nil, nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	log.Print("preprocessing finished, beginning CAMUS\n")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
-	return td, dp.RunDP(), nil
+	return td, qs, dp.RunDP(), nil
 }
 
 func (dp *DP) RunDP() [][2]int {
@@ -114,7 +116,7 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.QuartetSet[v.Id()] {
 		if dp.quartetScore(q, u, w, v, wSub) {
-			score += dp.TreeData.QuartetCounts[*q]
+			score += (*dp.TreeData.QuartetCounts)[*q]
 		}
 	}
 	return score

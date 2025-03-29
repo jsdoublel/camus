@@ -109,7 +109,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees)
+			_, _, err = Preprocess(tre, gtrees)
 			if !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else {
@@ -159,7 +159,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre)
+			result, _, err := processQuartets(rqList, tre)
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
@@ -179,8 +179,8 @@ func TestProcessQuartets(t *testing.T) {
 			for _, q := range expectedList {
 				expected[*q] += 1
 			}
-			if !reflect.DeepEqual(result, expected) {
-				t.Errorf("actual %s != expected %s", setToString(result, tre), setToString(expected, tre))
+			if !reflect.DeepEqual(*result, expected) {
+				t.Errorf("actual %s != expected %s", setToString(*result, tre), setToString(expected, tre))
 			}
 		})
 	}
@@ -248,7 +248,7 @@ func TestProcessTreeData(t *testing.T) {
 				q = append(q, tmp)
 			}
 			tre.UpdateTipIndex()
-			qs, err := processQuartets(q, tre)
+			qs, _, err := processQuartets(q, tre)
 			treeData := MakeTreeData(tre, qs)
 			lca := treeData.lca
 			leafset := treeData.leafsets
@@ -344,7 +344,7 @@ func quartetSetEqualityTester(quartetSets [][]*Quartet, testQS map[string][]stri
 			}
 			found := false
 			for _, q2 := range quartetSets[node.Id()] {
-				if q1.Compare(q2) == Q_EQ {
+				if q1.Compare(q2) == Qeq {
 					found = true
 				}
 			}

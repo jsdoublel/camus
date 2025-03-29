@@ -81,21 +81,21 @@ func TestCompare(t *testing.T) {
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, b), c), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_EQ,
+			result: Qeq,
 		},
 		{
 			name:   "not equal",
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, c), b), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_NEQ,
+			result: Qneq,
 		},
 		{
 			name:   "diff",
 			q1:     "((a,b),(c,d));",
 			q2:     "(((a, f), b), d);",
 			tre:    "(((a,c),(b,d)),f);",
-			result: Q_DIFF,
+			result: Qdiff,
 		},
 	}
 	for _, test := range testCases {
