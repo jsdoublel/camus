@@ -13,11 +13,15 @@ number of quartets from $\mathcal{G}$ that respects the constraint tree $T$.
 
 CAMUS should be able to build on any operating system, though it has only been
 tested on Linux. It is implemented in the Go programming language (which can be
-installed [here](https://go.dev/doc/install)) and additionally requires
-[gotree](https://github.com/evolbioinfo/gotree) and
-[go-isatty](https://github.com/mattn/go-isatty).
+installed [here](https://go.dev/doc/install)).
 
-There is three methods for installing go. 
+Additionally, CAMUS depends on the following three go modules:
+
+- [bitset](https://github.com/bits-and-blooms/bitset)
+- [go-isatty](https://github.com/mattn/go-isatty).
+- [gotree](https://github.com/evolbioinfo/gotree) 
+
+There are three methods for installing go. 
 
 ### Using Go's package manager
 

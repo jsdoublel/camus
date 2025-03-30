@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bits-and-blooms/bitset"
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
-	"github.com/fredericlemoine/bitset"
 
 	"github.com/jsdoublel/camus/qrt"
 )
