@@ -2,6 +2,7 @@ package prep
 
 import (
 	"github.com/evolbioinfo/gotree/tree"
+	"github.com/fredericlemoine/bitset"
 
 	"github.com/jsdoublel/camus/qrt"
 )
@@ -14,9 +15,10 @@ type TreeData struct {
 	QuartetSet    [][]*qrt.Quartet      // Quartets relevant for each subtree
 	QuartetCounts *map[qrt.Quartet]uint // Count of each unqiue quartet topology
 	Depths        []int                 // Distance from all nodes to the root
-	leafsets      [][]bool              // Leaves under each node
+	leafsets      []*bitset.BitSet      // Leaves under each node
 	lca           [][]int               // LCA for each pair of node id
-	tipIndexMap   map[int]int
+	tipIndexMap   map[int]int           // Tip index to node id map
+	NLeaves       int                   // Number of leaves
 }
 
 func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
@@ -28,9 +30,18 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
 	idMap := mapIdToNodes(tre)
 	qSets := mapQuartetsToVertices(tre, qCounts, leafsets)
 	tipIndexMap := makeTipIndexMap(tre)
-	return &TreeData{Tree: tre, Root: root, Children: children, lca: lca,
-		leafsets: leafsets, IdToNodes: idMap, Depths: depths,
-		QuartetSet: qSets, QuartetCounts: qCounts, tipIndexMap: tipIndexMap}
+	return &TreeData{Tree: tre,
+		Root:          root,
+		Children:      children,
+		lca:           lca,
+		leafsets:      leafsets,
+		IdToNodes:     idMap,
+		Depths:        depths,
+		QuartetSet:    qSets,
+		QuartetCounts: qCounts,
+		tipIndexMap:   tipIndexMap,
+		NLeaves:       len(tre.AllTipNames()),
+	}
 }
 
 // Create mapping from id to node pointer
@@ -87,21 +98,19 @@ func getChildren(node *tree.Node) []*tree.Node {
 }
 
 // Calculates the leafset for every node
-func calcLeafset(tre *tree.Tree, children [][]*tree.Node) [][]bool {
+func calcLeafset(tre *tree.Tree, children [][]*tree.Node) []*bitset.BitSet {
 	nLeaves, err := tre.NbTips()
 	if err != nil {
 		panic(err)
 	}
 	nNodes := len(tre.Nodes())
-	leafset := make([][]bool, nNodes)
+	leafset := make([]*bitset.BitSet, nNodes)
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-		leafset[cur.Id()] = make([]bool, nLeaves)
+		leafset[cur.Id()] = bitset.New(uint(nLeaves))
 		if cur.Tip() {
-			leafset[cur.Id()][cur.TipIndex()] = true
+			leafset[cur.Id()].Set(uint(cur.TipIndex()))
 		} else {
-			for i := range nLeaves {
-				leafset[cur.Id()][i] = leafset[children[cur.Id()][0].Id()][i] || leafset[children[cur.Id()][1].Id()][i]
-			}
+			leafset[cur.Id()] = leafset[children[cur.Id()][0].Id()].Union(leafset[children[cur.Id()][1].Id()])
 		}
 		return true
 	})
@@ -153,7 +162,7 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[qrt.Quartet]uint, leafsets [][]bool) [][]*qrt.Quartet {
+func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[qrt.Quartet]uint, leafsets []*bitset.BitSet) [][]*qrt.Quartet {
 	qSets := make([][]*qrt.Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
@@ -166,7 +175,8 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[qrt.Quartet]uint, leafse
 			for i := range 4 {
 				if q.Taxa[i] >= n {
 					panic("cannot map quartet taxa to constraint tree")
-				} else if leafsets[cur.Id()][q.Taxa[i]] {
+				} else if leafsets[cur.Id()].Test(uint(q.Taxa[i])) {
+					// } else if leafsets[cur.Id()][q.Taxa[i]] {
 					found++
 				}
 			}
@@ -189,7 +199,7 @@ func makeTipIndexMap(tre *tree.Tree) map[int]int {
 }
 
 func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
-	return td.leafsets[n1ID][n2ID]
+	return td.leafsets[n1ID].Test(uint(n2ID))
 }
 
 // Takes in the node ids of two nodes and returns the id of the LCA
@@ -212,16 +222,13 @@ func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
 	panic("failed to find node sibling")
 }
 
-func (td *TreeData) NLeaves() int {
-	return len(td.leafsets[0])
-}
-
 // Returns leafset as string for printing/testing
 func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	result := "{"
 	tips := td.Tree.AllTipNames()
-	for i, t := range td.leafsets[n.Id()] {
-		if t {
+	for i := range len(tips) {
+		// for i, t := range td.leafsets[n.Id()] {
+		if td.leafsets[n.Id()].Test(uint(i)) {
 			result += tips[i] + ","
 		}
 	}

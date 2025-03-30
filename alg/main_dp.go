@@ -153,7 +153,7 @@ func (dp *DP) quartetScore(q *qrt.Quartet, u, w, v, wSub *tree.Node) bool {
 			lcaDepths[k] = dp.TreeData.Depths[k]
 		}
 	}
-	nLeaves := dp.TreeData.NLeaves()
+	nLeaves := dp.TreeData.NLeaves
 	minW, maxU, bestTaxa := nLeaves, -1, -1
 	taxaInU := false
 	for _, t := range q.Taxa {

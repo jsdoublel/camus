@@ -2,6 +2,7 @@ package net
 
 import (
 	"fmt"
+	// "log"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
@@ -39,9 +40,25 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
 		}
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
-	deleteAllBranchLengths(td.Tree)
+	cleanTree(td.Tree)
 	return &Network{Backbone: td.Tree, Reticulations: branches}
 }
+
+// // https://github.com/smirarab/ASTRAL/blob/068a4b2497f61c866c4727bfbfd78b4361ba27c8/main/phylonet/coalescent/Utils.java#L149
+// // or maybe QuartetStats
+// func (ntw *Network) CalculateSupport(gtrees []*tree.Tree) {
+// 	log.Println("calculating quartet support")
+// 	nLeaves, err := ntw.Backbone.NbTips()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	ntw.Backbone.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+// 		if !cur.Tip() && e != nil {
+// 			panic("not implemented")
+// 		}
+// 		return true
+// 	})
+// }
 
 func (ntw *Network) Newick() string {
 	nwk := ntw.Backbone.Newick()
@@ -51,7 +68,7 @@ func (ntw *Network) Newick() string {
 }
 
 // Deletes all branch lengths and support values (since they might be missleading)
-func deleteAllBranchLengths(tre *tree.Tree) {
+func cleanTree(tre *tree.Tree) {
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if e != nil {
 			e.SetSupport(tree.NIL_SUPPORT)

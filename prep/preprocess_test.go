@@ -9,6 +9,7 @@ import (
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
+	"github.com/fredericlemoine/bitset"
 
 	"github.com/jsdoublel/camus/qrt"
 )
@@ -309,7 +310,7 @@ func lcaEqualityTester(lca [][]int, testLCA map[string][][]string, tre *tree.Tre
 	return true, nil
 }
 
-func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tre *tree.Tree) (bool, error) {
+func leafsetEqualityTester(leafset []*bitset.BitSet, testLeafset map[string][]string, tre *tree.Tree) (bool, error) {
 	for k, v := range testLeafset {
 		node, err := getNode(k, tre)
 		if err != nil {
@@ -321,7 +322,7 @@ func leafsetEqualityTester(leafset [][]bool, testLeafset map[string][]string, tr
 			if err != nil {
 				return false, err
 			}
-			if !leafsetList[id] {
+			if !leafsetList.Test(uint(id)) {
 				return false, nil
 			}
 		}
