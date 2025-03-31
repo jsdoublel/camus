@@ -2,7 +2,6 @@ package net
 
 import (
 	"fmt"
-	// "log"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
@@ -11,7 +10,7 @@ import (
 )
 
 type Network struct {
-	Backbone      *tree.Tree // computed data from dp
+	ExTree        *tree.Tree // tree from extended newick
 	Reticulations [][2]int   // reticulation branches
 }
 
@@ -41,27 +40,11 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
 	cleanTree(td.Tree)
-	return &Network{Backbone: td.Tree, Reticulations: branches}
+	return &Network{ExTree: td.Tree, Reticulations: branches}
 }
 
-// // https://github.com/smirarab/ASTRAL/blob/068a4b2497f61c866c4727bfbfd78b4361ba27c8/main/phylonet/coalescent/Utils.java#L149
-// // or maybe QuartetStats
-// func (ntw *Network) CalculateSupport(gtrees []*tree.Tree) {
-// 	log.Println("calculating quartet support")
-// 	nLeaves, err := ntw.Backbone.NbTips()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	ntw.Backbone.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-// 		if !cur.Tip() && e != nil {
-// 			panic("not implemented")
-// 		}
-// 		return true
-// 	})
-// }
-
 func (ntw *Network) Newick() string {
-	nwk := ntw.Backbone.Newick()
+	nwk := ntw.ExTree.Newick()
 	nwk = strings.ReplaceAll(nwk, "####,", "")
 	nwk = strings.ReplaceAll(nwk, ",####", "")
 	return nwk

@@ -14,7 +14,6 @@ type Quartet struct {
 
 const (
 	NTaxa = 4
-	NTopo = 3
 
 	// Possible results for quartet comparison (currently unused)
 	Qeq   = iota // quartets equal
@@ -112,9 +111,6 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 // Create quartet from gotree *tree.Quartet
 func quartetFromTreeQ(tq *tree.Quartet, constMap []int) *Quartet {
 	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
-	// idToBool := make(map[int]bool)
-	// idToBool[taxaIDs[0]] = true
-	// idToBool[taxaIDs[1]] = true
 	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs)}
 }
 
@@ -138,7 +134,7 @@ func mapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
 	return idMap, nil
 }
 
-/* Not efficent, do no use except for testing !!! */
+// Not efficent, do no use except for testing !!!
 func (q *Quartet) String(tre *tree.Tree) string {
 	names := make(map[int]string)
 	for _, u := range tre.Tips() {

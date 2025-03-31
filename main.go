@@ -34,7 +34,7 @@ import (
 	"github.com/jsdoublel/camus/prep"
 )
 
-var version = "v0.1.2"
+var version = "v0.1.3"
 
 type args struct {
 	treeFile     string
