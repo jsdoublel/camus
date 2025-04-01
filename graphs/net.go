@@ -1,12 +1,10 @@
-package net
+package graphs
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
-
-	"github.com/jsdoublel/camus/prep"
 )
 
 type Network struct {
@@ -14,9 +12,9 @@ type Network struct {
 	Reticulations [][2]int   // reticulation branches
 }
 
-// Makes extended newick network out of newick tree and branch data in somewhat
-// hacky way.
-func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
+// Makes extended newick network out of newick tree and branch data computed by
+// the CAMUS algorithm
+func MakeNetwork(td *TreeData, branches [][2]int) *Network {
 	for i, branch := range branches {
 		u, w := td.IdToNodes[branch[0]], td.IdToNodes[branch[1]]
 		uEdge, err := u.ParentEdge()

@@ -11,18 +11,18 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 
 	"github.com/jsdoublel/camus/prep"
-	"github.com/jsdoublel/camus/qrt"
+	"github.com/jsdoublel/camus/graphs"
 )
 
 type DP struct {
-	DP       []uint         // score for each dp subproblem
-	Branches [][2]int       // branch for each dp subproblem
-	TreeData *prep.TreeData // preprocessed data for our constraint tree
+	DP       []uint        // score for each dp subproblem
+	Branches [][2]int      // branch for each dp subproblem
+	TreeData *graphs.TreeData // preprocessed data for our constraint tree
 }
 
 // Runs CAMUS algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
-func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*prep.TreeData, [][2]int, error) {
+func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, [][2]int, error) {
 	log.Print("beginning data preprocessing\n")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
@@ -123,7 +123,7 @@ func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	return score
 }
 
-func (dp *DP) quartetScore(q *qrt.Quartet, u, w, v, wSub *tree.Node) bool {
+func (dp *DP) quartetScore(q *graphs.Quartet, u, w, v, wSub *tree.Node) bool {
 	bottom, bi, unique := dp.uniqueTaxaBelowNodeFromQ(w, q)
 	if !unique || bottom == -1 {
 		return false
@@ -171,7 +171,7 @@ func (dp *DP) quartetScore(q *qrt.Quartet, u, w, v, wSub *tree.Node) bool {
 }
 
 // Returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa)
-func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *qrt.Quartet) (int, int, bool) {
+func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *graphs.Quartet) (int, int, bool) {
 	taxaID, taxaIndex := -1, -1
 	for i, t := range q.Taxa {
 		if dp.TreeData.InLeafset(n.Id(), t) && taxaID == -1 {
@@ -184,7 +184,7 @@ func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *qrt.Quartet) (int, int, 
 }
 
 // Return neighbor of taxa at index i in quartet
-func neighborTaxaQ(q *qrt.Quartet, i int) int {
+func neighborTaxaQ(q *graphs.Quartet, i int) int {
 	b := (q.Topology >> i) % 2
 	for j := range 4 {
 		if j != i && (q.Topology>>j)%2 == b {

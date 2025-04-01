@@ -1,4 +1,4 @@
-package qrt
+package graphs
 
 import (
 	"errors"

@@ -7,8 +7,8 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/net"
 	"github.com/jsdoublel/camus/prep"
+	"github.com/jsdoublel/camus/graphs"
 )
 
 func TestCAMUS(t *testing.T) {
@@ -124,7 +124,7 @@ func TestCAMUS(t *testing.T) {
 		if err != nil {
 			t.Errorf("CAMUS failed with error %s", err)
 		}
-		result := net.MakeNetwork(td, edges).Newick()
+		result := graphs.MakeNetwork(td, edges).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}

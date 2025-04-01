@@ -8,14 +8,14 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/qrt"
+	"github.com/jsdoublel/camus/graphs"
 )
 
 var ErrInvalidTree = errors.New("invalid tree")
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
 		return nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
@@ -30,18 +30,18 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*TreeData, error) {
 	if err != nil {
 		return nil, err
 	}
-	treeData := MakeTreeData(tre, qCounts)
+	treeData := graphs.MakeTreeData(tre, qCounts)
 	return treeData, nil
 }
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]uint, error) {
-	treeQuartets, err := qrt.QuartetsFromTree(tre.Clone(), tre)
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quartet]uint, error) {
+	treeQuartets, err := graphs.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qCounts := make(map[qrt.Quartet]uint)
+	qCounts := make(map[graphs.Quartet]uint)
 	countTotal := len(geneTrees)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
@@ -52,7 +52,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[qrt.Quartet]u
 			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
 		gt.UpdateTipIndex()
-		newQuartets, err := qrt.QuartetsFromTree(gt, tre)
+		newQuartets, err := graphs.QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +88,7 @@ func isBinary(node *tree.Node) bool {
 	if node.Nneigh() != 3 {
 		return false
 	}
-	children := getChildren(node)
+	children := graphs.GetChildren(node)
 	return isBinary(children[0]) && isBinary(children[1])
 }
 

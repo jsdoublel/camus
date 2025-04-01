@@ -30,8 +30,8 @@ import (
 	"github.com/mattn/go-isatty"
 
 	"github.com/jsdoublel/camus/alg"
-	"github.com/jsdoublel/camus/net"
 	"github.com/jsdoublel/camus/prep"
+	"github.com/jsdoublel/camus/graphs"
 )
 
 var version = "v0.1.3"
@@ -49,8 +49,8 @@ func parseArgs() args {
 			"usage: camus [-h| -v] <constraint_tree> <gene_trees>\n",
 			"\n",
 			"positional arguments (required):\n\n",
-			"\t<constraint_tree>        constraint newick tree\n",
-			"\t<gene_trees>             gene tree newick file\n",
+			"  <constraint_tree>\tconstraint newick tree\n",
+			"  <gene_trees>\t\tgene tree newick file\n",
 			"\n",
 			"flags:\n\n",
 		)
@@ -58,7 +58,7 @@ func parseArgs() args {
 		fmt.Fprint(os.Stderr,
 			"\n",
 			"example:\n\n",
-			"\tcamus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt\n",
+			"  camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt\n",
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -101,5 +101,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
-	fmt.Println(net.MakeNetwork(td, branches).Newick())
+	fmt.Println(graphs.MakeNetwork(td, branches).Newick())
 }

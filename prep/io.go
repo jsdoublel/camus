@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jsdoublel/camus/graphs"
+
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 )
@@ -71,4 +73,9 @@ func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 		return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidTreeFile, genetreesFile)
 	}
 	return genetreeList, nil
+}
+
+// Read in extended newick file and make network
+func ReadNetworkFile(networkFile string) *graphs.Network {
+	return nil
 }

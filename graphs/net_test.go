@@ -1,13 +1,10 @@
-package net
+package graphs
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
-	"github.com/evolbioinfo/gotree/tree"
-
-	"github.com/jsdoublel/camus/prep"
 )
 
 func TestMakeNetwork(t *testing.T) {
@@ -31,10 +28,8 @@ func TestMakeNetwork(t *testing.T) {
 				t.Fatalf("%s cannot be parsed as newick. Test case is written incorrectly", test.constTree)
 			}
 			t.Logf("root %s", constTree.Root().Name())
-			td, err := prep.Preprocess(constTree, []*tree.Tree{})
-			if err != nil {
-				t.Fatalf("%s can not be evaluated (err: %s). Test case is written incorrectly", constTree.Newick(), err)
-			}
+			constTree.UpdateTipIndex()
+			td := MakeTreeData(constTree, nil)
 			edges := make([][2]int, len(test.edges))
 			for i, edge := range test.edges {
 				u, err := constTree.SelectNodes(edge[0])

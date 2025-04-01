@@ -1,36 +1,34 @@
-package prep
+package graphs
 
 import (
 	"github.com/bits-and-blooms/bitset"
 	"github.com/evolbioinfo/gotree/tree"
-
-	"github.com/jsdoublel/camus/qrt"
 )
 
 type TreeData struct {
-	Tree          *tree.Tree            // Tree object
-	Root          *tree.Node            // Root for which data is calculated
-	Children      [][]*tree.Node        // Children for each node
-	IdToNodes     []*tree.Node          // Mapping between id and node pointer
-	quartetSet    [][]*qrt.Quartet      // Quartets relevant for each subtree
-	quartetCounts *map[qrt.Quartet]uint // Count of each unique quartet topology
-	Depths        []int                 // Distance from all nodes to the root
-	leafsets      []*bitset.BitSet      // Leaves under each node
-	lca           [][]int               // LCA for each pair of node id
-	tipIndexMap   map[int]int           // Tip index to node id map
-	NLeaves       int                   // Number of leaves
+	Tree          *tree.Tree        // Tree object
+	Root          *tree.Node        // Root for which data is calculated
+	Children      [][]*tree.Node    // Children for each node
+	IdToNodes     []*tree.Node      // Mapping between id and node pointer
+	quartetSet    [][]*Quartet      // Quartets relevant for each subtree
+	quartetCounts *map[Quartet]uint // Count of each unique quartet topology
+	Depths        []int             // Distance from all nodes to the root
+	leafsets      []*bitset.BitSet  // Leaves under each node
+	lca           [][]int           // LCA for each pair of node id
+	tipIndexMap   map[int]int       // Tip index to node id map
+	NLeaves       int               // Number of leaves
 }
 
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
 // don't need quartets.
-func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
+func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
-	var qSets [][]*qrt.Quartet
+	var qSets [][]*Quartet
 	if qCounts != nil {
 		qSets = mapQuartetsToVertices(tre, qCounts, leafsets)
 	}
@@ -78,7 +76,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 		if cur.Tip() {
 			children[cur.Id()] = []*tree.Node{nil, nil}
 		} else {
-			children[cur.Id()] = getChildren(cur)
+			children[cur.Id()] = GetChildren(cur)
 		}
 		return true
 	})
@@ -86,7 +84,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 }
 
 // Get children of node
-func getChildren(node *tree.Node) []*tree.Node {
+func GetChildren(node *tree.Node) []*tree.Node {
 	children := make([]*tree.Node, 0)
 	p, err := node.Parent()
 	if err != nil && err.Error() == "The node has more than one parent" {
@@ -167,14 +165,14 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[qrt.Quartet]uint, leafsets []*bitset.BitSet) [][]*qrt.Quartet {
-	qSets := make([][]*qrt.Quartet, len(tre.Nodes()))
+func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[Quartet]uint, leafsets []*bitset.BitSet) [][]*Quartet {
+	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
 		panic(err)
 	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-		qSets[cur.Id()] = make([]*qrt.Quartet, 0)
+		qSets[cur.Id()] = make([]*Quartet, 0)
 		for q := range *qCounts {
 			found := 0
 			for i := range 4 {
@@ -245,7 +243,7 @@ func (td *TreeData) NodeID(idx int) int {
 }
 
 // Get quartets corresponding to a given node (by id)
-func (td *TreeData) Quartets(nid int) []*qrt.Quartet {
+func (td *TreeData) Quartets(nid int) []*Quartet {
 	if td.quartetSet == nil {
 		panic("quartet set never initialized")
 	}
@@ -253,7 +251,7 @@ func (td *TreeData) Quartets(nid int) []*qrt.Quartet {
 }
 
 // Get count of quartets with a particular topology
-func (td *TreeData) NumQuartet(q *qrt.Quartet) uint {
+func (td *TreeData) NumQuartet(q *Quartet) uint {
 	if td.quartetSet == nil {
 		panic("quartet counts never initialized")
 	}
