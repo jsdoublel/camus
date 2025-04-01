@@ -41,6 +41,8 @@ type args struct {
 	geneTreeFile string
 }
 
+var ErrMessage = fmt.Sprintf("[%s]:", red("error"))
+
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
@@ -56,7 +58,7 @@ func parseArgs() args {
 		fmt.Fprint(os.Stderr,
 			"\n",
 			"example:\n\n",
-			"\tcamus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt",
+			"\tcamus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt\n",
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -72,7 +74,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
-		fmt.Fprintln(os.Stderr, red("invalid:"), "two positional arguments required: <constraint_tree> <gene_tree_file>")
+		fmt.Fprintf(os.Stderr, "%s two positional arguments required: <constraint_tree> <gene_tree_file>\n", ErrMessage)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -92,13 +94,12 @@ func main() {
 	args := parseArgs()
 	log.Printf("CAMUS version %s", version)
 	constTree, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile)
-	errMsg := red("Sisyphus was not happy :(")
 	if err != nil {
-		log.Fatalf(errMsg+" %s\n", err)
+		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
 	td, branches, err := alg.CAMUS(constTree, geneTrees)
 	if err != nil {
-		log.Fatalf(errMsg+" %s\n", err)
+		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
 	fmt.Println(net.MakeNetwork(td, branches).Newick())
 }
