@@ -255,7 +255,7 @@ func TestProcessTreeData(t *testing.T) {
 			treeData := MakeTreeData(tre, qs)
 			lca := treeData.lca
 			leafset := treeData.leafsets
-			quartetSets := treeData.QuartetSet
+			quartetSets := treeData.quartetSet
 			nLeaves := len(lca)
 			for i := range nLeaves {
 				for j := range nLeaves {

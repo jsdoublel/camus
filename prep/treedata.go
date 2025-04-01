@@ -12,8 +12,8 @@ type TreeData struct {
 	Root          *tree.Node            // Root for which data is calculated
 	Children      [][]*tree.Node        // Children for each node
 	IdToNodes     []*tree.Node          // Mapping between id and node pointer
-	QuartetSet    [][]*qrt.Quartet      // Quartets relevant for each subtree
-	QuartetCounts *map[qrt.Quartet]uint // Count of each unqiue quartet topology
+	quartetSet    [][]*qrt.Quartet      // Quartets relevant for each subtree
+	quartetCounts *map[qrt.Quartet]uint // Count of each unique quartet topology
 	Depths        []int                 // Distance from all nodes to the root
 	leafsets      []*bitset.BitSet      // Leaves under each node
 	lca           [][]int               // LCA for each pair of node id
@@ -21,6 +21,8 @@ type TreeData struct {
 	NLeaves       int                   // Number of leaves
 }
 
+// Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
+// don't need quartets.
 func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
@@ -28,7 +30,10 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
-	qSets := mapQuartetsToVertices(tre, qCounts, leafsets)
+	var qSets [][]*qrt.Quartet
+	if qCounts != nil {
+		qSets = mapQuartetsToVertices(tre, qCounts, leafsets)
+	}
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: tre,
 		Root:          root,
@@ -37,8 +42,8 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
 		leafsets:      leafsets,
 		IdToNodes:     idMap,
 		Depths:        depths,
-		QuartetSet:    qSets,
-		QuartetCounts: qCounts,
+		quartetSet:    qSets,
+		quartetCounts: qCounts,
 		tipIndexMap:   tipIndexMap,
 		NLeaves:       len(tre.AllTipNames()),
 	}
@@ -237,4 +242,20 @@ func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 
 func (td *TreeData) NodeID(idx int) int {
 	return td.tipIndexMap[idx]
+}
+
+// Get quartets corresponding to a given node (by id)
+func (td *TreeData) Quartets(nid int) []*qrt.Quartet {
+	if td.quartetSet == nil {
+		panic("quartet set never initialized")
+	}
+	return td.quartetSet[nid]
+}
+
+// Get count of quartets with a particular topology
+func (td *TreeData) NumQuartet(q *qrt.Quartet) uint {
+	if td.quartetSet == nil {
+		panic("quartet counts never initialized")
+	}
+	return (*td.quartetCounts)[*q]
 }
