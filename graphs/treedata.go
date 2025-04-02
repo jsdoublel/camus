@@ -112,8 +112,12 @@ func calcLeafset(tre *tree.Tree, children [][]*tree.Node) []*bitset.BitSet {
 		leafset[cur.Id()] = bitset.New(uint(nLeaves))
 		if cur.Tip() {
 			leafset[cur.Id()].Set(uint(cur.TipIndex()))
-		} else {
+		} else if len(children[cur.Id()]) == 1 {
+			leafset[cur.Id()] = leafset[children[cur.Id()][0].Id()]
+		} else if len(children[cur.Id()]) == 2 {
 			leafset[cur.Id()] = leafset[children[cur.Id()][0].Id()].Union(leafset[children[cur.Id()][1].Id()])
+		} else {
+			panic("more than two children when calculating bitset")
 		}
 		return true
 	})
@@ -132,19 +136,34 @@ func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 		below[cur.Id()][cur.Id()] = true
 		lca[cur.Id()][cur.Id()] = cur.Id()
 		if !cur.Tip() {
-			leftId, rightId := children[cur.Id()][0].Id(), children[cur.Id()][1].Id()
-			for i := range nNodes {
-				below[cur.Id()][i] = below[leftId][i] || below[rightId][i] || i == cur.Id()
-			}
-			for i := range nNodes {
-				for j := range nNodes {
-					if below[leftId][i] && below[rightId][j] ||
-						i == cur.Id() && below[rightId][j] ||
-						i == cur.Id() && below[leftId][j] {
-						lca[i][j] = cur.Id()
-						lca[j][i] = cur.Id()
+			if len(children[cur.Id()]) == 1 {
+				cId := children[cur.Id()][0].Id()
+				for i := range nNodes {
+					below[cur.Id()][i] = below[cId][i] || i == cur.Id()
+				}
+				for i := range nNodes {
+					if below[cId][i] {
+						lca[i][cur.Id()] = cur.Id()
+						lca[cur.Id()][i] = cur.Id()
 					}
 				}
+			} else if len(children[cur.Id()]) == 2 {
+				leftId, rightId := children[cur.Id()][0].Id(), children[cur.Id()][1].Id()
+				for i := range nNodes {
+					below[cur.Id()][i] = below[leftId][i] || below[rightId][i] || i == cur.Id()
+				}
+				for i := range nNodes {
+					for j := range nNodes {
+						if below[leftId][i] && below[rightId][j] ||
+							i == cur.Id() && below[rightId][j] ||
+							i == cur.Id() && below[leftId][j] {
+							lca[i][j] = cur.Id()
+							lca[j][i] = cur.Id()
+						}
+					}
+				}
+			} else {
+				panic("too many children for lca")
 			}
 		}
 		return true

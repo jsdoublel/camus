@@ -2,7 +2,7 @@
 // following naming convention for some variables throughout. v always
 // represents the vertex corresponding to the current subproblem. At vertex v
 // we consider adding a directed edge from u -> w.
-package alg
+package infer
 
 import (
 	"fmt"
@@ -10,13 +10,13 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/prep"
 	"github.com/jsdoublel/camus/graphs"
+	"github.com/jsdoublel/camus/prep"
 )
 
 type DP struct {
-	DP       []uint        // score for each dp subproblem
-	Branches [][2]int      // branch for each dp subproblem
+	DP       []uint           // score for each dp subproblem
+	Branches [][2]int         // branch for each dp subproblem
 	TreeData *graphs.TreeData // preprocessed data for our constraint tree
 }
 
@@ -116,67 +116,71 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.Quartets(v.Id()) {
-		if dp.quartetScore(q, u, w, v, wSub) {
+		if QuartetScore(q, u, w, v, wSub, dp.TreeData) == graphs.Qeq {
 			score += dp.TreeData.NumQuartet(q)
 		}
 	}
 	return score
 }
 
-func (dp *DP) quartetScore(q *graphs.Quartet, u, w, v, wSub *tree.Node) bool {
-	bottom, bi, unique := dp.uniqueTaxaBelowNodeFromQ(w, q)
+func QuartetScore(q *graphs.Quartet, u, w, v, wSub *tree.Node, td *graphs.TreeData) int {
+	bottom, bi, unique := uniqueTaxaBelowNodeFromQ(w, q, td)
 	if !unique || bottom == -1 {
-		return false
+		return graphs.Qdiff
 	}
 	cycleNodes := make(map[int]bool)
 	taxaToLCA := make(map[int]int) // tip index -> lca
 	for _, t := range q.Taxa {
-		tID := dp.TreeData.NodeID(t)
+		tID := td.NodeID(t)
 		var lca int
-		if !dp.TreeData.InLeafset(v.Id(), t) {
+		if !td.InLeafset(v.Id(), t) {
 			lca = 0
-		} else if dp.TreeData.InLeafset(wSub.Id(), t) || dp.TreeData.InLeafset(u.Id(), bottom) {
-			lca = dp.TreeData.LCA(w.Id(), tID)
+		} else if td.InLeafset(wSub.Id(), t) || td.InLeafset(u.Id(), bottom) {
+			lca = td.LCA(w.Id(), tID)
 		} else {
-			lca = dp.TreeData.LCA(u.Id(), tID)
+			lca = td.LCA(u.Id(), tID)
 		}
 		cycleNodes[lca] = true
 		taxaToLCA[t] = lca
 	}
 	if len(cycleNodes) != 4 {
-		return false
+		return graphs.Qdiff
 	}
 	neighbor := neighborTaxaQ(q, bi)
 	lcaDepths := make(map[int]int) // node ID -> depth
 	for k, v := range cycleNodes {
 		if v {
-			lcaDepths[k] = dp.TreeData.Depths[k]
+			lcaDepths[k] = td.Depths[k]
 		}
 	}
-	nLeaves := dp.TreeData.NLeaves
+	nLeaves := td.NLeaves
 	minW, maxU, bestTaxa := nLeaves, -1, -1
 	taxaInU := false
 	for _, t := range q.Taxa {
 		d := lcaDepths[taxaToLCA[t]]
-		if !taxaInU && (dp.TreeData.InLeafset(wSub.Id(), t) && d < minW) {
+		if !taxaInU && (td.InLeafset(wSub.Id(), t) && d < minW) {
 			minW = d
 			bestTaxa = t
-		} else if !dp.TreeData.InLeafset(wSub.Id(), t) && d > maxU {
+		} else if !td.InLeafset(wSub.Id(), t) && d > maxU {
 			taxaInU = true
 			maxU = d
 			bestTaxa = t
 		}
 	}
-	return bestTaxa == neighbor
+	if bestTaxa == neighbor {
+		return graphs.Qeq
+	} else {
+		return graphs.Qneq
+	}
 }
 
 // Returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa)
-func (dp *DP) uniqueTaxaBelowNodeFromQ(n *tree.Node, q *graphs.Quartet) (int, int, bool) {
+func uniqueTaxaBelowNodeFromQ(n *tree.Node, q *graphs.Quartet, td *graphs.TreeData) (int, int, bool) {
 	taxaID, taxaIndex := -1, -1
 	for i, t := range q.Taxa {
-		if dp.TreeData.InLeafset(n.Id(), t) && taxaID == -1 {
+		if td.InLeafset(n.Id(), t) && taxaID == -1 {
 			taxaID, taxaIndex = t, i
-		} else if dp.TreeData.InLeafset(n.Id(), t) {
+		} else if td.InLeafset(n.Id(), t) {
 			return taxaID, taxaIndex, false
 		}
 	}

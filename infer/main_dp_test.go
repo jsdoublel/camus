@@ -1,4 +1,4 @@
-package alg
+package infer
 
 import (
 	"strings"
@@ -7,8 +7,8 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/prep"
 	"github.com/jsdoublel/camus/graphs"
+	"github.com/jsdoublel/camus/prep"
 )
 
 func TestCAMUS(t *testing.T) {

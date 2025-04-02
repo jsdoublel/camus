@@ -29,9 +29,9 @@ import (
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/jsdoublel/camus/alg"
-	"github.com/jsdoublel/camus/prep"
 	"github.com/jsdoublel/camus/graphs"
+	"github.com/jsdoublel/camus/infer"
+	"github.com/jsdoublel/camus/prep"
 )
 
 var version = "v0.1.3"
@@ -97,7 +97,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
-	td, branches, err := alg.CAMUS(constTree, geneTrees)
+	td, branches, err := infer.CAMUS(constTree, geneTrees)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
