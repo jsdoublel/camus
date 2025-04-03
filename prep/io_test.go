@@ -94,7 +94,7 @@ func TestReadInputFiles(t *testing.T) {
 	}
 }
 
-func TestReadNetworkFile(t *testing.T) {
+func TestConvertToNetwork(t *testing.T) {
 	testCases := []struct {
 		name             string
 		networkFile      string
@@ -114,7 +114,8 @@ func TestReadNetworkFile(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			net, err := ReadNetworkFile(test.networkFile)
+			tre, err := readTreeFile(test.networkFile)
+			net, err := ConvertToNetwork(tre)
 			if err != nil {
 				t.Fatalf("test returned unexpected err %s", err)
 			}

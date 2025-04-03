@@ -20,7 +20,7 @@ func TestCalculateRecticulationScore(t *testing.T) {
 	}{
 		{
 			name:    "basic",
-			network: "../testdata/prep/net.nwk",
+			network: "(((9,0),(7,(6,(#H0,8h0u)))),((#H2,(12,((3,(14h2w)#H2),10))h2u),((((5,(#H1,13h1u)),((2h1w)#H1,11))h0w)#H0,(1,4))));",
 			gtrees: []string{
 				"((0,9),(5,7));",
 				"((5,7),(9,6));",
@@ -37,7 +37,11 @@ func TestCalculateRecticulationScore(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			ntw, err := prep.ReadNetworkFile(test.network)
+			tre, err := newick.NewParser(strings.NewReader(test.network)).Parse()
+			if err != nil {
+				t.Fatalf("invalid newick in file %s", err)
+			}
+			ntw, err := prep.ConvertToNetwork(tre)
 			if err != nil {
 				t.Fatalf("test case failed with unexpected error %s", err)
 			}

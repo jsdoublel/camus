@@ -2,9 +2,11 @@ package prep
 
 import (
 	"bufio"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/jsdoublel/camus/graphs"
@@ -76,11 +78,7 @@ func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
 }
 
 // Read in extended newick file and make network
-func ReadNetworkFile(networkFile string) (network *graphs.Network, err error) {
-	ntw, err := readTreeFile(networkFile)
-	if err != nil {
-		return nil, err
-	}
+func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 	ret := make(map[string][2]int)
 	defer func() {
 		if r := recover(); r != nil {
@@ -127,4 +125,24 @@ func ReadNetworkFile(networkFile string) (network *graphs.Network, err error) {
 	}
 	ntw.UpdateTipIndex()
 	return &graphs.Network{NetTree: ntw, Reticulations: ret}, nil
+}
+
+// Write csv file containing reticulation branch scores to stdout
+func WriteBranchScoresToCSV(scores []*map[string]float64) error {
+	header := []string{"gene tree"}
+	data := make([][]string, len(scores))
+	for k := range *scores[0] {
+		header = append(header, k)
+	}
+	for i, row := range scores {
+		data[i] = []string{strconv.Itoa(i)}
+		for _, v := range *row {
+			data[i] = append(data[i], strconv.FormatFloat(v, 'f', -1, 64))
+		}
+	}
+	writer := csv.NewWriter(os.Stdout)
+	defer writer.Flush()
+	writer.Write(header)
+	writer.WriteAll(data)
+	return nil
 }

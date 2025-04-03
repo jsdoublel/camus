@@ -22,6 +22,7 @@ func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*ma
 	reticulations := *getReticulationNodes(ntw, td)
 	results := make([]*map[string]float64, len(gtrees))
 	for i, gtre := range gtrees {
+		gtre.UpdateTipIndex()
 		totals := make(map[string]uint)
 		supported := make(map[string]uint)
 		gtre.UnRoot()
