@@ -7,6 +7,7 @@ import (
 
 	"github.com/jsdoublel/camus/graphs"
 	"github.com/jsdoublel/camus/infer"
+	"github.com/jsdoublel/camus/prep"
 )
 
 // nodes needed for scoring reticulation
@@ -22,6 +23,7 @@ func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*ma
 	reticulations := *getReticulationNodes(ntw, td)
 	results := make([]*map[string]float64, len(gtrees))
 	for i, gtre := range gtrees {
+		prep.LogEveryNPercent(i, 10, len(gtrees), fmt.Sprintf("scoring gene tree %d of %d", i, len(gtrees)))
 		gtre.UpdateTipIndex()
 		totals := make(map[string]uint)
 		supported := make(map[string]uint)

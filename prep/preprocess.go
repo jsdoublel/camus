@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 
 	"github.com/evolbioinfo/gotree/tree"
 
@@ -45,9 +46,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 	countTotal := len(geneTrees)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
-		if i%((countTotal+10)/10) == 0 {
-			log.Printf("processed %d out of %d gene trees", i, countTotal)
-		}
+		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i, countTotal))
 		if !IsSingleCopy(gt) {
 			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
@@ -99,4 +98,10 @@ func IsSingleCopy(tre *tree.Tree) bool {
 	}
 	// have to use less efficient tre.Tips() because of weird behavior of gotree with multrees
 	return len(labels) == len(tre.Tips())
+}
+
+func LogEveryNPercent(i, n, total int, message string) {
+	if (i+1)%max(total/int(math.Ceil(float64(100)/float64(n))), 1) == 0 {
+		log.Print(message)
+	}
 }

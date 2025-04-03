@@ -44,7 +44,7 @@ func (dp *DP) RunDP() [][2]int {
 	dp.TreeData.Tree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
 			count++
-			log.Printf("processing dp cell %d of %d\n", count, totalDP)
+			prep.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
 			lID, rID := dp.TreeData.Children[cur.Id()][0].Id(), dp.TreeData.Children[cur.Id()][1].Id()
 			score, branch := dp.score(cur)
 			noEdgeScore := dp.DP[lID] + dp.DP[rID]
