@@ -64,3 +64,19 @@ func TestCalculateRecticulationScore(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCalculateRecticulationScore(b *testing.B) {
+	netFile := "../testdata/benchmark/network.nwk"
+	geneTrees := "../testdata/benchmark/gene-trees.nwk"
+	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees)
+	if err != nil {
+		b.Fatalf("failed to read in input files %s", err)
+	}
+	network, err := prep.ConvertToNetwork(tre)
+	if err != nil {
+		b.Fatalf("failed to convert tree to network %s", err)
+	}
+	for i := 0; i < b.N; i++ {
+		CalculateReticulationScore(network, genes)
+	}
+}
