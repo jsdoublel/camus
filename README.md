@@ -66,7 +66,7 @@ $T$.
 
 Since these added edges are directed edges, it is a requirement that any
 quartet that contributes to the maximum contain exactly one taxa from the clade
-below by $w$---where $w$ is the vertex that the new edge points towards.
+below by $w$—where $w$ is the vertex that the new edge points towards.
 
 CAMUS has the following inputs and outputs:
 
@@ -104,21 +104,22 @@ for each branch for each gene. Support is calculated as the ratio of the
 relevant quartets from the gene that support the branch.
 
 Specifically, for each new reticulation edge $r$ creating a cycle $\gamma_r$,
-we have $\mathcal{Q}_{\gamma_r}$---the set of quartets "in" the cycle. By this
+we have $\mathcal{Q}\_{\gamma_r}$—the set of quartets "in" the cycle. By this
 we mean the set of quartets where each taxa $t$ in the quartet corresponds to a
 unique node in $\gamma_r$ that can be reached by a path from $t$ to that unique
 node, without passing through any other vertices in $\gamma_r$. We also define
-$\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}_{\gamma_r}',
-\exists q \in \mathcal{Q}_{\gamma_r}$ where $\mathcal{T}(q') = \mathcal{T}(q)$,
-but $q' \not\in  \mathcal{Q}_{\gamma_r}$, where $\mathcal{T}(q)$ is the set of
-taxa in $q$ (in short, $\mathcal{Q}_{\gamma_r}'$ is the set of quartets that
+$\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\gamma_r}',
+\exists q \in \mathcal{Q}\_{\gamma_r}$ where $\mathcal{T}(q') = \mathcal{T}(q)$,
+but $q' \not\in  \mathcal{Q}\_{\gamma_r}$, where $\mathcal{T}(q)$ is the set of
+taxa in $q$ (in short, $\mathcal{Q}\_{\gamma_r}'$ is the set of quartets that
 are relevant for $\gamma_t$, but not included in the network).
 
-Thus, given a quartet set $\mathcal{Q}_g$ from a gene tree $g$, we can
+Thus, given a quartet set $\mathcal{Q}\_g$ from a gene tree $g$, we can
 calculate the support of $g$ for $r$ as 
-$$S_{g,r} = \frac{|\mathcal{Q}_{\gamma_r} \cap
-\mathcal{Q}_g|}{|\mathcal{Q}_{\gamma_r} \cap \mathcal{Q}_g| +
-|\mathcal{Q}_{\gamma_r}' \cap \mathcal{Q}_g|}$$
+
+$$S_{g,r} = \frac{|\mathcal{Q}\_{\gamma_r} \cap
+\mathcal{Q}\_g|}{|\mathcal{Q}\_{\gamma_r} \cap \mathcal{Q}\_g| +
+|\mathcal{Q}\_{\gamma_r}' \cap \mathcal{Q}\_g|}$$
 
 As can be seen, if the inputted gene trees were simply quartets (four leaf
 newick trees), the only valid results would be 0, 1, or NaN.
