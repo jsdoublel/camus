@@ -90,17 +90,23 @@ func parseArgs() args {
 		fmt.Printf("CAMUS version %s", version)
 		os.Exit(0)
 	}
-	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" && flag.Arg(0) != "" {
-		fmt.Fprintf(os.Stderr, "%s \"%s\" is not a valid command\n", ErrMessage, flag.Arg(0))
-		flag.Usage()
-		os.Exit(1)
+	if flag.Arg(0) == "" {
+		parserError(fmt.Sprintf("%s no command given: either infer or score required", ErrMessage))
+	}
+	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" {
+		parserError(fmt.Sprintf("%s \"%s\" is not a valid command", ErrMessage, flag.Arg(0)))
 	}
 	if flag.NArg() != 3 {
-		fmt.Fprintf(os.Stderr, "%s two positional arguments required: <tree> <gene_tree_file>\n", ErrMessage)
-		flag.Usage()
-		os.Exit(1)
+		parserError(fmt.Sprintf("%s two positional arguments required: <tree> <gene_tree_file>", ErrMessage))
 	}
 	return args{command: flag.Arg(0), treeFile: flag.Arg(1), geneTreeFile: flag.Arg(2)}
+}
+
+// prints message, usage, and exits (statis code 1)
+func parserError(message string) {
+	fmt.Fprintln(os.Stderr, message)
+	flag.Usage()
+	os.Exit(1)
 }
 
 // makes text printed to terminal red
