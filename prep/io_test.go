@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/evolbioinfo/gotree/tree"
 )
 
 func TestReadInputFiles(t *testing.T) {
@@ -86,6 +88,51 @@ func TestReadInputFiles(t *testing.T) {
 				}
 				if test.nQuartets != len(quartets) {
 					t.Errorf("Wrong number of quartets read (%d != %d)", len(quartets), test.nQuartets)
+				}
+			}
+		})
+	}
+}
+
+func TestConvertToNetwork(t *testing.T) {
+	testCases := []struct {
+		name             string
+		networkFile      string
+		expNetwork       string
+		expReticulations map[string][2]string
+	}{
+		{
+			name:        "basic test",
+			networkFile: "../testdata/prep/net.nwk",
+			expNetwork:  "(((9,0),(7,(6,(#H0,8h0u)))),((#H2,(12,((3,(14h2w)#H2),10))h2u),((((5,(#H1,13h1u)),((2h1w)#H1,11))h0w)#H0,(1,4))));",
+			expReticulations: map[string][2]string{
+				"#H0": {"8h0u", "h0w"},
+				"#H1": {"13h1u", "2h1w"},
+				"#H2": {"h2u", "14h2w"},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, err := readTreeFile(test.networkFile)
+			net, err := ConvertToNetwork(tre)
+			if err != nil {
+				t.Fatalf("test returned unexpected err %s", err)
+			}
+			if net.Newick() != test.expNetwork {
+				t.Errorf("result != expected, %s != %s", net.Newick(), test.expNetwork)
+			}
+			nameMap := make(map[string]int)
+			net.NetTree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+				nameMap[cur.Name()] = cur.Id()
+				return true
+			})
+			for k, v := range test.expReticulations {
+				for i := range 2 {
+					id := nameMap[v[i]]
+					if net.Reticulations[k][i] != id {
+						t.Errorf("%s mapped to %d when it should have mapped to %d", k, net.Reticulations[k][i], id)
+					}
 				}
 			}
 		})

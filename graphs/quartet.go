@@ -1,4 +1,4 @@
-package qrt
+package graphs
 
 import (
 	"errors"
@@ -16,8 +16,8 @@ const (
 	NTaxa = 4
 
 	// Possible results for quartet comparison (currently unused)
-	Qeq   = iota // quartets equal
-	Qneq         // quartets not equal
+	Qneq  = iota // quartets equal
+	Qeq          // quartets not equal
 	Qdiff        // quartets on different taxa set
 
 	Qtopo1 = uint8(0b1100)
@@ -98,23 +98,23 @@ func sortTaxa(arr *[4]int) uint8 {
 func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 	tre.UnRoot()                           // some quartets are missed if tree is rooted
 	treeQuartets := make(map[Quartet]uint) // get quartets from tree
-	taxaIDsMap, err := mapIDsFromConstTree(tre, constTree)
+	taxaIDsMap, err := MapIDsFromConstTree(tre, constTree)
 	if err != nil {
 		return nil, err
 	}
 	tre.Quartets(false, func(q *tree.Quartet) {
-		treeQuartets[*quartetFromTreeQ(q, taxaIDsMap)] = 1
+		treeQuartets[*QuartetFromTreeQ(q, taxaIDsMap)] = 1
 	})
 	return treeQuartets, nil
 }
 
 // Create quartet from gotree *tree.Quartet
-func quartetFromTreeQ(tq *tree.Quartet, constMap []int) *Quartet {
+func QuartetFromTreeQ(tq *tree.Quartet, constMap []int) *Quartet {
 	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
 	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs)}
 }
 
-func mapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
+func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
 	nLeavesGtree, err := gtre.NbTips()
 	if err != nil {
 		panic(fmt.Sprintf("gene tree %s", err))

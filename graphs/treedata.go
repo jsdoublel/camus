@@ -1,34 +1,37 @@
-package prep
+package graphs
 
 import (
 	"github.com/bits-and-blooms/bitset"
 	"github.com/evolbioinfo/gotree/tree"
-
-	"github.com/jsdoublel/camus/qrt"
 )
 
 type TreeData struct {
-	Tree          *tree.Tree            // Tree object
-	Root          *tree.Node            // Root for which data is calculated
-	Children      [][]*tree.Node        // Children for each node
-	IdToNodes     []*tree.Node          // Mapping between id and node pointer
-	QuartetSet    [][]*qrt.Quartet      // Quartets relevant for each subtree
-	QuartetCounts *map[qrt.Quartet]uint // Count of each unqiue quartet topology
-	Depths        []int                 // Distance from all nodes to the root
-	leafsets      []*bitset.BitSet      // Leaves under each node
-	lca           [][]int               // LCA for each pair of node id
-	tipIndexMap   map[int]int           // Tip index to node id map
-	NLeaves       int                   // Number of leaves
+	Tree          *tree.Tree        // Tree object
+	Root          *tree.Node        // Root for which data is calculated
+	Children      [][]*tree.Node    // Children for each node
+	IdToNodes     []*tree.Node      // Mapping between id and node pointer
+	quartetSet    [][]*Quartet      // Quartets relevant for each subtree
+	quartetCounts *map[Quartet]uint // Count of each unique quartet topology
+	Depths        []int             // Distance from all nodes to the root
+	leafsets      []*bitset.BitSet  // Leaves under each node
+	lca           [][]int           // LCA for each pair of node id
+	tipIndexMap   map[int]int       // Tip index to node id map
+	NLeaves       int               // Number of leaves
 }
 
-func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
+// Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
+// don't need quartets.
+func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
 	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
-	qSets := mapQuartetsToVertices(tre, qCounts, leafsets)
+	var qSets [][]*Quartet
+	if qCounts != nil {
+		qSets = mapQuartetsToVertices(tre, qCounts, leafsets)
+	}
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: tre,
 		Root:          root,
@@ -37,8 +40,8 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[qrt.Quartet]uint) *TreeData {
 		leafsets:      leafsets,
 		IdToNodes:     idMap,
 		Depths:        depths,
-		QuartetSet:    qSets,
-		QuartetCounts: qCounts,
+		quartetSet:    qSets,
+		quartetCounts: qCounts,
 		tipIndexMap:   tipIndexMap,
 		NLeaves:       len(tre.AllTipNames()),
 	}
@@ -73,7 +76,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 		if cur.Tip() {
 			children[cur.Id()] = []*tree.Node{nil, nil}
 		} else {
-			children[cur.Id()] = getChildren(cur)
+			children[cur.Id()] = GetChildren(cur)
 		}
 		return true
 	})
@@ -81,7 +84,7 @@ func children(tre *tree.Tree) [][]*tree.Node {
 }
 
 // Get children of node
-func getChildren(node *tree.Node) []*tree.Node {
+func GetChildren(node *tree.Node) []*tree.Node {
 	children := make([]*tree.Node, 0)
 	p, err := node.Parent()
 	if err != nil && err.Error() == "The node has more than one parent" {
@@ -109,8 +112,12 @@ func calcLeafset(tre *tree.Tree, children [][]*tree.Node) []*bitset.BitSet {
 		leafset[cur.Id()] = bitset.New(uint(nLeaves))
 		if cur.Tip() {
 			leafset[cur.Id()].Set(uint(cur.TipIndex()))
-		} else {
+		} else if len(children[cur.Id()]) == 1 {
+			leafset[cur.Id()] = leafset[children[cur.Id()][0].Id()]
+		} else if len(children[cur.Id()]) == 2 {
 			leafset[cur.Id()] = leafset[children[cur.Id()][0].Id()].Union(leafset[children[cur.Id()][1].Id()])
+		} else {
+			panic("more than two children when calculating bitset")
 		}
 		return true
 	})
@@ -129,19 +136,34 @@ func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 		below[cur.Id()][cur.Id()] = true
 		lca[cur.Id()][cur.Id()] = cur.Id()
 		if !cur.Tip() {
-			leftId, rightId := children[cur.Id()][0].Id(), children[cur.Id()][1].Id()
-			for i := range nNodes {
-				below[cur.Id()][i] = below[leftId][i] || below[rightId][i] || i == cur.Id()
-			}
-			for i := range nNodes {
-				for j := range nNodes {
-					if below[leftId][i] && below[rightId][j] ||
-						i == cur.Id() && below[rightId][j] ||
-						i == cur.Id() && below[leftId][j] {
-						lca[i][j] = cur.Id()
-						lca[j][i] = cur.Id()
+			if len(children[cur.Id()]) == 1 {
+				cId := children[cur.Id()][0].Id()
+				for i := range nNodes {
+					below[cur.Id()][i] = below[cId][i] || i == cur.Id()
+				}
+				for i := range nNodes {
+					if below[cId][i] {
+						lca[i][cur.Id()] = cur.Id()
+						lca[cur.Id()][i] = cur.Id()
 					}
 				}
+			} else if len(children[cur.Id()]) == 2 {
+				leftId, rightId := children[cur.Id()][0].Id(), children[cur.Id()][1].Id()
+				for i := range nNodes {
+					below[cur.Id()][i] = below[leftId][i] || below[rightId][i] || i == cur.Id()
+				}
+				for i := range nNodes {
+					for j := range nNodes {
+						if below[leftId][i] && below[rightId][j] ||
+							i == cur.Id() && below[rightId][j] ||
+							i == cur.Id() && below[leftId][j] {
+							lca[i][j] = cur.Id()
+							lca[j][i] = cur.Id()
+						}
+					}
+				}
+			} else {
+				panic("too many children for lca")
 			}
 		}
 		return true
@@ -162,14 +184,14 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[qrt.Quartet]uint, leafsets []*bitset.BitSet) [][]*qrt.Quartet {
-	qSets := make([][]*qrt.Quartet, len(tre.Nodes()))
+func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[Quartet]uint, leafsets []*bitset.BitSet) [][]*Quartet {
+	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
 		panic(err)
 	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-		qSets[cur.Id()] = make([]*qrt.Quartet, 0)
+		qSets[cur.Id()] = make([]*Quartet, 0)
 		for q := range *qCounts {
 			found := 0
 			for i := range 4 {
@@ -237,4 +259,20 @@ func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 
 func (td *TreeData) NodeID(idx int) int {
 	return td.tipIndexMap[idx]
+}
+
+// Get quartets corresponding to a given node (by id)
+func (td *TreeData) Quartets(nid int) []*Quartet {
+	if td.quartetSet == nil {
+		panic("quartet set never initialized")
+	}
+	return td.quartetSet[nid]
+}
+
+// Get count of quartets with a particular topology
+func (td *TreeData) NumQuartet(q *Quartet) uint {
+	if td.quartetSet == nil {
+		panic("quartet counts never initialized")
+	}
+	return (*td.quartetCounts)[*q]
 }

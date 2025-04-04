@@ -1,24 +1,29 @@
-package net
+package graphs
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
-
-	"github.com/jsdoublel/camus/prep"
 )
 
 type Network struct {
-	ExTree        *tree.Tree // tree from extended newick
-	Reticulations [][2]int   // reticulation branches
+	NetTree       *tree.Tree        // tree from extended newick
+	Reticulations map[string][2]int // reticulation branches
 }
 
-// Makes extended newick network out of newick tree and branch data in somewhat
-// hacky way.
-func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
+const (
+	Ui = iota // index of u and w in reticulation array
+	Wi
+)
+
+// Makes extended newick network out of newick tree and branch data computed by
+// the CAMUS algorithm
+func MakeNetwork(td *TreeData, branches [][2]int) *Network {
+	ret := make(map[string][2]int)
 	for i, branch := range branches {
-		u, w := td.IdToNodes[branch[0]], td.IdToNodes[branch[1]]
+		ret[fmt.Sprintf("#H%d", i)] = branch
+		u, w := td.IdToNodes[branch[Ui]], td.IdToNodes[branch[Wi]]
 		uEdge, err := u.ParentEdge()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting u (id %d): %s", u.Id(), err))
@@ -40,11 +45,11 @@ func MakeNetwork(td *prep.TreeData, branches [][2]int) *Network {
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
 	cleanTree(td.Tree)
-	return &Network{ExTree: td.Tree, Reticulations: branches}
+	return &Network{NetTree: td.Tree, Reticulations: ret}
 }
 
 func (ntw *Network) Newick() string {
-	nwk := ntw.ExTree.Newick()
+	nwk := ntw.NetTree.Newick()
 	nwk = strings.ReplaceAll(nwk, "####,", "")
 	nwk = strings.ReplaceAll(nwk, ",####", "")
 	return nwk

@@ -1,4 +1,4 @@
-package alg
+package infer
 
 import "github.com/evolbioinfo/gotree/tree"
 

@@ -3,21 +3,30 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [-h| -v] <constraint_tree> <gene_trees>
+usage: camus [-h| -v] <command> <tree> <gene_trees>
 
-positional arguments (required):
+commands:
 
-	<constraint_tree>        constraint newick tree
-	<gene_trees>             gene tree newick file
+	infer		find level-1 network given constraint tree and gene trees
+	score		score each reticulation branch with respects to gene trees
+
+positional arguments:
+
+	<tree>			constraint newick tree
+	<gene_trees>	gene tree newick file
 
 flags:
 
 	-h	prints this message and exits
 	-v	prints version number and exits
 
-example:
+examples:
 
-	camus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt
+	infer command example:
+		camus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt
+
+	score command example:
+		camus score network.nwk gene-trees.nwk > scores.csv 2> log.txt
 */
 package main
 
@@ -29,41 +38,49 @@ import (
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/jsdoublel/camus/alg"
-	"github.com/jsdoublel/camus/net"
+	"github.com/jsdoublel/camus/graphs"
+	"github.com/jsdoublel/camus/infer"
 	"github.com/jsdoublel/camus/prep"
+	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.1.3"
+var version = "v0.2.0"
 
 type args struct {
-	treeFile     string
-	geneTreeFile string
+	command      string // infer or score
+	treeFile     string // constraint or network tree file
+	geneTreeFile string // gene trees
 }
 
-var ErrMessage = fmt.Sprintf("[%s]:", red("error"))
+var ErrMessage = red("error:")
 
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [-h| -v] <constraint_tree> <gene_trees>\n",
+			"usage: camus [-h| -v] <command> <tree> <gene_trees>\n",
 			"\n",
-			"positional arguments (required):\n\n",
-			"\t<constraint_tree>        constraint newick tree\n",
-			"\t<gene_trees>             gene tree newick file\n",
+			"commands:\n\n",
+			"  infer\t\tfind level-1 network given constraint tree and gene trees\n",
+			"  score\t\tscore each reticulation branch with respects to gene trees\n",
+			"\n",
+			"positional arguments:\n\n",
+			"  <tree>\tconstraint newick tree (infer) or network (score)\n",
+			"  <gene_trees>\tgene tree newick file\n",
 			"\n",
 			"flags:\n\n",
 		)
 		flag.PrintDefaults()
 		fmt.Fprint(os.Stderr,
 			"\n",
-			"example:\n\n",
-			"\tcamus contraint.nwk gene-trees.nwk > out.nwk 2> log.txt\n",
+			"examples:\n\n",
+			"  infer command example:\n",
+			"\tcamus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
+			"  score command example:\n",
+			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
-
 	flag.Parse()
 	if *help {
 		flag.Usage()
@@ -73,12 +90,23 @@ func parseArgs() args {
 		fmt.Printf("CAMUS version %s", version)
 		os.Exit(0)
 	}
-	if flag.NArg() != 2 {
-		fmt.Fprintf(os.Stderr, "%s two positional arguments required: <constraint_tree> <gene_tree_file>\n", ErrMessage)
-		flag.Usage()
-		os.Exit(1)
+	if flag.Arg(0) == "" {
+		parserError(fmt.Sprintf("%s no command given: either infer or score required", ErrMessage))
 	}
-	return args{treeFile: flag.Arg(0), geneTreeFile: flag.Arg(1)}
+	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" {
+		parserError(fmt.Sprintf("%s \"%s\" is not a valid command", ErrMessage, flag.Arg(0)))
+	}
+	if flag.NArg() != 3 {
+		parserError(fmt.Sprintf("%s two positional arguments required: <tree> <gene_tree_file>", ErrMessage))
+	}
+	return args{command: flag.Arg(0), treeFile: flag.Arg(1), geneTreeFile: flag.Arg(2)}
+}
+
+// prints message, usage, and exits (statis code 1)
+func parserError(message string) {
+	fmt.Fprintln(os.Stderr, message)
+	flag.Usage()
+	os.Exit(1)
 }
 
 // makes text printed to terminal red
@@ -93,13 +121,31 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("CAMUS version %s", version)
-	constTree, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile)
+	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
-	td, branches, err := alg.CAMUS(constTree, geneTrees)
-	if err != nil {
-		log.Fatalf("%s %s\n", ErrMessage, err)
+	switch args.command {
+	case "infer":
+		td, branches, err := infer.CAMUS(tre, geneTrees)
+		if err != nil {
+			log.Fatalf("%s %s\n", ErrMessage, err)
+		}
+		fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+	case "score":
+		network, err := prep.ConvertToNetwork(tre)
+		if err != nil {
+			log.Fatalf("%s %s\n", ErrMessage, err)
+		}
+		scores, err := score.CalculateReticulationScore(network, geneTrees)
+		if err != nil {
+			log.Fatalf("%s %s\n", ErrMessage, err)
+		}
+		err = prep.WriteBranchScoresToCSV(scores)
+		if err != nil {
+			log.Fatalf("%s %s\n", ErrMessage, err)
+		}
+	default:
+		panic(fmt.Sprintf("allowed invalid command %s", args.command))
 	}
-	fmt.Println(net.MakeNetwork(td, branches).Newick())
 }
