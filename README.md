@@ -21,7 +21,7 @@ Additionally, CAMUS depends on the following three go modules:
 - [go-isatty](https://github.com/mattn/go-isatty).
 - [gotree](https://github.com/evolbioinfo/gotree) 
 
-There are three methods for installing go. 
+There are three methods for installing CAMUS. 
 
 ### Using Go's package manager
 
