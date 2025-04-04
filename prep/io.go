@@ -129,7 +129,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 
 // Write csv file containing reticulation branch scores to stdout
 func WriteBranchScoresToCSV(scores []*map[string]float64) error {
-	header := []string{"gene tree"}
+	header := []string{"gene"}
 	data := make([][]string, len(scores))
 	for k := range *scores[0] {
 		header = append(header, k)

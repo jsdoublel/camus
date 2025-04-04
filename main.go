@@ -3,7 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [-h| -v] <command> <constraint_tree> <gene_trees>
+usage: camus [-h| -v] <command> <tree> <gene_trees>
 
 commands:
 
@@ -12,8 +12,8 @@ commands:
 
 positional arguments:
 
-	<constraint_tree>	constraint newick tree
-	<gene_trees>		gene tree newick file
+	<tree>			constraint newick tree
+	<gene_trees>	gene tree newick file
 
 flags:
 
@@ -22,9 +22,11 @@ flags:
 
 examples:
 
-	camus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt
+	infer command example:
+		camus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt
 
-	camus score network.nwk gene-trees.nwk > scores.csv 2> log.txt
+	score command example:
+		camus score network.nwk gene-trees.nwk > scores.csv 2> log.txt
 */
 package main
 
@@ -42,7 +44,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.1.3"
+var version = "v0.2.0"
 
 type args struct {
 	command      string // infer or score
@@ -55,15 +57,15 @@ var ErrMessage = red("error:")
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [-h| -v] <command> <constraint_tree> <gene_trees>\n",
+			"usage: camus [-h| -v] <command> <tree> <gene_trees>\n",
 			"\n",
 			"commands:\n\n",
 			"  infer\t\tfind level-1 network given constraint tree and gene trees\n",
 			"  score\t\tscore each reticulation branch with respects to gene trees\n",
 			"\n",
 			"positional arguments:\n\n",
-			"  <constraint_tree>\tconstraint newick tree\n",
-			"  <gene_trees>\t\tgene tree newick file\n",
+			"  <tree>\tconstraint newick tree (infer) or network (score)\n",
+			"  <gene_trees>\tgene tree newick file\n",
 			"\n",
 			"flags:\n\n",
 		)
@@ -71,8 +73,10 @@ func parseArgs() args {
 		fmt.Fprint(os.Stderr,
 			"\n",
 			"examples:\n\n",
-			"  camus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
-			"  camus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
+			"  infer command example:\n",
+			"\tcamus infer contraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
+			"  score command example:\n",
+			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -86,13 +90,13 @@ func parseArgs() args {
 		fmt.Printf("CAMUS version %s", version)
 		os.Exit(0)
 	}
-	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" {
+	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" && flag.Arg(0) != "" {
 		fmt.Fprintf(os.Stderr, "%s \"%s\" is not a valid command\n", ErrMessage, flag.Arg(0))
 		flag.Usage()
 		os.Exit(1)
 	}
 	if flag.NArg() != 3 {
-		fmt.Fprintf(os.Stderr, "%s two positional arguments required: <constraint_tree> <gene_tree_file>\n", ErrMessage)
+		fmt.Fprintf(os.Stderr, "%s two positional arguments required: <tree> <gene_tree_file>\n", ErrMessage)
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -136,6 +140,6 @@ func main() {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
 	default:
-		panic(fmt.Sprintf("allowed invalid command %s -- check parser code", args.command))
+		panic(fmt.Sprintf("allowed invalid command %s", args.command))
 	}
 }

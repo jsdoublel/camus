@@ -2,6 +2,7 @@ package score
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/evolbioinfo/gotree/tree"
 
@@ -55,7 +56,7 @@ func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*ma
 			if totals[label] != 0 {
 				gtreeResult[label] = float64(supported[label]) / float64(totals[label])
 			} else {
-				gtreeResult[label] = 0
+				gtreeResult[label] = math.NaN()
 			}
 		}
 		results[i] = &gtreeResult

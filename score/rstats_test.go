@@ -1,7 +1,7 @@
 package score
 
 import (
-	"reflect"
+	"math"
 	"strings"
 	"testing"
 
@@ -28,10 +28,10 @@ func TestCalculateRecticulationScore(t *testing.T) {
 				"((5,9),(7,6));",
 			},
 			expected: []*map[string]float64{
-				{"#H0": float64(0), "#H1": float64(0), "#H2": float64(0)},
-				{"#H0": float64(0), "#H1": float64(0), "#H2": float64(0)},
-				{"#H0": float64(1), "#H1": float64(0), "#H2": float64(0)},
-				{"#H0": float64(0), "#H1": float64(0), "#H2": float64(0)},
+				{"#H0": math.NaN(), "#H1": math.NaN(), "#H2": math.NaN()},
+				{"#H0": float64(0), "#H1": math.NaN(), "#H2": math.NaN()},
+				{"#H0": float64(1), "#H1": math.NaN(), "#H2": math.NaN()},
+				{"#H0": float64(0), "#H1": math.NaN(), "#H2": math.NaN()},
 			},
 		},
 	}
@@ -57,12 +57,30 @@ func TestCalculateRecticulationScore(t *testing.T) {
 			if err != nil {
 				t.Errorf("test case failed with unexpected error %s", err)
 			}
-			if !reflect.DeepEqual(result, test.expected) {
-				t.Errorf("%v != %v; result != expected", result, test.expected)
+			if !compareScoreMaps(result, test.expected) {
+				t.Error("result != expected", result, test.expected)
 			}
 
 		})
 	}
+}
+
+// compares the two maps (specifically allows NaN == NaN to be true)
+func compareScoreMaps(m1, m2 []*map[string]float64) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+	for i := range m1 {
+		if len(*m1[i]) != len(*m2[i]) {
+			return false
+		}
+		for key := range *m1[i] {
+			if (*m1[i])[key] != (*m2[i])[key] && (!math.IsNaN((*m1[i])[key]) || !math.IsNaN((*m2[i])[key])) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
