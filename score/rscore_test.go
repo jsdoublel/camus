@@ -1,7 +1,10 @@
 package score
 
 import (
+	"bytes"
+	"io"
 	"math"
+	"os"
 	"strings"
 	"testing"
 
@@ -83,10 +86,61 @@ func compareScoreMaps(m1, m2 []*map[string]float64) bool {
 	return true
 }
 
+func TestCalculateRecticulationScore_Large(t *testing.T) {
+	testCases := []struct {
+		name     string
+		network  string
+		gtrees   string
+		expected string
+	}{
+		{
+			name:     "pauls data",
+			network:  "../testdata/large/network.nwk",
+			gtrees:   "../testdata/large/gene-trees.nwk",
+			expected: "../testdata/large/scores.csv",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, genes, err := prep.ReadInputFiles(test.network, test.gtrees, "newick")
+			if err != nil {
+				t.Fatalf("failed to read in input files %s", err)
+			}
+			network, err := prep.ConvertToNetwork(tre)
+			if err != nil {
+				t.Fatalf("failed to convert tree to network %s", err)
+			}
+			scores, err := CalculateReticulationScore(network, genes.Trees)
+			if err != nil {
+				t.Fatalf("failed with unexpected err %s", err)
+			}
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to open pipe %s", err)
+			}
+			oldStdout := os.Stdout
+			os.Stdout = w
+			prep.WriteBranchScoresToCSV(scores, genes.Names)
+			w.Close()
+			os.Stdout = oldStdout
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			result := strings.TrimSpace(buf.String())
+			expBytes, err := os.ReadFile(test.expected)
+			if err != nil {
+				t.Fatalf("failed to read in expected file %s", err)
+			}
+			if result != strings.TrimSpace(string(expBytes)) {
+				t.Error("result != expected")
+			}
+		})
+	}
+}
+
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
-	netFile := "../testdata/benchmark/network.nwk"
-	geneTrees := "../testdata/benchmark/gene-trees.nex"
-	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees, "nexus")
+	netFile := "../testdata/large/network.nwk"
+	geneTrees := "../testdata/large/gene-trees.nwk"
+	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees, "newick")
 	if err != nil {
 		b.Fatalf("failed to read in input files %s", err)
 	}

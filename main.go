@@ -12,7 +12,7 @@ commands:
 
 positional arguments:
 
-	<tree>	constraint newick tree (infer) or network (score)
+	<tree>			constraint newick tree (infer) or network (score)
 	<gene_trees>	gene tree newick file
 
 flags:
@@ -46,7 +46,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.1"
+var version = "v0.2.2"
 
 type args struct {
 	command      string // infer or score

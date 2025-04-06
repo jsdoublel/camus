@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -85,7 +86,7 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 		}
 		geneTreeNames = make([]string, 0)
 		for i := range len(geneTreeList) {
-			geneTreeNames = append(geneTreeNames, strconv.Itoa(i))
+			geneTreeNames = append(geneTreeNames, strconv.Itoa(i+1))
 		}
 	case "nexus":
 		nex, err := nexus.NewParser(file).Parse()
@@ -154,20 +155,25 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 
 // Write csv file containing reticulation branch scores to stdout
 func WriteBranchScoresToCSV(scores []*map[string]float64, names []string) {
-	header := []string{"gene"}
-	data := make([][]string, len(scores))
+	branchNames := make([]string, 0)
 	for k := range *scores[0] {
-		header = append(header, k)
+		branchNames = append(branchNames, k)
 	}
+	slices.SortFunc(branchNames, func(a, b string) int {
+		if diff := len(a) - len(b); diff != 0 {
+			return diff
+		}
+		return strings.Compare(a, b)
+	})
+	data := make([][]string, len(scores)+1)
+	data[0] = append([]string{"gene"}, branchNames...)
 	for i, row := range scores {
-		data[i] = []string{names[i]}
-		// data[i] = []string{strconv.Itoa(i)}
-		for _, v := range *row {
-			data[i] = append(data[i], strconv.FormatFloat(v, 'f', -1, 64))
+		data[i+1] = []string{names[i]}
+		for _, br := range branchNames {
+			data[i+1] = append(data[i+1], strconv.FormatFloat((*row)[br], 'f', -1, 64))
 		}
 	}
 	writer := csv.NewWriter(os.Stdout)
 	defer writer.Flush()
-	writer.Write(header)
 	writer.WriteAll(data)
 }

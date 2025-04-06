@@ -1,6 +1,7 @@
 package infer
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -131,9 +132,45 @@ func TestCAMUS(t *testing.T) {
 	}
 }
 
+func TestCAMUS_Large(t *testing.T) {
+	testCases := []struct {
+		name      string
+		constTree string
+		geneTrees string
+		result    string
+	}{
+		{
+			name:      "pauls data",
+			constTree: "../testdata/large/constraint.nwk",
+			geneTrees: "../testdata/large/gene-trees.nwk",
+			result:    "../testdata/large/network.nwk",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, quartets, err := prep.ReadInputFiles(test.constTree, test.geneTrees, "newick")
+			if err != nil {
+				t.Fatalf("Could not read input files for benchmark (error %s)", err)
+			}
+			td, br, err := CAMUS(tre, quartets.Trees)
+			if err != nil {
+				t.Fatalf("failed with unexpected err %s", err)
+			}
+			ntw := graphs.MakeNetwork(td, br)
+			bts, err := os.ReadFile(test.result)
+			if err != nil {
+				t.Fatalf("failed with unexpected err %s", err)
+			}
+			if strings.TrimSpace(string(bts)) != ntw.Newick() {
+				t.Errorf("%s != %s, result != expected", string(bts), ntw.Newick())
+			}
+		})
+	}
+}
+
 func BenchmarkCAMUS(b *testing.B) {
-	constTreeFile := "../testdata/benchmark/constraint.nwk"
-	geneTreeFile := "../testdata/benchmark/gene-trees.nwk"
+	constTreeFile := "../testdata/large/constraint.nwk"
+	geneTreeFile := "../testdata/large/gene-trees.nwk"
 	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile, "newick")
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
