@@ -14,7 +14,8 @@ func TestReadInputFiles(t *testing.T) {
 		treeFile    string
 		quartetFile string
 		taxaset     []string
-		nQuartets   int
+		numGenes    int
+		format      string
 		expectedErr error
 	}{
 		{
@@ -22,7 +23,8 @@ func TestReadInputFiles(t *testing.T) {
 			treeFile:    "../testdata/prep/constraint.nwk",
 			quartetFile: "../testdata/prep/quartets.nwk",
 			taxaset:     []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
-			nQuartets:   2,
+			numGenes:    2,
+			format:      "newick",
 			expectedErr: nil,
 		},
 		{
@@ -30,7 +32,8 @@ func TestReadInputFiles(t *testing.T) {
 			treeFile:    "../testdata/prep/quartets.nwk",
 			quartetFile: "../testdata/prep/quartets.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
+			numGenes:    -1,
+			format:      "newick",
 			expectedErr: ErrInvalidTreeFile,
 		},
 		{
@@ -38,23 +41,26 @@ func TestReadInputFiles(t *testing.T) {
 			treeFile:    "../testdata/prep/badtree.nwk",
 			quartetFile: "../testdata/prep/quartets.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
-			expectedErr: ErrInvalidNewick,
+			numGenes:    -1,
+			format:      "newick",
+			expectedErr: ErrInvalidFormat,
 		},
 		{
 			name:        "bad const tree (no ;)",
 			treeFile:    "../testdata/prep/badtree-nosemi.nwk",
 			quartetFile: "../testdata/prep/quartets.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
-			expectedErr: ErrInvalidNewick,
+			numGenes:    -1,
+			format:      "newick",
+			expectedErr: ErrInvalidFormat,
 		},
 		{
 			name:        "empty const tree",
 			treeFile:    "../testdata/prep/empty.nwk",
 			quartetFile: "../testdata/prep/quartets.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
+			numGenes:    -1,
+			format:      "newick",
 			expectedErr: ErrInvalidTreeFile,
 		},
 		{
@@ -62,21 +68,32 @@ func TestReadInputFiles(t *testing.T) {
 			treeFile:    "../testdata/prep/constraint.nwk",
 			quartetFile: "../testdata/prep/badtree.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
-			expectedErr: ErrInvalidNewick,
+			numGenes:    -1,
+			format:      "newick",
+			expectedErr: ErrInvalidFormat,
 		},
 		{
 			name:        "empty gene trees",
 			treeFile:    "../testdata/prep/constraint.nwk",
 			quartetFile: "../testdata/prep/empty.nwk",
 			taxaset:     []string{},
-			nQuartets:   -1,
+			numGenes:    -1,
+			format:      "newick",
 			expectedErr: ErrInvalidTreeFile,
+		},
+		{
+			name:        "basic nexus",
+			treeFile:    "../testdata/prep/constraint.nwk",
+			quartetFile: "../testdata/prep/quartets.nex",
+			taxaset:     []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
+			numGenes:    2,
+			format:      "nexus",
+			expectedErr: nil,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile)
+			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile, test.format)
 			if !errors.Is(err, test.expectedErr) {
 				t.Errorf("Failed with unexpected error %+v", err)
 			} else if errors.Is(err, test.expectedErr) && err != nil {
@@ -86,8 +103,8 @@ func TestReadInputFiles(t *testing.T) {
 				if !reflect.DeepEqual(taxaset, test.taxaset) {
 					t.Errorf("Taxaset of tree not equal to expected (%v != %v)", taxaset, test.taxaset)
 				}
-				if test.nQuartets != len(quartets) {
-					t.Errorf("Wrong number of quartets read (%d != %d)", len(quartets), test.nQuartets)
+				if test.numGenes != len(quartets.Trees) {
+					t.Errorf("Wrong number of quartets read (%d != %d)", len(quartets.Trees), test.numGenes)
 				}
 			}
 		})

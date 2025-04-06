@@ -12,23 +12,29 @@ import (
 	"github.com/jsdoublel/camus/graphs"
 
 	"github.com/evolbioinfo/gotree/io/newick"
+	"github.com/evolbioinfo/gotree/io/nexus"
 	"github.com/evolbioinfo/gotree/tree"
 )
 
 var (
 	ErrInvalidTreeFile = errors.New("invalid tree file")
-	ErrInvalidNewick   = errors.New("invalid newick format")
+	ErrInvalidFormat   = errors.New("invalid format")
 )
+
+type GeneTrees struct {
+	Trees []*tree.Tree // gene trees
+	Names []string     // gene names
+}
 
 // Reads in and validates constraint tree and gene tree input files.
 // Returns an error if the newick format is invalid, or the file is invalid for
 // some other reason (e.g., more than one constraint tree)
-func ReadInputFiles(treeFile, genetreesFile string) (*tree.Tree, []*tree.Tree, error) {
+func ReadInputFiles(treeFile, genetreesFile, format string) (*tree.Tree, *GeneTrees, error) {
 	tre, err := readTreeFile(treeFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	genetrees, err := readGeneTreesFile(genetreesFile)
+	genetrees, err := readGeneTreesFile(genetreesFile, format)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -47,34 +53,53 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 	}
 	tre, err := newick.NewParser(strings.NewReader(treStr)).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s", ErrInvalidNewick, treeFile, err.Error())
+		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s", ErrInvalidFormat, treeFile, err.Error())
 	}
 	return tre, nil
 }
 
 // reads and validates gene tree file
-func readGeneTreesFile(genetreesFile string) ([]*tree.Tree, error) {
+func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 	file, err := os.Open(genetreesFile)
 	if err != nil {
 		return nil, fmt.Errorf("error opening %s, %w", genetreesFile, err)
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	genetreeList := []*tree.Tree{}
-	for i := 0; scanner.Scan(); i++ {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			genetree, err := newick.NewParser(strings.NewReader(line)).Parse()
-			if err != nil {
-				return nil, fmt.Errorf("%w, error reading gene tree on line %d in %s: %s", ErrInvalidNewick, i, genetreesFile, err.Error())
+	geneTreeList := make([]*tree.Tree, 0)
+	geneTreeNames := make([]string, 0)
+	switch format {
+	case "newick":
+		scanner := bufio.NewScanner(file)
+		for i := 0; scanner.Scan(); i++ {
+			line := strings.TrimSpace(scanner.Text())
+			if line != "" {
+				genetree, err := newick.NewParser(strings.NewReader(line)).Parse()
+				if err != nil {
+					return nil, fmt.Errorf("%w, error reading gene tree on line %d in %s: %s", ErrInvalidFormat, i, genetreesFile, err.Error())
+				}
+				geneTreeList = append(geneTreeList, genetree)
 			}
-			genetreeList = append(genetreeList, genetree)
 		}
+		if len(geneTreeList) < 1 {
+			return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidTreeFile, genetreesFile)
+		}
+		geneTreeNames = make([]string, 0)
+		for i := range len(geneTreeList) {
+			geneTreeNames = append(geneTreeNames, strconv.Itoa(i))
+		}
+	case "nexus":
+		nex, err := nexus.NewParser(file).Parse()
+		if err != nil {
+			return nil, fmt.Errorf("%w, error reading gene tree nexus file %s: %s", ErrInvalidFormat, genetreesFile, err.Error())
+		}
+		nex.IterateTrees(func(s string, t *tree.Tree) {
+			geneTreeList = append(geneTreeList, t)
+			geneTreeNames = append(geneTreeNames, s)
+		})
+	default:
+		return nil, fmt.Errorf("%w, not a valid file format", ErrInvalidTreeFile)
 	}
-	if len(genetreeList) < 1 {
-		return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidTreeFile, genetreesFile)
-	}
-	return genetreeList, nil
+	return &GeneTrees{Trees: geneTreeList, Names: geneTreeNames}, nil
 }
 
 // Read in extended newick file and make network
@@ -82,7 +107,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 	ret := make(map[string][2]int)
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("%w, too many or invalid matching reticulation label %v", ErrInvalidNewick, r)
+			err = fmt.Errorf("%w, too many or invalid matching reticulation label %v", ErrInvalidFormat, r)
 		}
 	}()
 	ntw.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
@@ -120,7 +145,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 	})
 	for label, branch := range ret {
 		if branch[graphs.Ui] == 0 || branch[graphs.Wi] == 0 { // assumes root node is not labeled as reticulation
-			return nil, fmt.Errorf("%w, label %s is unmatched", ErrInvalidNewick, label)
+			return nil, fmt.Errorf("%w, label %s is unmatched", ErrInvalidFormat, label)
 		}
 	}
 	ntw.UpdateTipIndex()
@@ -128,14 +153,15 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 }
 
 // Write csv file containing reticulation branch scores to stdout
-func WriteBranchScoresToCSV(scores []*map[string]float64) error {
+func WriteBranchScoresToCSV(scores []*map[string]float64, names []string) {
 	header := []string{"gene"}
 	data := make([][]string, len(scores))
 	for k := range *scores[0] {
 		header = append(header, k)
 	}
 	for i, row := range scores {
-		data[i] = []string{strconv.Itoa(i)}
+		data[i] = []string{names[i]}
+		// data[i] = []string{strconv.Itoa(i)}
 		for _, v := range *row {
 			data[i] = append(data[i], strconv.FormatFloat(v, 'f', -1, 64))
 		}
@@ -144,5 +170,4 @@ func WriteBranchScoresToCSV(scores []*map[string]float64) error {
 	defer writer.Flush()
 	writer.Write(header)
 	writer.WriteAll(data)
-	return nil
 }
