@@ -46,7 +46,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.0"
+var version = "v0.2.1"
 
 type args struct {
 	command      string // infer or score

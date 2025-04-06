@@ -51,7 +51,15 @@ binaries compiled on my personal computer (i.e., Linux x86_64).
 
 ## Usage
 
-There are two main commands for CAMUS: `infer` and `score`; the functionality of these commands is outlined below.
+```
+camus [-h| -v | -f <format> ] <command> <tree> <gene_trees>
+```
+
+There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
+
+- `-f string [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
+- `-h` prints usage information and exits
+- `-v` prints software version and exits
 
 ### Infer
 
