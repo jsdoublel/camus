@@ -46,7 +46,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 	countTotal := len(geneTrees)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
-		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i, countTotal))
+		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countTotal))
 		if !IsSingleCopy(gt) {
 			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
 		}
