@@ -134,11 +134,11 @@ func TestCAMUS(t *testing.T) {
 func BenchmarkCAMUS(b *testing.B) {
 	constTreeFile := "../testdata/benchmark/constraint.nwk"
 	geneTreeFile := "../testdata/benchmark/gene-trees.nwk"
-	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile)
+	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile, "newick")
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
 	for i := 0; i < b.N; i++ {
-		CAMUS(tre, quartets)
+		CAMUS(tre, quartets.Trees)
 	}
 }

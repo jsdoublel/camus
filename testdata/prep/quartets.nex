@@ -1,0 +1,9 @@
+#NEXUS
+
+BEGIN TREES;
+
+Tree q1 = (A,(B,(C,D)));
+Tree q2 = (B,(C,D),E);
+
+END;
+
