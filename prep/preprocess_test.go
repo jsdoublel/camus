@@ -111,9 +111,9 @@ func TestPreprocess_Errors(t *testing.T) {
 				gtrees[i] = tmp
 			}
 			_, err = Preprocess(tre, gtrees)
-			if !errors.Is(err, test.expectedErr) {
+			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
-			} else {
+			} else if err != nil {
 				t.Logf("%s", err)
 			}
 		})

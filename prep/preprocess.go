@@ -69,6 +69,17 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 	return &qCounts, nil
 }
 
+func NetworkIsBinary(ntw *tree.Tree) bool {
+	if !ntw.Rooted() {
+		return false
+	}
+	neighbors := ntw.Root().Neigh()
+	if len(neighbors) != 2 {
+		panic("tree is not rooted (even though it is??)")
+	}
+	return isBinary(neighbors[0], true) && isBinary(neighbors[1], true)
+}
+
 func TreeIsBinary(tre *tree.Tree) bool {
 	if !tre.Rooted() {
 		return false
@@ -77,18 +88,21 @@ func TreeIsBinary(tre *tree.Tree) bool {
 	if len(neighbors) != 2 {
 		panic("tree is not rooted (even though it is??)")
 	}
-	return isBinary(neighbors[0]) && isBinary(neighbors[1])
+	return isBinary(neighbors[0], false) && isBinary(neighbors[1], false)
 }
 
-func isBinary(node *tree.Node) bool {
+func isBinary(node *tree.Node, allowUnifurcations bool) bool {
 	if node.Tip() {
 		return true
+	}
+	children := graphs.GetChildren(node)
+	if node.Nneigh() == 2 && allowUnifurcations {
+		return isBinary(children[0], allowUnifurcations)
 	}
 	if node.Nneigh() != 3 {
 		return false
 	}
-	children := graphs.GetChildren(node)
-	return isBinary(children[0]) && isBinary(children[1])
+	return isBinary(children[0], allowUnifurcations) && isBinary(children[1], allowUnifurcations)
 }
 
 func IsSingleCopy(tre *tree.Tree) bool {

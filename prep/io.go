@@ -105,6 +105,12 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 
 // Read in extended newick file and make network
 func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
+	if !ntw.Rooted() {
+		return nil, fmt.Errorf("%w, network is not rooted", ErrInvalidTree)
+	}
+	if !NetworkIsBinary(ntw) {
+		return nil, fmt.Errorf("%w, network must be fully resolved", ErrInvalidTree)
+	}
 	ret := make(map[string][2]int)
 	defer func() {
 		if r := recover(); r != nil {
@@ -144,6 +150,9 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 		}
 		return true
 	})
+	if len(ret) == 0 {
+		return nil, fmt.Errorf("%w, no reticulations - not a network", ErrInvalidTree)
+	}
 	for label, branch := range ret {
 		if branch[graphs.Ui] == 0 || branch[graphs.Wi] == 0 { // assumes root node is not labeled as reticulation
 			return nil, fmt.Errorf("%w, label %s is unmatched", ErrInvalidFormat, label)

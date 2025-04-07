@@ -2,6 +2,7 @@ package score
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math"
 	"os"
@@ -16,10 +17,11 @@ import (
 
 func TestCalculateRecticulationScore(t *testing.T) {
 	testCases := []struct {
-		name     string
-		network  string
-		gtrees   []string
-		expected []*map[string]float64
+		name        string
+		network     string
+		gtrees      []string
+		expected    []*map[string]float64
+		expectedErr error
 	}{
 		{
 			name:    "basic",
@@ -36,6 +38,14 @@ func TestCalculateRecticulationScore(t *testing.T) {
 				{"#H0": float64(1), "#H1": math.NaN(), "#H2": math.NaN()},
 				{"#H0": float64(0), "#H1": math.NaN(), "#H2": math.NaN()},
 			},
+			expectedErr: nil,
+		},
+		{
+			name:        "not level-1",
+			network:     "(A,(B,(#H1,(C,(#H0,(D,(E,(F,((G,(H,((I,J))#H1)))#H0))))))));",
+			gtrees:      nil,
+			expected:    nil,
+			expectedErr: prep.ErrInvalidTree,
 		},
 	}
 	for _, test := range testCases {
@@ -57,10 +67,11 @@ func TestCalculateRecticulationScore(t *testing.T) {
 				gtrees[i] = tmp
 			}
 			result, err := CalculateReticulationScore(ntw, gtrees)
-			if err != nil {
+			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("test case failed with unexpected error %s", err)
-			}
-			if !compareScoreMaps(result, test.expected) {
+			} else if err != nil {
+				t.Logf("%s", err)
+			} else if !compareScoreMaps(result, test.expected) {
 				t.Error("result != expected", result, test.expected)
 			}
 
