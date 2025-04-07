@@ -150,5 +150,3 @@ repository:
 ```
 camus score testdata/benchmark/network.nwk testdata/benchmark/gene-trees.nwk > out.csv 2> log.txt
 ```
-
-**Important Note:** Currently, CAMUS does not check whether the inputted network is level-1 or fully-resolved. Outputs in this case lead to undefined behavior and are not meaningful.
