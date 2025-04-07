@@ -62,7 +62,7 @@ func TestPreprocess_Errors(t *testing.T) {
 		},
 		{
 			name:        "non-binary",
-			tre:         "(a,b,c,d);",
+			tre:         "((a,b),(c,d,e));",
 			gtrees:      []string{},
 			expectedErr: ErrInvalidTree,
 		},

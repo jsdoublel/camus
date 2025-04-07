@@ -117,6 +117,7 @@ func TestConvertToNetwork(t *testing.T) {
 		networkFile      string
 		expNetwork       string
 		expReticulations map[string][2]string
+		expectedErr      error
 	}{
 		{
 			name:        "basic test",
@@ -127,28 +128,82 @@ func TestConvertToNetwork(t *testing.T) {
 				"#H1": {"13h1u", "2h1w"},
 				"#H2": {"h2u", "14h2w"},
 			},
+			expectedErr: nil,
+		},
+		{
+			name:             "unresolved",
+			networkFile:      "../testdata/prep/unresolved.nwk",
+			expNetwork:       "",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTree,
+		},
+		{
+			name:             "not level-1",
+			networkFile:      "../testdata/prep/not-level-1.nwk",
+			expNetwork:       "",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTree,
+		},
+		{
+			name:             "non-unique network",
+			networkFile:      "../testdata/prep/multi-net.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTreeFile,
+		},
+		{
+			name:             "bad network",
+			networkFile:      "../testdata/prep/badtree.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidFormat,
+		},
+		{
+			name:             "bad network (no ;)",
+			networkFile:      "../testdata/prep/badtree-nosemi.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidFormat,
+		},
+		{
+			name:             "empty",
+			networkFile:      "../testdata/prep/empty.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTreeFile,
+		},
+		{
+			name:             "no reticulations",
+			networkFile:      "../testdata/prep/constraint.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTreeFile,
+		},
+		{
+			name:             "unrooted",
+			networkFile:      "../testdata/prep/unrooted-net.nwk",
+			expReticulations: nil,
+			expectedErr:      ErrInvalidTreeFile,
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			tre, err := readTreeFile(test.networkFile)
 			net, err := ConvertToNetwork(tre)
-			if err != nil {
+			if err != nil && !errors.Is(test.expectedErr, err) {
 				t.Fatalf("test returned unexpected err %s", err)
-			}
-			if net.Newick() != test.expNetwork {
-				t.Errorf("result != expected, %s != %s", net.Newick(), test.expNetwork)
-			}
-			nameMap := make(map[string]int)
-			net.NetTree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-				nameMap[cur.Name()] = cur.Id()
-				return true
-			})
-			for k, v := range test.expReticulations {
-				for i := range 2 {
-					id := nameMap[v[i]]
-					if net.Reticulations[k][i] != id {
-						t.Errorf("%s mapped to %d when it should have mapped to %d", k, net.Reticulations[k][i], id)
+			} else if errors.Is(test.expectedErr, err) {
+				t.Logf("%s", err)
+			} else {
+				if net.Newick() != test.expNetwork {
+					t.Errorf("result != expected, %s != %s", net.Newick(), test.expNetwork)
+				}
+				nameMap := make(map[string]int)
+				net.NetTree.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+					nameMap[cur.Name()] = cur.Id()
+					return true
+				})
+				for k, v := range test.expReticulations {
+					for i := range 2 {
+						id := nameMap[v[i]]
+						if net.Reticulations[k][i] != id {
+							t.Errorf("%s mapped to %d when it should have mapped to %d", k, net.Reticulations[k][i], id)
+						}
 					}
 				}
 			}
