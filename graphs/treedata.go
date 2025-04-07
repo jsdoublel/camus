@@ -211,6 +211,7 @@ func makeTipIndexMap(tre *tree.Tree) map[int]int {
 	return tipMap
 }
 
+// n2 (id) is in the leafset of n1 (id)
 func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
 	return td.leafsets[n1ID].Test(uint(n2ID))
 }
@@ -266,4 +267,9 @@ func (td *TreeData) NumQuartet(q *Quartet) uint {
 		panic("quartet counts never initialized")
 	}
 	return (*td.quartetCounts)[*q]
+}
+
+// n2 is under n1
+func (td *TreeData) Under(n1ID, n2ID int) bool {
+	return td.LCA(n1ID, n2ID) == n1ID && n1ID != n2ID
 }

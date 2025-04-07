@@ -21,6 +21,9 @@ type reticulation struct {
 
 func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
 	td := graphs.MakeTreeData(ntw.NetTree, nil)
+	if !ntw.Level1(td) {
+		return nil, fmt.Errorf("%w, network is not level-1", prep.ErrInvalidTree)
+	}
 	reticulations := *getReticulationNodes(ntw, td)
 	results := make([]*map[string]float64, len(gtrees))
 	for i, gtre := range gtrees {

@@ -65,3 +65,28 @@ func cleanTree(tre *tree.Tree) {
 		return true
 	})
 }
+
+func (ntw *Network) Level1(td *TreeData) bool {
+	branchs := make([]string, 0)
+	for k := range ntw.Reticulations {
+		branchs = append(branchs, k)
+	}
+	for i := range branchs {
+		for j := i + 1; j < len(branchs); j++ {
+			r1 := ntw.Reticulations[branchs[i]]
+			r2 := ntw.Reticulations[branchs[j]]
+			vR1 := td.LCA(r1[0], r1[1])
+			vR2 := td.LCA(r2[0], r2[1])
+			if vR1 == vR2 {
+				return false
+			}
+			if td.Under(vR1, vR2) && (td.Under(vR2, r1[0]) || td.Under(vR2, r1[1])) {
+				return false
+			}
+			if td.Under(vR2, vR1) && (td.Under(vR1, r2[0]) || td.Under(vR1, r2[1])) {
+				return false
+			}
+		}
+	}
+	return true
+}
