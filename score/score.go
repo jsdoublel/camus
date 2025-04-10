@@ -1,3 +1,4 @@
+// package implementing scoring for networks
 package score
 
 import (

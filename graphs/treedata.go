@@ -1,3 +1,5 @@
+// package containing all structs and functions related to graph-like data
+// structures used in CAMUS such as quartets, networks, and trees
 package graphs
 
 import (
