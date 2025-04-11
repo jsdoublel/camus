@@ -117,7 +117,11 @@ we mean the set of quartets where each taxa $t$ in the quartet corresponds to a
 unique node in $\gamma_r$ that can be reached by a path from $t$ to that unique
 node, without passing through any other vertices in $\gamma_r$. 
 
-We also define $\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\gamma_r}', \exists q \in \mathcal{Q}\_{\gamma_r}$ where $\mathcal{L}(q') = \mathcal{L}(q)$, where $\mathcal{L}(q)$ is the set of taxa in $q$ (in short, $\mathcal{Q}\_{\gamma_r}'$ is the set of quartets that are relevant for $\gamma_t$).
+We also define $\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\gamma_r}', 
+\exists q \in \mathcal{Q}\_{\gamma_r}$ where $\mathcal{L}(q') = \mathcal{L}(q)$, where 
+$\mathcal{L}(q)$ is the set of taxa in $q$ (in short, $\mathcal{Q}\_{\gamma_r}'$ is 
+the set of all possible quartets on the same set of taxa as the quartets in 
+$\mathcal{Q}\_{\gamma_r}$).
 
 Thus, given a quartet set $\mathcal{Q}\_g$ from a gene tree $g$, we can
 calculate the support of $g$ for $r$ as 
@@ -125,6 +129,7 @@ calculate the support of $g$ for $r$ as
 $$S_{g,r} = \frac{|(\mathcal{Q}\_{\gamma_r} \cap
 \mathcal{Q}\_g) \setminus \mathcal{Q}\_T|}{|\mathcal{Q}\_{\gamma_r}' \cap \mathcal{Q}\_g|}$$
 
+where $\mathcal{Q}\_T$ is the set of quartets in the constraint tree.
 As can be seen, if the inputted gene trees were simply quartets (four leaf
 newick trees), the only valid results would be 0, 1, or NaN.
 
@@ -142,7 +147,8 @@ The `score` command for CAMUS has the following inputs and outputs:
   the rows correspond to different genes (labeled by the line number they
   appear on in the input).
 
-As with `infer`, `score` uses positional arguments for the inputs and outputs the result and logging information to `stdout` and `stderr` respectively. 
+As with `infer`, `score` uses positional arguments for the inputs and outputs 
+the result and logging information to `stdout` and `stderr` respectively. 
 
 Here is an example of how one might run CAMUS using example data from this
 repository:
