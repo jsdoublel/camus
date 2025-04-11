@@ -122,8 +122,8 @@ We also define $\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\ga
 Thus, given a quartet set $\mathcal{Q}\_g$ from a gene tree $g$, we can
 calculate the support of $g$ for $r$ as 
 
-$$S_{g,r} = \frac{|\mathcal{Q}\_{\gamma_r} \cap
-\mathcal{Q}\_g|}{|\mathcal{Q}\_{\gamma_r}' \cap \mathcal{Q}\_g|}$$
+$$S_{g,r} = \frac{|(\mathcal{Q}\_{\gamma_r} \cap
+\mathcal{Q}\_g) \setminus \mathcal{Q}\_T|}{|\mathcal{Q}\_{\gamma_r}' \cap \mathcal{Q}\_g|}$$
 
 As can be seen, if the inputted gene trees were simply quartets (four leaf
 newick trees), the only valid results would be 0, 1, or NaN.
