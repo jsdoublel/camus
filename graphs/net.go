@@ -77,16 +77,14 @@ func (ntw *Network) Level1(td *TreeData) bool {
 			r2 := ntw.Reticulations[branchs[j]]
 			vR1 := td.LCA(r1[0], r1[1])
 			vR2 := td.LCA(r2[0], r2[1])
-			if vR1 == vR2 {
-				return false
-			}
-			if td.Under(vR1, vR2) && (td.Under(vR2, r1[0]) || td.Under(vR2, r1[1])) {
-				return false
-			}
-			if td.Under(vR2, vR1) && (td.Under(vR1, r2[0]) || td.Under(vR1, r2[1])) {
+			if vR1 == vR2 || illSorted(vR1, vR2, r1, td) || illSorted(vR2, vR1, r2, td) {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+func illSorted(v1, v2 int, r1 [2]int, td *TreeData) bool {
+	return td.Under(v1, v2) && (td.Under(v2, r1[0]) || td.Under(v2, r1[1]))
 }
