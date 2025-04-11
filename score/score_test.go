@@ -45,7 +45,7 @@ func TestCalculateRecticulationScore(t *testing.T) {
 			network:     "(A,(B,(#H1,(C,(#H0,(D,(E,(F,((G,(H,((I,J))#H1)))#H0))))))));",
 			gtrees:      nil,
 			expected:    nil,
-			expectedErr: prep.ErrInvalidTree,
+			expectedErr: ErrNotLevel1,
 		},
 	}
 	for _, test := range testCases {

@@ -2,6 +2,7 @@
 package score
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/jsdoublel/camus/infer"
 	"github.com/jsdoublel/camus/prep"
 )
+
+var ErrNotLevel1 = errors.New("not level-1")
 
 // nodes needed for scoring reticulation
 type reticulation struct {
@@ -23,7 +26,7 @@ type reticulation struct {
 func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
 	td := graphs.MakeTreeData(ntw.NetTree, nil)
 	if !ntw.Level1(td) {
-		return nil, fmt.Errorf("%w, network is not level-1", prep.ErrInvalidTree)
+		return nil, fmt.Errorf("network is %w", ErrNotLevel1)
 	}
 	reticulations := *getReticulationNodes(ntw, td)
 	results := make([]*map[string]float64, len(gtrees))
