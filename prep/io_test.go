@@ -34,7 +34,7 @@ func TestReadInputFiles(t *testing.T) {
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
-			expectedErr: ErrInvalidTreeFile,
+			expectedErr: ErrInvalidFile,
 		},
 		{
 			name:        "bad const tree",
@@ -61,7 +61,7 @@ func TestReadInputFiles(t *testing.T) {
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
-			expectedErr: ErrInvalidTreeFile,
+			expectedErr: ErrInvalidFile,
 		},
 		{
 			name:        "bad gene tree trees",
@@ -79,7 +79,7 @@ func TestReadInputFiles(t *testing.T) {
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
-			expectedErr: ErrInvalidTreeFile,
+			expectedErr: ErrInvalidFile,
 		},
 		{
 			name:        "basic nexus",
@@ -135,13 +135,13 @@ func TestConvertToNetwork(t *testing.T) {
 			networkFile:      "../testdata/prep/unresolved.nwk",
 			expNetwork:       "",
 			expReticulations: nil,
-			expectedErr:      ErrInvalidTree,
+			expectedErr:      ErrNonBinary,
 		},
 		{
 			name:             "non-unique network",
 			networkFile:      "../testdata/prep/multi-net.nwk",
 			expReticulations: nil,
-			expectedErr:      ErrInvalidTreeFile,
+			expectedErr:      ErrInvalidFile,
 		},
 		{
 			name:             "bad network",
@@ -159,19 +159,19 @@ func TestConvertToNetwork(t *testing.T) {
 			name:             "empty",
 			networkFile:      "../testdata/prep/empty.nwk",
 			expReticulations: nil,
-			expectedErr:      ErrInvalidTreeFile,
+			expectedErr:      ErrInvalidFile,
 		},
 		{
 			name:             "no reticulations",
 			networkFile:      "../testdata/prep/constraint.nwk",
 			expReticulations: nil,
-			expectedErr:      ErrInvalidTree,
+			expectedErr:      ErrNoReticulations,
 		},
 		{
 			name:             "unrooted",
 			networkFile:      "../testdata/prep/unrooted-net.nwk",
 			expReticulations: nil,
-			expectedErr:      ErrInvalidTree,
+			expectedErr:      ErrUnrooted,
 		},
 	}
 	for _, test := range testCases {

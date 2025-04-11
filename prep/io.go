@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	ErrInvalidTreeFile = errors.New("invalid tree file")
+	ErrInvalidFile     = errors.New("invalid file")
 	ErrInvalidFormat   = errors.New("invalid format")
+	ErrNoReticulations = errors.New("no reticulations")
 )
 
 type GeneTrees struct {
@@ -50,7 +51,7 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 	}
 	treStr := strings.TrimSpace(string(treBytes))
 	if strings.Count(treStr, "\n") != 0 || treStr == "" {
-		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in tree file %s", ErrInvalidTreeFile, treeFile)
+		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in tree file %s", ErrInvalidFile, treeFile)
 	}
 	tre, err := newick.NewParser(strings.NewReader(treStr)).Parse()
 	if err != nil {
@@ -82,7 +83,7 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 			}
 		}
 		if len(geneTreeList) < 1 {
-			return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidTreeFile, genetreesFile)
+			return nil, fmt.Errorf("%w, empty gene tree file %s", ErrInvalidFile, genetreesFile)
 		}
 		geneTreeNames = make([]string, 0)
 		for i := range len(geneTreeList) {
@@ -98,7 +99,7 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 			geneTreeNames = append(geneTreeNames, s)
 		})
 	default:
-		return nil, fmt.Errorf("%w, not a valid file format", ErrInvalidTreeFile)
+		return nil, fmt.Errorf("%w, not a valid file format", ErrInvalidFile)
 	}
 	return &GeneTrees{Trees: geneTreeList, Names: geneTreeNames}, nil
 }
@@ -106,10 +107,10 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 // Read in extended newick file and make network
 func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 	if !ntw.Rooted() {
-		return nil, fmt.Errorf("%w, network is not rooted", ErrInvalidTree)
+		return nil, fmt.Errorf("network is %w", ErrUnrooted)
 	}
 	if !NetworkIsBinary(ntw) {
-		return nil, fmt.Errorf("%w, network must be fully resolved", ErrInvalidTree)
+		return nil, fmt.Errorf("network is %w", ErrNonBinary)
 	}
 	ret := make(map[string][2]int)
 	defer func() {
@@ -151,7 +152,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 		return true
 	})
 	if len(ret) == 0 {
-		return nil, fmt.Errorf("%w, no reticulations - not a network", ErrInvalidTree)
+		return nil, fmt.Errorf("%w - not a network", ErrNoReticulations)
 	}
 	for label, branch := range ret {
 		if branch[graphs.Ui] == 0 || branch[graphs.Wi] == 0 { // assumes root node is not labeled as reticulation

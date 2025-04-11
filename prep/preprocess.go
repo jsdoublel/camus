@@ -12,20 +12,24 @@ import (
 	"github.com/jsdoublel/camus/graphs"
 )
 
-var ErrInvalidTree = errors.New("invalid tree")
+var (
+	ErrUnrooted  = errors.New("not rooted")
+	ErrNonBinary = errors.New("not binary")
+	ErrMulTree   = errors.New("contains duplicate labels")
+)
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
-		return nil, fmt.Errorf("%w, constraint tree is not rooted", ErrInvalidTree)
+		return nil, fmt.Errorf("constraint tree is %w", ErrUnrooted)
 	}
 	if !TreeIsBinary(tre) {
-		return nil, fmt.Errorf("%w, constraint tree is not binary", ErrInvalidTree)
+		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
 	if !IsSingleCopy(tre) {
-		return nil, fmt.Errorf("%w, constraint tree has duplicate labels", ErrInvalidTree)
+		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
 	qCounts, err := processQuartets(geneTrees, tre)
 	if err != nil {
@@ -48,7 +52,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 	for i, gt := range geneTrees {
 		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countTotal))
 		if !IsSingleCopy(gt) {
-			return nil, fmt.Errorf("%w, gene tree on line %d has duplicate labels", ErrInvalidTree, i)
+			return nil, fmt.Errorf("gene tree on line %d : %w", i, ErrMulTree)
 		}
 		gt.UpdateTipIndex()
 		newQuartets, err := graphs.QuartetsFromTree(gt, tre)
