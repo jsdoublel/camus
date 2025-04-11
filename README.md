@@ -52,7 +52,7 @@ binaries compiled on my personal computer (i.e., Linux x86_64).
 ## Usage
 
 ```
-camus [-h| -v | -f <format> ] <command> <tree> <gene_trees>
+camus [-h | -v | -f <format> ] <command> <tree> <gene_trees>
 ```
 
 There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
