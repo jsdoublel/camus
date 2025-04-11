@@ -52,7 +52,7 @@ binaries compiled on my personal computer (i.e., Linux x86_64).
 ## Usage
 
 ```
-camus [-h | -v | -f <format> ] <command> <tree> <gene_trees>
+camus [ -h | -v | -f <format> ] <command> <tree> <gene_trees>
 ```
 
 There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
@@ -73,7 +73,7 @@ maximum number of quartets from $\mathcal{G}$ that respects the constraint tree
 $T$.
 
 Since these added edges are directed edges, it is a requirement that any
-quartet that contributes to the maximum contain exactly one taxa from the clade
+quartet that contributes to the maximum contain exactly one taxon from the clade
 below by $w$—where $w$ is the vertex that the new edge points towards.
 
 CAMUS has the following inputs and outputs:
@@ -113,14 +113,14 @@ relevant quartets from the gene that support the branch.
 
 Specifically, for each new reticulation edge $r$ creating a cycle $\gamma_r$,
 we have $\mathcal{Q}\_{\gamma_r}$—the set of quartets "in" the cycle. By this
-we mean the set of quartets where each taxa $t$ in the quartet corresponds to a
+we mean the set of quartets where each taxon $t$ in the quartet corresponds to a
 unique node in $\gamma_r$ that can be reached by a path from $t$ to that unique
 node, without passing through any other vertices in $\gamma_r$. 
 
 We also define $\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\gamma_r}', 
 \exists q \in \mathcal{Q}\_{\gamma_r}$ where $\mathcal{L}(q') = \mathcal{L}(q)$, where 
 $\mathcal{L}(q)$ is the set of taxa in $q$ (in short, $\mathcal{Q}\_{\gamma_r}'$ is 
-the set of all possible quartets on the same set of taxa as the quartets in 
+the set of all possible quartets on the same sets of taxa as the quartets in 
 $\mathcal{Q}\_{\gamma_r}$).
 
 Thus, given a quartet set $\mathcal{Q}\_g$ from a gene tree $g$, we can
