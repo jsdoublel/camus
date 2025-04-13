@@ -25,20 +25,20 @@ There are three methods for installing CAMUS.
 
 ### Using Go's package manager
 
-After installing Go, run
+After installing Go, run:
 
 ```
 go install github.com/jsdoublel/camus@latest
 ```
 
-this will install the CAMUS executable to `$GOPATH/bin`. You can check where
+This will install the CAMUS executable to `$GOPATH/bin`. You can check where
 that is using the command `go env GOPATH`; if you want to run CAMUS from any
 directory make sure you add `$GOPATH/bin` to your `PATH` environmental variable.
 
 ### Build from source
 
 Once Go is installed, clone the repository, download dependencies, and build
-the project with the following commands
+the project with the following commands:
 
 ```
 git clone https://github.com/jsdoublel/camus.git
