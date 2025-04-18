@@ -15,14 +15,22 @@ import (
 )
 
 type DP struct {
-	DP       []uint           // score for each dp subproblem
-	Branches [][2]int         // branch for each dp subproblem
+	DP       [][]uint         // score for each dp subproblem
+	Branches [][][2]int       // branch for each dp subproblem
 	TreeData *graphs.TreeData // preprocessed data for our constraint tree
 }
 
+// type branch struct {
+// 	ids [2]int
+// }
+//
+// func (br *branch) Empty() bool {
+// 	return br.ids == [2]int{0, 0}
+// }
+
 // Runs CAMUS algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
-func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, [][2]int, error) {
+func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, [][][2]int, error) {
 	log.Print("beginning data preprocessing\n")
 	td, err := prep.Preprocess(tre, geneTrees)
 	if err != nil {
@@ -30,11 +38,11 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, [][2]int, 
 	}
 	log.Print("preprocessing finished, beginning dp algorithm\n")
 	n := len(td.Tree.Nodes())
-	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
+	dp := &DP{DP: make([][]uint, n, n), Branches: make([][][2]int, n), TreeData: td}
 	return td, dp.RunDP(), nil
 }
 
-func (dp *DP) RunDP() [][2]int {
+func (dp *DP) RunDP() [][][2]int {
 	n, err := dp.TreeData.Tree.NbTips()
 	if err != nil {
 		panic(err)
@@ -45,15 +53,9 @@ func (dp *DP) RunDP() [][2]int {
 		if !cur.Tip() { // default value is 0, so we don't need to code a base case
 			count++
 			prep.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
-			lID, rID := dp.TreeData.Children[cur.Id()][0].Id(), dp.TreeData.Children[cur.Id()][1].Id()
-			score, branch := dp.score(cur)
-			noEdgeScore := dp.DP[lID] + dp.DP[rID]
-			if score > noEdgeScore {
-				dp.DP[cur.Id()] = score
-				dp.Branches[cur.Id()] = branch
-			} else {
-				dp.DP[cur.Id()] = noEdgeScore
-			}
+			scores, branches := dp.scoreAllV(cur)
+			dp.DP[cur.Id()] = scores
+			dp.Branches[cur.Id()] = branches
 		}
 		return true
 	})
@@ -65,15 +67,28 @@ func (dp *DP) RunDP() [][2]int {
 	return result
 }
 
-// Calculates score for given top node v; returns score, best edge, and dp lookups
-func (dp *DP) score(v *tree.Node) (uint, [2]int) {
+func (dp *DP) scoreAllV(v *tree.Node) ([]uint, [][2]int) {
+	lID, rID := dp.TreeData.Children[v.Id()][0].Id(), dp.TreeData.Children[v.Id()][1].Id()
+	score, branch := dp.score(v)
+	noEdgeScore := dp.DP[lID] + dp.DP[rID]
+	if score > noEdgeScore {
+		dp.DP[v.Id()] = score
+		dp.Branches[v.Id()] = branch
+	} else {
+		dp.DP[v.Id()] = noEdgeScore
+	}
+}
+
+// TODO: update -- Calculates score for given top node v; returns score, best edge, and dp lookups
+func (dp *DP) score(v *tree.Node, m uint) (uint, [2]int) {
+	// TODO: integrate m
 	bestScore := uint(0)
 	bestEdge := [2]int{0, 0}
 	bestCycleLen := 0
-	vPathDPScores := dp.accumlateDPScores(v)
+	vPathDPScores := dp.accumlateDPScores(v, m-1)
 	if v != dp.TreeData.Root {
 		var wID int
-		bestScore, wID = dp.scoreU(v, v, v, vPathDPScores)
+		bestScore, wID = dp.scoreU(v, v, v, vPathDPScores, m)
 		bestCycleLen = dp.cycleLen(v.Id(), wID)
 		bestEdge = [2]int{v.Id(), wID}
 	}
@@ -87,7 +102,8 @@ func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 }
 
 // Add up dp scores along path from v ~> w
-func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
+// TODO: integrate m
+func (dp *DP) accumlateDPScores(v *tree.Node, m uint) map[int]uint {
 	pathScores := make(map[int]uint)
 	SubtreePreOrder(v, func(cur *tree.Node) {
 		if cur != v {
@@ -111,11 +127,12 @@ func (dp *DP) cycleLen(u, w int) int {
 }
 
 // Score branch u -> w (for w in subtree under sub); returns score, best w
-func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) {
+func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint, m uint) (uint, int) {
 	var bestScore uint
 	var bestW int
 	SubtreePreOrder(sub, func(w *tree.Node) {
 		if u != w {
+			// TODO: add score edge lookups
 			score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()] + dp.DP[w.Id()]
 			if score > bestScore {
 				bestScore = score
@@ -211,11 +228,11 @@ func neighborTaxaQ(q *graphs.Quartet, i int) int {
 	panic("invalid quartet or bad i")
 }
 
-func (dp *DP) traceback() [][2]int {
+func (dp *DP) traceback(m uint) [][][2]int {
 	return dp.tracebackRecursive(dp.TreeData.Root)
 }
 
-func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
+func (dp *DP) tracebackRecursive(curNode *tree.Node, m uint) [][2]int {
 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
 		curBranch := dp.Branches[curNode.Id()]
 		if curBranch == [2]int{0, 0} { // there is no new edge
@@ -239,7 +256,7 @@ func (dp *DP) tracebackRecursive(curNode *tree.Node) [][2]int {
 	return [][2]int{}
 }
 
-func (dp *DP) tracePath(start, end *tree.Node) [][2]int {
+func (dp *DP) tracePath(start, end *tree.Node, m uint) [][2]int {
 	if start == end {
 		panic("in tracePath start should not equal end!")
 	}
