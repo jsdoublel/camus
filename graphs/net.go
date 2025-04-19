@@ -17,13 +17,21 @@ const (
 	Wi
 )
 
+type Branch struct {
+	IDs [2]int
+}
+
+func (br *Branch) Empty() bool {
+	return br.IDs == [2]int{0, 0}
+}
+
 // Makes extended newick network out of newick tree and branch data computed by
 // the CAMUS algorithm
-func MakeNetwork(td *TreeData, branches [][2]int) *Network {
+func MakeNetwork(td *TreeData, branches []Branch) *Network {
 	ret := make(map[string][2]int)
 	for i, branch := range branches {
-		ret[fmt.Sprintf("#H%d", i)] = branch
-		u, w := td.IdToNodes[branch[Ui]], td.IdToNodes[branch[Wi]]
+		ret[fmt.Sprintf("#H%d", i)] = branch.IDs // TODO: finish branch refactor
+		u, w := td.IdToNodes[branch.IDs[Ui]], td.IdToNodes[branch.IDs[Wi]]
 		uEdge, err := u.ParentEdge()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting u (id %d): %s", u.Id(), err))

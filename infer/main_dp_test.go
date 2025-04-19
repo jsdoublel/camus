@@ -144,11 +144,11 @@ func TestCAMUS(t *testing.T) {
 				t.Fatalf("cannot parse %s as newick tree", g)
 			}
 		}
-		td, edges, err := CAMUS(constTree, geneTrees)
+		td, results, err := CAMUS(constTree, geneTrees)
 		if err != nil {
 			t.Fatalf("CAMUS failed with error %s", err)
 		}
-		result := graphs.MakeNetwork(td, edges).Newick()
+		result := graphs.MakeNetwork(td, results[len(results)-1]).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}
@@ -175,11 +175,11 @@ func TestCAMUS_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
-			td, br, err := CAMUS(tre, quartets.Trees)
+			td, results, err := CAMUS(tre, quartets.Trees)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
-			ntw := graphs.MakeNetwork(td, br)
+			ntw := graphs.MakeNetwork(td, results[len(results)-1])
 			bts, err := os.ReadFile(test.result)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)

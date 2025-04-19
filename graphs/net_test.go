@@ -30,7 +30,7 @@ func TestMakeNetwork(t *testing.T) {
 			t.Logf("root %s", constTree.Root().Name())
 			constTree.UpdateTipIndex()
 			td := MakeTreeData(constTree, nil)
-			edges := make([][2]int, len(test.edges))
+			edges := make([]Branch, len(test.edges))
 			for i, edge := range test.edges {
 				u, err := constTree.SelectNodes(edge[0])
 				t.Logf("u: %s, u (id): %d", u[0].Name(), u[0].Id())
@@ -42,7 +42,7 @@ func TestMakeNetwork(t *testing.T) {
 				if err != nil || len(w) != 1 {
 					t.Fatalf("cannot find node %s or found too many", edge[1])
 				}
-				edges[i] = [2]int{u[0].Id(), w[0].Id()}
+				edges[i] = Branch{IDs: [2]int{u[0].Id(), w[0].Id()}}
 			}
 			t.Logf("edges %v", edges)
 			result := MakeNetwork(td, edges).Newick()
