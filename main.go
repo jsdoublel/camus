@@ -46,7 +46,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.3"
+var version = "v0.3.0"
 
 type args struct {
 	command      string // infer or score
@@ -139,11 +139,13 @@ func main() {
 	}
 	switch args.command {
 	case "infer":
-		td, branches, err := infer.CAMUS(tre, geneTrees.Trees)
+		td, results, err := infer.CAMUS(tre, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+		for _, branches := range results {
+			fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+		}
 	case "score":
 		network, err := prep.ConvertToNetwork(tre)
 		if err != nil {
