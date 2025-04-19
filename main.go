@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	Version    = "v0.2.6"
+	Version    = "v0.3.0"
 	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
@@ -137,11 +137,13 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, branches, err := infer.CAMUS(tre, geneTrees.Trees)
+		td, results, err := infer.CAMUS(tre, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+		for _, branches := range results {
+			fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+		}
 	case Score:
 		log.Println("running score...")
 		network, err := prep.ConvertToNetwork(tre)
