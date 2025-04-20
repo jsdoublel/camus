@@ -101,7 +101,7 @@ Here is an example of how one might run CAMUS using example data from this
 repository:
 
 ```
-camus infer testdata/benchmark/constraint.nwk testdata/benchmark/gene-trees.nwk > out.nwk 2> log.txt
+camus infer testdata/large/constraint.nwk testdata/large/gene-trees.nwk > out.nwk 2> log.txt
 ```
 
 ### Score
@@ -157,5 +157,5 @@ Here is an example of how one might run CAMUS using example data from this
 repository:
 
 ```
-camus score testdata/benchmark/network.nwk testdata/benchmark/gene-trees.nwk > out.csv 2> log.txt
+camus score testdata/large/network.nwk testdata/large/gene-trees.nwk > out.csv 2> log.txt
 ```
