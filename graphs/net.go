@@ -28,6 +28,7 @@ func (br *Branch) Empty() bool {
 // Makes extended newick network out of newick tree and branch data computed by
 // the CAMUS algorithm
 func MakeNetwork(td *TreeData, branches []Branch) *Network {
+	td = td.Clone()
 	ret := make(map[string][2]int)
 	for i, branch := range branches {
 		ret[fmt.Sprintf("#H%d", i)] = branch.IDs // TODO: finish branch refactor

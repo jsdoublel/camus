@@ -275,3 +275,18 @@ func (td *TreeData) NumQuartet(q *Quartet) uint {
 func (td *TreeData) Under(n1ID, n2ID int) bool {
 	return td.LCA(n1ID, n2ID) == n1ID && n1ID != n2ID
 }
+
+func (td *TreeData) Clone() *TreeData {
+	tre := td.Tree.Clone()
+	return &TreeData{
+		Tree:        tre,
+		Root:        tre.Root(),
+		Children:    children(tre),
+		IdToNodes:   mapIdToNodes(tre),
+		Depths:      td.Depths,
+		leafsets:    td.leafsets,
+		lca:         td.lca,
+		tipIndexMap: td.tipIndexMap,
+		NLeaves:     td.NLeaves,
+	}
+}

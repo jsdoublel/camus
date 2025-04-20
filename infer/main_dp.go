@@ -67,10 +67,12 @@ func (dp *DP) RunDP() [][]gr.Branch {
 	numOptimal := len(dp.DP[dp.TreeData.Root.Id()])
 	log.Printf("%d edges identified\n", numOptimal)
 	log.Println("beginning traceback")
-	result := make([][]gr.Branch, numOptimal, numOptimal)
+	result := make([][]gr.Branch, numOptimal-1, numOptimal-1)
 	for m := range numOptimal {
-		log.Printf("dp scored %d at root with %d edges\n", dp.DP[dp.TreeData.Tree.Root().Id()][m], m)
-		result[m] = dp.traceback(m)
+		if m != 0 {
+			log.Printf("dp scored %d at root with %d edges\n", dp.DP[dp.TreeData.Tree.Root().Id()][m], m)
+			result[m-1] = dp.traceback(m)
+		}
 	}
 	log.Println("done.")
 	return result
