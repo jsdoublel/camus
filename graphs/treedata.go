@@ -284,3 +284,18 @@ func (td *TreeData) TotalNumQuartets() uint {
 	}
 	return result
 }
+
+func (td *TreeData) Clone() *TreeData {
+	tre := td.Tree.Clone()
+	return &TreeData{
+		Tree:        tre,
+		Root:        tre.Root(),
+		Children:    children(tre),
+		IdToNodes:   mapIdToNodes(tre),
+		Depths:      td.Depths,
+		leafsets:    td.leafsets,
+		lca:         td.lca,
+		tipIndexMap: td.tipIndexMap,
+		NLeaves:     td.NLeaves,
+	}
+}
