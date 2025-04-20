@@ -64,15 +64,17 @@ func (dp *DP) RunDP() [][]gr.Branch {
 		}
 		return true
 	})
-	numOptimal := len(dp.DP[dp.TreeData.Root.Id()])
+	numOptimal := len(dp.DP[dp.TreeData.Root.Id()]) - 1
 	log.Printf("%d edges identified\n", numOptimal)
 	log.Println("beginning traceback")
 	result := make([][]gr.Branch, numOptimal, numOptimal)
-	for m := range numOptimal {
-		finalScore := dp.DP[dp.TreeData.Tree.Root().Id()][m]
-		log.Printf("dp scored %d at root with %d edges\n", finalScore, m)
-		log.Printf("%f percent of quartets satisfied", 100*(float64(finalScore)/float64(dp.TreeData.TotalNumQuartets())))
-		result[m] = dp.traceback(m)
+	for m := range numOptimal + 1 {
+		if m != 0 {
+			finalScore := dp.DP[dp.TreeData.Tree.Root().Id()][m]
+			log.Printf("dp scored %d at root with %d edges\n", finalScore, m)
+			log.Printf("%f percent of quartets satisfied", 100*(float64(finalScore)/float64(dp.TreeData.TotalNumQuartets())))
+			result[m-1] = dp.traceback(m)
+		}
 	}
 	log.Println("done.")
 	return result
@@ -102,6 +104,9 @@ func (dp *DP) score(v *tree.Node) ([]uint, []gr.Branch) {
 		}
 		if scores[m] <= scores[m-1] {
 			panic("score did not strictly improve")
+		}
+		if len(scores) != len(branches) || len(scores) != m && len(scores) != m+1 {
+			panic(fmt.Sprintf("scores list in weird state: m %d, len(scores) %d, len(branches) %d", m, len(scores), len(branches)))
 		}
 	}
 	return scores, branches
