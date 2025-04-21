@@ -101,7 +101,11 @@ func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 
 func (dp *DP) cycleLen(u, w int) int {
 	v := dp.TreeData.LCA(u, w)
-	return (dp.TreeData.Depths[u] - dp.TreeData.Depths[v]) + (dp.TreeData.Depths[w] - dp.TreeData.Depths[v]) + 1
+	length := (dp.TreeData.Depths[u] - dp.TreeData.Depths[v]) + (dp.TreeData.Depths[w] - dp.TreeData.Depths[v]) + 1
+	if v == u { // we have to account for the edge above v that our new edge is anchored to
+		length += 1
+	}
+	return length
 }
 
 // Score branch u -> w (for w in subtree under sub); returns score, best w
@@ -111,7 +115,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 	SubtreePreOrder(sub, func(w *tree.Node) {
 		if u != w {
 			score := dp.scoreEdge(u, w, v, sub) + pathScores[w.Id()] + dp.DP[w.Id()]
-			if score >= bestScore {
+			if score > bestScore {
 				bestScore = score
 				bestW = w.Id()
 			}

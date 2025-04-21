@@ -46,7 +46,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.3"
+var version = "v0.2.4"
 
 type args struct {
 	command      string // infer or score
@@ -91,7 +91,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if *ver {
-		fmt.Printf("CAMUS version %s", version)
+		fmt.Printf("CAMUS version %s\n", version)
 		os.Exit(0)
 	}
 	if *format != "nexus" && *format != "newick" {

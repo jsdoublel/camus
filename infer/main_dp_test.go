@@ -35,7 +35,7 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((G,F),(A,H));",
 			},
-			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
+			result: "(((#H0,A),((((B,(C)#H1),(#H1,D)),E),F)),(G,(H)#H0));",
 		},
 		{
 			name:      "two-edge two",
@@ -81,6 +81,7 @@ func TestCAMUS(t *testing.T) {
 				"((G,H),(D,J));",
 				"((G,I),(D,J));",
 				"((H,I),(D,J));",
+				"((E,I),(A,J));",
 			},
 			result: "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
 		},
