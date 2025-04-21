@@ -67,15 +67,17 @@ func (dp *DP) RunDP() [][2]int {
 func (dp *DP) score(v *tree.Node) (uint, [2]int) {
 	bestScore := uint(0)
 	bestEdge := [2]int{0, 0}
+	bestCycleLen := 0
 	vPathDPScores := dp.accumlateDPScores(v)
 	if v != dp.TreeData.Root {
 		var wID int
 		bestScore, wID = dp.scoreU(v, v, v, vPathDPScores)
+		bestCycleLen = dp.cycleLen(v.Id(), wID)
 		bestEdge = [2]int{v.Id(), wID}
 	}
 	SubtreePostOrder(v, func(cur, otherSubtree *tree.Node) {
 		score, wID := dp.scoreU(cur, otherSubtree, v, vPathDPScores)
-		if score >= bestScore {
+		if score > bestScore || (score == bestScore && dp.cycleLen(cur.Id(), wID) <= bestCycleLen) {
 			bestScore, bestEdge = score, [2]int{cur.Id(), wID}
 		}
 	})
@@ -95,6 +97,11 @@ func (dp *DP) accumlateDPScores(v *tree.Node) map[int]uint {
 		}
 	})
 	return pathScores
+}
+
+func (dp *DP) cycleLen(u, w int) int {
+	v := dp.TreeData.LCA(u, w)
+	return (dp.TreeData.Depths[u] - dp.TreeData.Depths[v]) + (dp.TreeData.Depths[w] - dp.TreeData.Depths[v]) + 1
 }
 
 // Score branch u -> w (for w in subtree under sub); returns score, best w
