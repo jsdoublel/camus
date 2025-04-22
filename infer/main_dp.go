@@ -28,7 +28,7 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, [][2]int, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
-	log.Print("preprocessing finished, beginning CAMUS\n")
+	log.Print("preprocessing finished, beginning dp algorithm\n")
 	n := len(td.Tree.Nodes())
 	dp := &DP{DP: make([]uint, n, n), Branches: make([][2]int, n), TreeData: td}
 	return td, dp.RunDP(), nil
@@ -57,9 +57,11 @@ func (dp *DP) RunDP() [][2]int {
 		}
 		return true
 	})
-	log.Printf("dp scored %d at root\n", dp.DP[dp.TreeData.Tree.Root().Id()])
+	finalScore := dp.DP[dp.TreeData.Tree.Root().Id()]
+	log.Printf("dp scored %d at root\n", finalScore)
 	result := dp.traceback()
 	log.Printf("%d edges identified\n", len(result))
+	log.Printf("%f percent of quartets satisfied", 100*(float64(finalScore)/float64(dp.TreeData.TotalNumQuartets())))
 	return result
 }
 

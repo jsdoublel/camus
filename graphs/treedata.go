@@ -275,3 +275,12 @@ func (td *TreeData) NumQuartet(q *Quartet) uint {
 func (td *TreeData) Under(n1ID, n2ID int) bool {
 	return td.LCA(n1ID, n2ID) == n1ID && n1ID != n2ID
 }
+
+// returns total number of quartets (all topologies)
+func (td *TreeData) TotalNumQuartets() uint {
+	result := uint(0)
+	for _, count := range *td.quartetCounts {
+		result += count
+	}
+	return result
+}
