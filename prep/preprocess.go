@@ -47,10 +47,11 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 		panic(err)
 	}
 	qCounts := make(map[graphs.Quartet]uint)
-	countTotal := len(geneTrees)
+	countGTree := len(geneTrees)
+	countTotal := uint(0)
 	countNew := uint(0)
 	for i, gt := range geneTrees {
-		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countTotal))
+		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
 		if !IsSingleCopy(gt) {
 			return nil, fmt.Errorf("gene tree on line %d : %w", i, ErrMulTree)
 		}
@@ -67,9 +68,10 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 				qCounts[quartet] += count
 				countNew += count
 			}
+			countTotal += count
 		}
 	}
-	log.Printf("%d gene trees provided, %d new quartet trees were found\n", countTotal, countNew)
+	log.Printf("%d gene trees provided, containing %d quartets; %d new quartet trees were found\n", countGTree, countTotal, countNew)
 	return &qCounts, nil
 }
 
