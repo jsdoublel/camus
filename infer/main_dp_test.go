@@ -8,7 +8,7 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 	"github.com/jsdoublel/camus/prep"
 )
 
@@ -148,7 +148,7 @@ func TestCAMUS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CAMUS failed with error %s", err)
 		}
-		result := graphs.MakeNetwork(td, results[len(results)-1]).Newick()
+		result := gr.MakeNetwork(td, results[len(results)-1]).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}
@@ -179,7 +179,7 @@ func TestCAMUS_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
-			ntw := graphs.MakeNetwork(td, results[len(results)-1])
+			ntw := gr.MakeNetwork(td, results[len(results)-1])
 			bts, err := os.ReadFile(test.result)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)

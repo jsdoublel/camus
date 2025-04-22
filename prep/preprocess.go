@@ -9,7 +9,7 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, error) {
 	tre.UpdateTipIndex()
 	if !tre.Rooted() {
 		return nil, fmt.Errorf("constraint tree is %w", ErrUnrooted)
@@ -35,18 +35,18 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*graphs.TreeData, error
 	if err != nil {
 		return nil, err
 	}
-	treeData := graphs.MakeTreeData(tre, qCounts)
+	treeData := gr.MakeTreeData(tre, qCounts)
 	return treeData, nil
 }
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quartet]uint, error) {
-	treeQuartets, err := graphs.QuartetsFromTree(tre.Clone(), tre)
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[gr.Quartet]uint, error) {
+	treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qCounts := make(map[graphs.Quartet]uint)
+	qCounts := make(map[gr.Quartet]uint)
 	countGTree := len(geneTrees)
 	countTotal := uint(0)
 	countNew := uint(0)
@@ -56,7 +56,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[graphs.Quarte
 			return nil, fmt.Errorf("gene tree on line %d : %w", i, ErrMulTree)
 		}
 		gt.UpdateTipIndex()
-		newQuartets, err := graphs.QuartetsFromTree(gt, tre)
+		newQuartets, err := gr.QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +101,7 @@ func isBinary(node *tree.Node, allowUnifurcations bool) bool {
 	if node.Tip() {
 		return true
 	}
-	children := graphs.GetChildren(node)
+	children := gr.GetChildren(node)
 	if node.Nneigh() == 2 && allowUnifurcations {
 		return isBinary(children[0], allowUnifurcations)
 	}

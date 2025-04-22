@@ -8,7 +8,7 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 	"github.com/jsdoublel/camus/infer"
 	"github.com/jsdoublel/camus/prep"
 )
@@ -23,8 +23,8 @@ type reticulation struct {
 	wSub *tree.Node
 }
 
-func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
-	td := graphs.MakeTreeData(ntw.NetTree, nil)
+func CalculateReticulationScore(ntw *gr.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
+	td := gr.MakeTreeData(ntw.NetTree, nil)
 	if !ntw.Level1(td) {
 		return nil, fmt.Errorf("network is %w", ErrNotLevel1)
 	}
@@ -36,24 +36,24 @@ func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*ma
 		totals := make(map[string]uint)
 		supported := make(map[string]uint)
 		gtre.UnRoot()
-		constMap, err := graphs.MapIDsFromConstTree(gtre, ntw.NetTree)
+		constMap, err := gr.MapIDsFromConstTree(gtre, ntw.NetTree)
 		if err != nil {
 			return nil, err
 		}
 		gtre.Quartets(false, func(q *tree.Quartet) {
 			for label, branch := range reticulations {
 				comp := infer.QuartetScore(
-					graphs.QuartetFromTreeQ(q, constMap),
+					gr.QuartetFromTreeQ(q, constMap),
 					branch.u,
 					branch.w,
 					branch.v,
 					branch.wSub,
 					td,
 				)
-				if comp != graphs.Qdiff {
+				if comp != gr.Qdiff {
 					totals[label] += 1
 				}
-				if comp == graphs.Qeq {
+				if comp == gr.Qeq {
 					supported[label] += 1
 				}
 			}
@@ -72,10 +72,10 @@ func CalculateReticulationScore(ntw *graphs.Network, gtrees []*tree.Tree) ([]*ma
 }
 
 // Get reticulation name to node map
-func getReticulationNodes(ntw *graphs.Network, td *graphs.TreeData) *map[string]reticulation {
+func getReticulationNodes(ntw *gr.Network, td *gr.TreeData) *map[string]reticulation {
 	result := make(map[string]reticulation)
 	for label, branch := range ntw.Reticulations {
-		uId, wId := branch[graphs.Ui], branch[graphs.Wi]
+		uId, wId := branch.IDs[gr.Ui], branch.IDs[gr.Wi]
 		vId := td.LCA(uId, wId)
 		for _, neigh := range td.IdToNodes[vId].Neigh() {
 			if td.LCA(vId, wId) == vId {
