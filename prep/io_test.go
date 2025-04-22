@@ -200,8 +200,8 @@ func TestConvertToNetwork(t *testing.T) {
 			})
 			for k, v := range test.expReticulations {
 				for i := range 2 {
-					if id := nameMap[v[i]]; net.Reticulations[k][i] != id {
-						t.Errorf("%s mapped to %d when it should have mapped to %d", k, net.Reticulations[k][i], id)
+					if id := nameMap[v[i]]; net.Reticulations[k].IDs[i] != id {
+						t.Errorf("%s mapped to %d when it should have mapped to %d", k, net.Reticulations[k].IDs[i], id)
 					}
 				}
 			}

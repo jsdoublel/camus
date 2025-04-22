@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/io/nexus"
@@ -134,14 +134,14 @@ func readGeneTreesFile(genetreesFile string, format Format) (*GeneTrees, error) 
 }
 
 // Read in extended newick file and make network
-func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
+func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 	if !ntw.Rooted() {
 		return nil, fmt.Errorf("network is %w", ErrUnrooted)
 	}
 	if !NetworkIsBinary(ntw) {
 		return nil, fmt.Errorf("network is %w", ErrNonBinary)
 	}
-	ret := make(map[string][2]int)
+	ret := make(map[string]gr.Branch)
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%w, too many or invalid matching reticulation label %v", ErrInvalidFormat, r)
@@ -161,20 +161,20 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 						v = n
 					}
 				}
-				if branch[graphs.Ui] != 0 || v == nil {
+				if branch.IDs[gr.Ui] != 0 || v == nil {
 					panic(fmt.Sprintf("%s", cur.Name()))
 				}
-				branch[graphs.Ui] = v.Id()
+				branch.IDs[gr.Ui] = v.Id()
 			} else {
 				for _, n := range cur.Neigh() {
 					if n != cur && n != prev {
 						v = n
 					}
 				}
-				if branch[graphs.Wi] != 0 || v == nil {
+				if branch.IDs[gr.Wi] != 0 || v == nil {
 					panic(fmt.Sprintf("%s", cur.Name()))
 				}
-				branch[graphs.Wi] = v.Id()
+				branch.IDs[gr.Wi] = v.Id()
 			}
 			ret[cur.Name()] = branch
 		}
@@ -184,12 +184,12 @@ func ConvertToNetwork(ntw *tree.Tree) (network *graphs.Network, err error) {
 		return nil, fmt.Errorf("%w - not a network", ErrNoReticulations)
 	}
 	for label, branch := range ret {
-		if branch[graphs.Ui] == 0 || branch[graphs.Wi] == 0 { // assumes root node is not labeled as reticulation
+		if branch.IDs[gr.Ui] == 0 || branch.IDs[gr.Wi] == 0 { // assumes root node is not labeled as reticulation
 			return nil, fmt.Errorf("%w, label %s is unmatched", ErrInvalidFormat, label)
 		}
 	}
 	ntw.UpdateTipIndex()
-	return &graphs.Network{NetTree: ntw, Reticulations: ret}, nil
+	return &gr.Network{NetTree: ntw, Reticulations: ret}, nil
 }
 
 // Write csv file containing reticulation branch scores to stdout

@@ -9,7 +9,7 @@ import (
 
 type Network struct {
 	NetTree       *tree.Tree        // tree from extended newick
-	Reticulations map[string][2]int // reticulation branches
+	Reticulations map[string]Branch // reticulation branches
 }
 
 const (
@@ -29,9 +29,9 @@ func (br *Branch) Empty() bool {
 // the CAMUS algorithm
 func MakeNetwork(td *TreeData, branches []Branch) *Network {
 	td = td.Clone()
-	ret := make(map[string][2]int)
+	ret := make(map[string]Branch)
 	for i, branch := range branches {
-		ret[fmt.Sprintf("#H%d", i)] = branch.IDs // TODO: finish branch refactor
+		ret[fmt.Sprintf("#H%d", i)] = branch
 		u, w := td.IdToNodes[branch.IDs[Ui]], td.IdToNodes[branch.IDs[Wi]]
 		uEdge, err := u.ParentEdge()
 		if err != nil {
@@ -84,8 +84,8 @@ func (ntw *Network) Level1(td *TreeData) bool {
 		for j := i + 1; j < len(branchs); j++ {
 			r1 := ntw.Reticulations[branchs[i]]
 			r2 := ntw.Reticulations[branchs[j]]
-			vR1 := td.LCA(r1[0], r1[1])
-			vR2 := td.LCA(r2[0], r2[1])
+			vR1 := td.LCA(r1.IDs[0], r1.IDs[1])
+			vR2 := td.LCA(r2.IDs[0], r2.IDs[1])
 			if vR1 == vR2 || illSorted(vR1, vR2, r1, td) || illSorted(vR2, vR1, r2, td) {
 				return false
 			}
@@ -94,6 +94,6 @@ func (ntw *Network) Level1(td *TreeData) bool {
 	return true
 }
 
-func illSorted(v1, v2 int, r1 [2]int, td *TreeData) bool {
-	return td.Under(v1, v2) && (td.Under(v2, r1[0]) || td.Under(v2, r1[1]))
+func illSorted(v1, v2 int, r1 Branch, td *TreeData) bool {
+	return td.Under(v1, v2) && (td.Under(v2, r1.IDs[0]) || td.Under(v2, r1.IDs[1]))
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 )
 
 func TestIsBinary(t *testing.T) {
@@ -85,7 +85,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				"((a,b),(c,d));",
 				"(((a,b),(c,d)),e);",
 			},
-			expectedErr: graphs.ErrTipNameMismatch,
+			expectedErr: gr.ErrTipNameMismatch,
 		},
 		{
 			name: "non-binary input trees",
@@ -164,24 +164,24 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
-			expectedList := []*graphs.Quartet{}
+			expectedList := []*gr.Quartet{}
 			for _, nwk := range test.expected {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 				if err != nil {
 					t.Errorf("invalid newick tree %s; test is written wrong", nwk)
 				}
-				q, err := graphs.NewQuartet(tr, tre)
+				q, err := gr.NewQuartet(tr, tre)
 				if err != nil {
 					t.Errorf("invalid newick tree %s; test is written wrong", nwk)
 				}
 				expectedList = append(expectedList, q)
 			}
-			expected := make(map[graphs.Quartet]uint)
+			expected := make(map[gr.Quartet]uint)
 			for _, q := range expectedList {
 				expected[*q] += 1
 			}
 			if !reflect.DeepEqual(*result, expected) {
-				t.Errorf("actual %s != expected %s", graphs.QSetToString(*result, tre), graphs.QSetToString(expected, tre))
+				t.Errorf("actual %s != expected %s", gr.QSetToString(*result, tre), gr.QSetToString(expected, tre))
 			}
 		})
 	}
