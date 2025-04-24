@@ -3,7 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [ -h | -v | -f <format> ] <command> <tree> <gene_trees>
+usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>
 
 commands:
 
@@ -44,10 +44,19 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.6"
+var Version = "v0.2.6"
+
+var ErrMessage = "Sisyphus was not happy :("
 
 type Command int
 type Format int
+
+type args struct {
+	command      Command // infer or score
+	gtFormat     Format  // gene tree file format
+	treeFile     string  // constraint or network tree file
+	geneTreeFile string  // gene trees
+}
 
 const (
 	Newick Format = iota
@@ -56,6 +65,11 @@ const (
 	Infer Command = iota
 	Score
 )
+
+var parseCommand = map[string]Command{
+	"infer": Infer,
+	"score": Score,
+}
 
 var parseFormat = map[string]Format{
 	"newick": Newick,
@@ -79,24 +93,10 @@ func (f Format) String() string {
 	panic(fmt.Sprintf("format (%d) does not exist", f))
 }
 
-var parseCommand = map[string]Command{
-	"infer": Infer,
-	"score": Score,
-}
-
-type args struct {
-	command      Command // infer or score
-	gtFormat     Format  // gene tree file format
-	treeFile     string  // constraint or network tree file
-	geneTreeFile string  // gene trees
-}
-
-var ErrMessage = "Sisyphus was not happy :("
-
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [ -h | -v | -f <format> ] <command> <tree> <gene_trees>\n",
+			"usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>\n",
 			"\n",
 			"commands:\n\n",
 			"  infer\t\tfind level-1 network given constraint tree and gene trees\n",
@@ -128,7 +128,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if *ver {
-		fmt.Printf("CAMUS version %s\n", version)
+		fmt.Printf("CAMUS version %s\n", Version)
 		os.Exit(0)
 	}
 	if flag.NArg() != 3 {
@@ -156,7 +156,7 @@ func parserError(message string) {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
-	log.Printf("CAMUS version %s", version)
+	log.Printf("CAMUS version %s", Version)
 	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat.String())
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
@@ -180,5 +180,7 @@ func main() {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
 		prep.WriteBranchScoresToCSV(scores, geneTrees.Names)
+	default:
+		panic(fmt.Sprintf("inavlid command (%d)", args.command))
 	}
 }
