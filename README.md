@@ -18,7 +18,6 @@ installed [here](https://go.dev/doc/install)).
 Additionally, CAMUS depends on the following three go modules:
 
 - [bitset](https://github.com/bits-and-blooms/bitset)
-- [go-isatty](https://github.com/mattn/go-isatty).
 - [gotree](https://github.com/evolbioinfo/gotree) 
 
 There are three methods for installing CAMUS. 

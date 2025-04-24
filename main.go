@@ -17,7 +17,7 @@ positional arguments:
 
 flags:
 
-	-f string
+	-f format
 	  	gene tree format [ newick | nexus ] (default "newick")
 	-h	prints this message and exits
 	-v	prints version number and exits
@@ -38,24 +38,60 @@ import (
 	"log"
 	"os"
 
-	"github.com/mattn/go-isatty"
-
 	"github.com/jsdoublel/camus/graphs"
 	"github.com/jsdoublel/camus/infer"
 	"github.com/jsdoublel/camus/prep"
 	"github.com/jsdoublel/camus/score"
 )
 
-var version = "v0.2.5"
+var version = "v0.2.6"
 
-type args struct {
-	command      string // infer or score
-	treeFile     string // constraint or network tree file
-	geneTreeFile string // gene trees
-	gtFormat     string // gene tree file format
+type Command int
+type Format int
+
+const (
+	Newick Format = iota
+	Nexus
+
+	Infer Command = iota
+	Score
+)
+
+var parseFormat = map[string]Format{
+	"newick": Newick,
+	"nexus":  Nexus,
 }
 
-var ErrMessage = red("error:")
+func (f *Format) Set(s string) error {
+	if format, ok := parseFormat[s]; ok {
+		*f = format
+		return nil
+	}
+	return fmt.Errorf("\"%s\" is not a valid gene tree file format", s)
+}
+
+func (f Format) String() string {
+	for s, fr := range parseFormat {
+		if fr == f {
+			return s
+		}
+	}
+	panic(fmt.Sprintf("format (%d) does not exist", f))
+}
+
+var parseCommand = map[string]Command{
+	"infer": Infer,
+	"score": Score,
+}
+
+type args struct {
+	command      Command // infer or score
+	gtFormat     Format  // gene tree file format
+	treeFile     string  // constraint or network tree file
+	geneTreeFile string  // gene trees
+}
+
+var ErrMessage = "Sisyphus was not happy :("
 
 func parseArgs() args {
 	flag.Usage = func() {
@@ -82,9 +118,10 @@ func parseArgs() args {
 			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
+	format := Newick
+	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ]")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
-	format := flag.String("f", "newick", "gene tree format [ newick | nexus ]")
 	flag.Parse()
 	if *help {
 		flag.Usage()
@@ -94,23 +131,18 @@ func parseArgs() args {
 		fmt.Printf("CAMUS version %s\n", version)
 		os.Exit(0)
 	}
-	if *format != "nexus" && *format != "newick" {
-		parserError(fmt.Sprintf("%s \"%s\" is not a valid gene tree file format", ErrMessage, *format))
-	}
-	if flag.Arg(0) == "" {
-		parserError(fmt.Sprintf("%s no command given: either infer or score required", ErrMessage))
-	}
-	if flag.Arg(0) != "infer" && flag.Arg(0) != "score" {
-		parserError(fmt.Sprintf("%s \"%s\" is not a valid command", ErrMessage, flag.Arg(0)))
-	}
 	if flag.NArg() != 3 {
-		parserError(fmt.Sprintf("%s two positional arguments required: <tree> <gene_tree_file>", ErrMessage))
+		parserError("three positional arguments required: <command> <tree> <gene_tree_file>")
+	}
+	cmd, ok := parseCommand[flag.Arg(0)]
+	if !ok {
+		parserError(fmt.Sprintf("\"%s\" is not a valid command: either \"infer\" or \"score\" required", flag.Arg(0)))
 	}
 	return args{
-		command:      flag.Arg(0),
+		command:      cmd,
+		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
-		gtFormat:     *format,
 	}
 }
 
@@ -121,30 +153,24 @@ func parserError(message string) {
 	os.Exit(1)
 }
 
-// makes text printed to terminal red
-func red(str string) string {
-	if isatty.IsTerminal(os.Stderr.Fd()) {
-		return fmt.Sprintf("\033[31m%s\033[0m", str)
-	}
-	return str
-}
-
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("CAMUS version %s", version)
-	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
+	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat.String())
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
 	switch args.command {
-	case "infer":
+	case Infer:
+		log.Println("running infer...")
 		td, branches, err := infer.CAMUS(tre, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
 		fmt.Println(graphs.MakeNetwork(td, branches).Newick())
-	case "score":
+	case Score:
+		log.Println("running score...")
 		network, err := prep.ConvertToNetwork(tre)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
@@ -154,7 +180,5 @@ func main() {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
 		prep.WriteBranchScoresToCSV(scores, geneTrees.Names)
-	default:
-		panic(fmt.Sprintf("allowed invalid command %s", args.command))
 	}
 }

@@ -10,8 +10,3 @@ github.com/fredericlemoine/bitset v1.2.0 h1:RMdEqiqXAuufXz6gk1RO95w2p/Z7pFL0k45w
 github.com/fredericlemoine/bitset v1.2.0/go.mod h1:fEGlWPx4YvxYdUdd5ULnC/Tb0CLOdGX/Lgpx4ri32aU=
 github.com/fredericlemoine/gostats v0.1.1 h1:vODa3brG7tt98FNAkfLC7KFIg3qrm5li9GHbmjLLWxk=
 github.com/fredericlemoine/gostats v0.1.1/go.mod h1:5OBBRN6vXzgXAJfprZ1WPahOHPJw2wJjmVtijhTqsX8=
-github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
-github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.31.0 h1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=
-golang.org/x/sys v0.31.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
