@@ -1,8 +1,8 @@
+# CAMUS
+
 [![build](https://github.com/jsdoublel/camus/actions/workflows/go.yml/badge.svg)](https://github.com/jsdoublel/camus/actions)
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/jsdoublel/camus)](https://go.dev/)
 [![GitHub License](https://img.shields.io/github/license/jsdoublel/camus)](https://github.com/jsdoublel/camus/blob/main/LICENSE.txt)
-
-# CAMUS
 
 CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
@@ -14,11 +14,6 @@ constraint tree.
 CAMUS should be able to build on any operating system, though it has only been
 tested on Linux. It is implemented in the Go programming language (which can be
 installed [here](https://go.dev/doc/install)).
-
-Additionally, CAMUS depends on the following three go modules:
-
-- [bitset](https://github.com/bits-and-blooms/bitset)
-- [gotree](https://github.com/evolbioinfo/gotree) 
 
 There are three methods for installing CAMUS. 
 
@@ -36,13 +31,11 @@ directory make sure you add `$GOPATH/bin` to your `PATH` environmental variable.
 
 ### Build from source
 
-Once Go is installed, clone the repository, download dependencies, and build
-the project with the following commands:
+Once Go is installed, clone the repository and build the project with the following commands:
 
 ```
 git clone https://github.com/jsdoublel/camus.git
 cd camus
-go mod download
 go build
 ```
 
@@ -57,9 +50,10 @@ binaries compiled on my personal computer (i.e., Linux x86_64).
 camus [ -h | -v | -f <format> ] <command> <tree> <gene_trees>
 ```
 
-There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
+There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments 
+indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
 
-- `-f string [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
+- `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
 - `-h` prints usage information and exits
 - `-v` prints software version and exits
 
