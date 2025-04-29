@@ -99,7 +99,7 @@ func (dp *DP) RunDP() [][]gr.Branch {
 func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 	lID, rID := dp.TreeData.Children[v.Id()][0].Id(), dp.TreeData.Children[v.Id()][1].Id()
 	scores := make([]uint, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
-	branches := make([]trace, 1, dp.NumNodes)
+	traces := make([]trace, 1, dp.NumNodes)
 	scores[0] = dp.DP[lID][0] + dp.DP[rID][0]
 	for k := 1; ; k++ {
 		score, edgeTrace := dp.scoreV(v, k)
@@ -111,10 +111,10 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 		}
 		if score > noEdgeScore {
 			scores = append(scores, score)
-			branches = append(branches, edgeTrace)
+			traces = append(traces, edgeTrace)
 		} else {
 			scores = append(scores, noEdgeScore)
-			branches = append(branches, &noCycleTrace{
+			traces = append(traces, &noCycleTrace{
 				prevs: [2]*trace{&dp.Traceback[lID][lK], &dp.Traceback[rID][rK]},
 			})
 		}
@@ -124,11 +124,11 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 		if scores[k] <= scores[k-1] {
 			panic("score did not strictly improve")
 		}
-		if len(scores) != len(branches) || len(scores) != k && len(scores) != k+1 {
-			panic(fmt.Sprintf("scores list in weird state: k %d, len(scores) %d, len(branches) %d", k, len(scores), len(branches)))
+		if len(scores) != len(traces) || len(scores) != k && len(scores) != k+1 {
+			panic(fmt.Sprintf("scores list in weird state: k %d, len(scores) %d, len(branches) %d", k, len(scores), len(traces)))
 		}
 	}
-	return scores, branches
+	return scores, traces
 }
 
 func bestSplit(l, r []uint, k int) (int, int) {
@@ -177,7 +177,10 @@ func (dp *DP) scoreV(v *tree.Node, k int) (uint, trace) {
 
 // Add up dp scores along path from v ~> w
 func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
-	pathScores := make(map[int]uint)
+	pathScores := pathDPScores{
+		make([]uint, dp.NumNodes, dp.NumNodes),
+		make([]*cycleTraceNode, dp.NumNodes, dp.NumNodes),
+	}
 	SubtreePreOrder(v, func(cur *tree.Node) {
 		if cur != v {
 			if p, err := cur.Parent(); v != dp.TreeData.Root && err != nil {
@@ -185,7 +188,13 @@ func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
 			} else if p != v && cur != dp.TreeData.Root {
 				sibId := dp.TreeData.Sibling(cur).Id()
 				kLookup := min(len(dp.DP[sibId])-1, prevK)
-				pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[sibId][kLookup]
+				pScore, pTrace := pathScores.get(p.Id())
+				pathScores.set(
+					cur.Id(),
+					pScore+dp.DP[sibId][kLookup],
+					cycleTraceNode{p: pTrace, sib: &dp.Traceback[sibId][kLookup]},
+				)
+				// pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[sibId][kLookup]
 			}
 		}
 	})
@@ -202,9 +211,11 @@ func (dp *DP) cycleLen(u, w int) int {
 }
 
 // Score branch u -> w (for w in subtree under sub); returns score, best w
-func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint, prevK int) (uint, int, cycleTrace) {
+func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores pathDPScores, prevK int) (uint, int, cycleTrace) {
 	var bestScore uint
 	var bestW int
+	var bestWKLookup int
+	var bestWTrace *cycleTraceNode
 	SubtreePreOrder(sub, func(w *tree.Node) {
 		if u != w { // TODO: is this check necessary?
 			edgeScore := dp.brScoreCache[u.Id()][w.Id()]
@@ -213,19 +224,28 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint, prevK int) (
 				dp.brScoreCache[u.Id()][w.Id()] = edgeScore
 			}
 			kLookup := min(len(dp.DP[w.Id()])-1, prevK)
-			score := edgeScore + pathScores[w.Id()] + dp.DP[w.Id()][kLookup]
+			wScore, wTrace := pathScores.get(w.Id())
+			score := edgeScore + wScore + dp.DP[w.Id()][kLookup]
 			if score > bestScore {
 				bestScore = score
 				bestW = w.Id()
+				bestWKLookup = kLookup
+				bestWTrace = wTrace
 			}
 		}
 	})
-	score := pathScores[u.Id()] + bestScore
+	uScore, uTrace := pathScores.get(u.Id())
+	score := uScore + bestScore
 	if u != v {
 		mLookup := min(len(dp.DP[u.Id()])-1, prevK)
 		score += dp.DP[u.Id()][mLookup]
 	}
-	return score, bestW, prevs
+	return score, bestW, cycleTrace{
+		pathW:  bestWTrace,
+		pathU:  uTrace,
+		wTrace: &dp.Traceback[bestW][bestWKLookup],
+		branch: gr.Branch{IDs: [2]int{u.Id(), bestW}},
+	}
 }
 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
@@ -311,6 +331,10 @@ func neighborTaxaQ(q *gr.Quartet, i int) int {
 		}
 	}
 	panic("invalid quartet or bad i")
+}
+
+func (dp DP) traceback(k int) []gr.Branch {
+	return dp.Traceback[dp.TreeData.Root.Id()][k].traceback()
 }
 
 // func (dp *DP) traceback(k int) []gr.Branch {
