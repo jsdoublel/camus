@@ -44,53 +44,26 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var Version = "v0.2.6"
-
-var ErrMessage = "Sisyphus was not happy :("
-
-type Command int
-type Format int
-
-type args struct {
-	command      Command // infer or score
-	gtFormat     Format  // gene tree file format
-	treeFile     string  // constraint or network tree file
-	geneTreeFile string  // gene trees
-}
-
 const (
-	Newick Format = iota
-	Nexus
+	Version    = "v0.2.6"
+	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
 	Score
 )
 
+type Command int
+
+type args struct {
+	command      Command     // infer or score
+	gtFormat     prep.Format // gene tree file format
+	treeFile     string      // constraint or network tree file
+	geneTreeFile string      // gene trees
+}
+
 var parseCommand = map[string]Command{
 	"infer": Infer,
 	"score": Score,
-}
-
-var parseFormat = map[string]Format{
-	"newick": Newick,
-	"nexus":  Nexus,
-}
-
-func (f *Format) Set(s string) error {
-	if format, ok := parseFormat[s]; ok {
-		*f = format
-		return nil
-	}
-	return fmt.Errorf("\"%s\" is not a valid gene tree file format", s)
-}
-
-func (f Format) String() string {
-	for s, fr := range parseFormat {
-		if fr == f {
-			return s
-		}
-	}
-	panic(fmt.Sprintf("format (%d) does not exist", f))
 }
 
 func parseArgs() args {
@@ -118,7 +91,7 @@ func parseArgs() args {
 			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
-	format := Newick
+	format := prep.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ]")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
@@ -157,7 +130,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("CAMUS version %s", Version)
-	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat.String())
+	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}

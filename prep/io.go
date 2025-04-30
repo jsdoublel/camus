@@ -23,6 +23,35 @@ var (
 	ErrNoReticulations = errors.New("no reticulations")
 )
 
+type Format int
+
+const (
+	Newick Format = iota
+	Nexus
+)
+
+var parseFormat = map[string]Format{
+	"newick": Newick,
+	"nexus":  Nexus,
+}
+
+func (f *Format) Set(s string) error {
+	if format, ok := parseFormat[s]; ok {
+		*f = format
+		return nil
+	}
+	return fmt.Errorf("\"%s\" is not a valid gene tree file format", s)
+}
+
+func (f Format) String() string {
+	for s, fr := range parseFormat {
+		if fr == f {
+			return s
+		}
+	}
+	panic(fmt.Sprintf("format (%d) does not exist", f))
+}
+
 type GeneTrees struct {
 	Trees []*tree.Tree // gene trees
 	Names []string     // gene names
@@ -31,7 +60,7 @@ type GeneTrees struct {
 // Reads in and validates constraint tree and gene tree input files.
 // Returns an error if the newick format is invalid, or the file is invalid for
 // some other reason (e.g., more than one constraint tree)
-func ReadInputFiles(treeFile, genetreesFile, format string) (*tree.Tree, *GeneTrees, error) {
+func ReadInputFiles(treeFile, genetreesFile string, format Format) (*tree.Tree, *GeneTrees, error) {
 	tre, err := readTreeFile(treeFile)
 	if err != nil {
 		return nil, nil, err
@@ -61,7 +90,7 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 }
 
 // reads and validates gene tree file
-func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
+func readGeneTreesFile(genetreesFile string, format Format) (*GeneTrees, error) {
 	file, err := os.Open(genetreesFile)
 	if err != nil {
 		return nil, fmt.Errorf("error opening %s, %w", genetreesFile, err)
@@ -70,7 +99,7 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 	geneTreeList := make([]*tree.Tree, 0)
 	geneTreeNames := make([]string, 0)
 	switch format {
-	case "newick":
+	case Newick:
 		scanner := bufio.NewScanner(file)
 		for i := 0; scanner.Scan(); i++ {
 			line := strings.TrimSpace(scanner.Text())
@@ -89,7 +118,7 @@ func readGeneTreesFile(genetreesFile, format string) (*GeneTrees, error) {
 		for i := range len(geneTreeList) {
 			geneTreeNames = append(geneTreeNames, strconv.Itoa(i+1))
 		}
-	case "nexus":
+	case Nexus:
 		nex, err := nexus.NewParser(file).Parse()
 		if err != nil {
 			return nil, fmt.Errorf("%w, error reading gene tree nexus file %s: %s", ErrInvalidFormat, genetreesFile, err.Error())

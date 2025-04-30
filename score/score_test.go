@@ -113,7 +113,7 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, genes, err := prep.ReadInputFiles(test.network, test.gtrees, "newick")
+			tre, genes, err := prep.ReadInputFiles(test.network, test.gtrees, prep.Newick)
 			if err != nil {
 				t.Fatalf("failed to read in input files %s", err)
 			}
@@ -151,7 +151,7 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
 	netFile := "../testdata/large/network.nwk"
 	geneTrees := "../testdata/large/gene-trees.nwk"
-	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees, "newick")
+	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees, prep.Newick)
 	if err != nil {
 		b.Fatalf("failed to read in input files %s", err)
 	}

@@ -171,7 +171,7 @@ func TestCAMUS_Large(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, quartets, err := prep.ReadInputFiles(test.constTree, test.geneTrees, "newick")
+			tre, quartets, err := prep.ReadInputFiles(test.constTree, test.geneTrees, prep.Newick)
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
@@ -194,7 +194,7 @@ func TestCAMUS_Large(t *testing.T) {
 func BenchmarkCAMUS(b *testing.B) {
 	constTreeFile := "../testdata/large/constraint.nwk"
 	geneTreeFile := "../testdata/large/gene-trees.nwk"
-	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile, "newick")
+	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile, prep.Newick)
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
