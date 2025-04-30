@@ -109,22 +109,45 @@ func TestCAMUS(t *testing.T) {
 			},
 			result: "((#H0,(((((A,B))#H0,C),D),E)),F);",
 		},
+		{
+			name:      "test under node w lookup",
+			constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
+			geneTrees: []string{
+				"((C,D),(B,H));",
+				"((F,G),(E,H));",
+				"((R,A),(B,H));",
+			},
+			result: "(R,((A,((((B,(C)#H1),(#H1,D)),((E,(F)#H2),(#H2,G))))#H0),(#H0,H)));",
+		},
+		{
+			name:      "test under node u lookup",
+			constTree: "(R,((A,(I,J)),((((B,C),D),H),((E,F),G))));",
+			// constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
+			geneTrees: []string{
+				"((C,D),(B,A));",
+				"((F,G),(E,A));",
+				"((H,A),(E,C));",
+				"((H,R),(E,C));",
+				"((I,R),(J,A));",
+			},
+			result: "(R,(((A)#H0,(I,(#H0,J))),(((((B,(C)#H3),(#H3,D)))#H1,H),(#H1,((E,(F)#H2),(#H2,G))))));",
+		},
 	}
 	for _, test := range testCases {
 		constTree, err := newick.NewParser(strings.NewReader(test.constTree)).Parse()
 		if err != nil {
-			t.Errorf("cannot parse %s as newick tree", test.constTree)
+			t.Fatalf("cannot parse %s as newick tree", test.constTree)
 		}
 		geneTrees := make([]*tree.Tree, len(test.geneTrees))
 		for i, g := range test.geneTrees {
 			geneTrees[i], err = newick.NewParser(strings.NewReader(g)).Parse()
 			if err != nil {
-				t.Errorf("cannot parse %s as newick tree", g)
+				t.Fatalf("cannot parse %s as newick tree", g)
 			}
 		}
 		td, edges, err := CAMUS(constTree, geneTrees)
 		if err != nil {
-			t.Errorf("CAMUS failed with error %s", err)
+			t.Fatalf("CAMUS failed with error %s", err)
 		}
 		result := graphs.MakeNetwork(td, edges).Newick()
 		if result != test.result {
