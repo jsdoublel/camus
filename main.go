@@ -44,7 +44,7 @@ import (
 	"github.com/jsdoublel/camus/score"
 )
 
-var Version = "v0.2.6"
+var Version = "v0.2.7"
 
 var ErrMessage = "Sisyphus was not happy :("
 
