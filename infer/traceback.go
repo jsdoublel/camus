@@ -43,7 +43,11 @@ type cycleTrace struct {
 
 func (tr cycleTrace) traceback() []gr.Branch {
 	result := append((*tr.wTrace).traceback(), tr.branch)
-	result = append(result, tr.pathU.traceUp()...)
-	result = append(result, tr.pathW.traceUp()...)
+	if tr.pathU != nil {
+		result = append(result, tr.pathU.traceUp()...)
+	}
+	if tr.pathW != nil {
+		result = append(result, tr.pathW.traceUp()...)
+	}
 	return result
 }

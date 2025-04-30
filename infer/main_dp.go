@@ -6,6 +6,7 @@
 package infer
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -15,7 +16,9 @@ import (
 	"github.com/jsdoublel/camus/prep"
 )
 
-const noCache = ^uint(0)
+const maxVal = ^uint(0)
+
+var ErrNoValidSplit = errors.New("no valid split")
 
 type DP struct {
 	DP           [][]uint     // score for each dp subproblem
@@ -76,7 +79,8 @@ func (dp *DP) RunDP() [][]gr.Branch {
 			dp.Traceback[v.Id()] = edgeTrace
 		} else {
 			dp.DP[v.Id()] = make([]uint, 1)
-			dp.Traceback[v.Id()] = []trace{noCycleTrace{}}
+			dp.Traceback[v.Id()] = make([]trace, 1, dp.NumNodes)
+			dp.Traceback[v.Id()][0] = noCycleTrace{}
 		}
 		return true
 	})
@@ -101,18 +105,18 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 	scores := make([]uint, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
 	traces := make([]trace, 1, dp.NumNodes)
 	scores[0] = dp.DP[lID][0] + dp.DP[rID][0]
+	traces[0] = noCycleTrace{[2]*trace{&dp.Traceback[lID][0], &dp.Traceback[rID][0]}}
 	for k := 1; ; k++ {
 		score, edgeTrace := dp.scoreV(v, k)
-		// lK, rK := min(k, len(dp.DP[lID])-1), min(k, len(dp.DP[rID])-1)
-		lK, rK := bestSplit(dp.DP[lID], dp.DP[rID], k)
+		lK, rK, err := bestSplit(dp.DP[lID], dp.DP[rID], k)
 		noEdgeScore := dp.DP[lID][lK] + dp.DP[rID][rK]
-		if scores[k-1] >= score && scores[k-1] >= noEdgeScore {
+		if scores[k-1] >= score && (err != nil || scores[k-1] >= noEdgeScore) {
 			break
 		}
 		if score > noEdgeScore {
 			scores = append(scores, score)
 			traces = append(traces, edgeTrace)
-		} else {
+		} else if err == nil {
 			scores = append(scores, noEdgeScore)
 			traces = append(traces, &noCycleTrace{
 				prevs: [2]*trace{&dp.Traceback[lID][lK], &dp.Traceback[rID][rK]},
@@ -131,20 +135,27 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 	return scores, traces
 }
 
-func bestSplit(l, r []uint, k int) (int, int) {
-	if len(l) != len(r) {
-		panic("left and right list must have equal length")
+// returns best split between two lists, i.e., max l[i] + r[j] where i + j = k.
+// returns err if k is too large
+func bestSplit(l, r []uint, k int) (int, int, error) {
+	if len(l) == 0 || len(r) == 0 {
+		panic("zero length lists not allowed")
 	}
-	maxK := min(k+1, len(l))
-	bestScore := uint(0)
-	bestK := 0
-	for i := range maxK {
-		if curScore := l[i] + r[maxK-i]; curScore > bestScore {
+	if len(l)+len(r)-2 < k {
+		return 0, 0, ErrNoValidSplit
+	}
+	bestScore := maxVal
+	bestKL, bestKR := -1, -1
+	for i := range min(k+1, len(l)) {
+		if k-i >= len(r) {
+			continue
+		}
+		if curScore := l[i] + r[k-i]; curScore > bestScore || bestScore == maxVal {
 			bestScore = curScore
-			bestK = i
+			bestKL, bestKR = i, k-i
 		}
 	}
-	return bestK, k - bestK
+	return bestKL, bestKR, nil
 }
 
 // Calculates score for given top node v; returns score and best edge.
@@ -212,21 +223,21 @@ func (dp *DP) cycleLen(u, w int) int {
 
 // Score branch u -> w (for w in subtree under sub); returns score, best w
 func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores pathDPScores, prevK int) (uint, int, cycleTrace) {
-	var bestScore uint
+	bestScore := maxVal
 	var bestW int
 	var bestWKLookup int
 	var bestWTrace *cycleTraceNode
 	SubtreePreOrder(sub, func(w *tree.Node) {
 		if u != w { // TODO: is this check necessary?
 			edgeScore := dp.brScoreCache[u.Id()][w.Id()]
-			if edgeScore == noCache {
+			if edgeScore == maxVal {
 				edgeScore = dp.scoreEdge(u, w, v, sub)
 				dp.brScoreCache[u.Id()][w.Id()] = edgeScore
 			}
 			kLookup := min(len(dp.DP[w.Id()])-1, prevK)
 			wScore, wTrace := pathScores.get(w.Id())
 			score := edgeScore + wScore + dp.DP[w.Id()][kLookup]
-			if score > bestScore {
+			if score > bestScore || bestScore == maxVal {
 				bestScore = score
 				bestW = w.Id()
 				bestWKLookup = kLookup
@@ -394,7 +405,7 @@ func makeBrScoreCache(n int) [][]uint {
 	for i := range result {
 		result[i] = make([]uint, n, n)
 		for j := range result[i] {
-			result[i][j] = noCache
+			result[i][j] = maxVal
 		}
 	}
 	return result
