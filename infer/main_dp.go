@@ -123,7 +123,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores map[int]uint) (uint, int) 
 			}
 		}
 	})
-	return pathScores[u.Id()] + bestScore, bestW
+	return pathScores[u.Id()] + dp.DP[u.Id()] + bestScore, bestW
 }
 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
