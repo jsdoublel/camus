@@ -2,6 +2,7 @@ package graphs
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/evolbioinfo/gotree/tree"
@@ -21,8 +22,15 @@ type Branch struct {
 	IDs [2]int
 }
 
-func (br *Branch) Empty() bool {
+func (br Branch) Empty() bool {
 	return br.IDs == [2]int{0, 0}
+}
+
+func (br Branch) Collide(br2 Branch) bool {
+	return (br.IDs[0] == br2.IDs[0] ||
+		br.IDs[0] == br2.IDs[1] ||
+		br.IDs[1] == br2.IDs[0] ||
+		br.IDs[1] == br.IDs[1])
 }
 
 // Makes extended newick network out of newick tree and branch data computed by
@@ -30,6 +38,19 @@ func (br *Branch) Empty() bool {
 func MakeNetwork(td *TreeData, branches []Branch) *Network {
 	td = td.Clone()
 	ret := make(map[string]Branch)
+	slices.SortFunc(branches, func(br1, br2 Branch) int {
+		if br1.Collide(br2) {
+			if td.Under(br1.IDs[0], br2.IDs[0]) ||
+				td.Under(br1.IDs[0], br2.IDs[1]) ||
+				td.Under(br1.IDs[1], br2.IDs[0]) ||
+				td.Under(br1.IDs[1], br2.IDs[1]) {
+				return -1
+			} else {
+				return 1
+			}
+		}
+		return 0
+	})
 	for i, branch := range branches {
 		ret[fmt.Sprintf("#H%d", i)] = branch
 		u, w := td.IdToNodes[branch.IDs[Ui]], td.IdToNodes[branch.IDs[Wi]]
