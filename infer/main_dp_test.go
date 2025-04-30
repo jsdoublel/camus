@@ -122,7 +122,6 @@ func TestCAMUS(t *testing.T) {
 		{
 			name:      "test under node u lookup",
 			constTree: "(R,((A,(I,J)),((((B,C),D),H),((E,F),G))));",
-			// constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
 			geneTrees: []string{
 				"((C,D),(B,A));",
 				"((F,G),(E,A));",
