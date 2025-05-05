@@ -173,14 +173,12 @@ func (dp *DP) scoreV(v *tree.Node, k int) (uint, trace) {
 		var wID int
 		bestScore, wID, bestCycleTrace = dp.scoreU(v, v, v, vPathDPScores, prevK)
 		bestCycleLen = dp.cycleLen(v.Id(), wID)
-		// curCycleTrace.branch, curCycleTrace.prevs = gr.Branch{IDs: [2]int{v.Id(), wID}}, prevs
 	}
 	SubtreePostOrder(v, func(u, otherSubtree *tree.Node) {
 		score, wID, curCycleTrace := dp.scoreU(u, otherSubtree, v, vPathDPScores, prevK)
 		if score > bestScore || (score == bestScore && dp.cycleLen(u.Id(), wID) <= bestCycleLen) {
 			bestScore = score
 			bestCycleTrace = curCycleTrace
-			// curCycleTrace.branch, curCycleTrace.prevs = gr.Branch{IDs: [2]int{u.Id(), wID}}, prevs
 		}
 	})
 	return bestScore, bestCycleTrace
@@ -205,7 +203,6 @@ func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
 					pScore+dp.DP[sibId][kLookup],
 					cycleTraceNode{p: pTrace, sib: &dp.Traceback[sibId][kLookup]},
 				)
-				// pathScores[cur.Id()] = pathScores[p.Id()] + dp.DP[sibId][kLookup]
 			}
 		}
 	})
@@ -228,7 +225,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores pathDPScores, prevK int) (
 	var bestWKLookup int
 	var bestWTrace *cycleTraceNode
 	SubtreePreOrder(sub, func(w *tree.Node) {
-		if u != w { // TODO: is this check necessary?
+		if u != w { // needed for edge case where u and sub are both v
 			edgeScore := dp.brScoreCache[u.Id()][w.Id()]
 			if edgeScore == maxVal {
 				edgeScore = dp.scoreEdge(u, w, v, sub)
@@ -247,16 +244,18 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores pathDPScores, prevK int) (
 	})
 	uScore, uTrace := pathScores.get(u.Id())
 	score := uScore + bestScore
-	if u != v {
-		mLookup := min(len(dp.DP[u.Id()])-1, prevK)
-		score += dp.DP[u.Id()][mLookup]
-	}
-	return score, bestW, cycleTrace{
+	traceback := cycleTrace{
 		pathW:  bestWTrace,
 		pathU:  uTrace,
 		wTrace: &dp.Traceback[bestW][bestWKLookup],
 		branch: gr.Branch{IDs: [2]int{u.Id(), bestW}},
 	}
+	if u != v {
+		kLookup := min(len(dp.DP[u.Id()])-1, prevK)
+		score += dp.DP[u.Id()][kLookup]
+		traceback.uTrace = &dp.Traceback[u.Id()][kLookup]
+	}
+	return score, bestW, traceback
 }
 
 func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {

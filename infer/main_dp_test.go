@@ -110,12 +110,23 @@ func TestCAMUS(t *testing.T) {
 			result: "((#H0,(((((A,B))#H0,C),D),E)),F);",
 		},
 		{
+			name:      "avoid over-adding edges",
+			constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
+			geneTrees: []string{
+				"((C,D),(B,H));",
+				"((F,G),(E,H));",
+				"((R,A),(B,H));",
+			},
+			result: "(R,((A,((((#H0,B),C),D),((E,(F)#H1),(#H1,G)))),(H)#H0));",
+		},
+		{
 			name:      "test under node w lookup",
 			constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
 			geneTrees: []string{
 				"((C,D),(B,H));",
 				"((F,G),(E,H));",
 				"((R,A),(B,H));",
+				"((R,D),(E,H));",
 			},
 			result: "(R,((A,((((B,(C)#H1),(#H1,D)),((E,(F)#H2),(#H2,G))))#H0),(#H0,H)));",
 		},
