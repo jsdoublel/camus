@@ -54,7 +54,7 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch,
 	log.Print("preprocessing finished, beginning dp algorithm\n")
 	n := len(td.Tree.Nodes())
 	dp := &DP{
-		DP:           make([][]uint, n, n),
+		DP:           make([][]uint, n),
 		Traceback:    make([][]trace, n),
 		TreeData:     td,
 		brScoreCache: makeBrScoreCache(n),
@@ -87,7 +87,7 @@ func (dp *DP) RunDP() [][]gr.Branch {
 	numOptimal := len(dp.DP[dp.TreeData.Root.Id()]) - 1
 	log.Printf("%d edges identified\n", numOptimal)
 	log.Println("beginning traceback")
-	result := make([][]gr.Branch, numOptimal, numOptimal)
+	result := make([][]gr.Branch, numOptimal)
 	for k := range numOptimal + 1 {
 		if k != 0 {
 			finalScore := dp.DP[dp.TreeData.Tree.Root().Id()][k]
@@ -189,8 +189,8 @@ func (dp *DP) scoreV(v *tree.Node, k int) (uint, trace) {
 // Add up dp scores along path from v ~> w
 func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
 	pathScores := pathDPScores{
-		make([]uint, dp.NumNodes, dp.NumNodes),
-		make([]*cycleTraceNode, dp.NumNodes, dp.NumNodes),
+		make([]uint, dp.NumNodes),
+		make([]*cycleTraceNode, dp.NumNodes),
 	}
 	SubtreePreOrder(v, func(cur *tree.Node) {
 		if cur != v {
@@ -348,62 +348,10 @@ func (dp DP) traceback(k int) []gr.Branch {
 	return dp.Traceback[dp.TreeData.Root.Id()][k].traceback()
 }
 
-// func (dp *DP) traceback(k int) []gr.Branch {
-// 	return dp.tracebackRecursive(dp.TreeData.Root, k)
-// }
-
-// func (dp *DP) tracebackRecursive(curNode *tree.Node, k int) []gr.Branch {
-// 	if !dp.TreeData.IdToNodes[curNode.Id()].Tip() {
-// 		kLookup := min(len(dp.Branches[curNode.Id()])-1, k)
-// 		curBranch := dp.Branches[curNode.Id()][kLookup]
-// 		if curBranch.Empty() {
-// 			return append(dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][0], k),
-// 				dp.tracebackRecursive(dp.TreeData.Children[curNode.Id()][1], k)...)
-// 		} else {
-// 			prevK := k - 1
-// 			u, w := dp.TreeData.IdToNodes[curBranch.IDs[0]], dp.TreeData.IdToNodes[curBranch.IDs[1]]
-// 			traceback := []gr.Branch{curBranch}
-// 			if u != curNode {
-// 				traceback = append(traceback, dp.tracebackRecursive(u, prevK)...)
-// 				traceback = append(traceback, dp.tracePath(u, curNode, prevK)...)
-// 			}
-// 			if w == curNode {
-// 				panic("w should not be current node")
-// 			}
-// 			traceback = append(traceback, dp.tracebackRecursive(w, prevK)...)
-// 			traceback = append(traceback, dp.tracePath(w, curNode, prevK)...)
-// 			return traceback
-// 		}
-// 	}
-// 	return []gr.Branch{}
-// }
-
-// func (dp *DP) tracePath(start, end *tree.Node, prevK int) []gr.Branch {
-// 	if start == end {
-// 		panic("in tracePath start should not equal end!")
-// 	}
-// 	cur := start
-// 	p, err := start.Parent()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	trace := make([]gr.Branch, 0)
-// 	for p != end {
-// 		trace = append(trace, dp.tracebackRecursive(dp.TreeData.Sibling(cur), prevK)...)
-// 		var err error
-// 		cur = p
-// 		p, err = cur.Parent()
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-// 	return trace
-// }
-
 func makeBrScoreCache(n int) [][]uint {
-	result := make([][]uint, n, n)
+	result := make([][]uint, n)
 	for i := range result {
-		result[i] = make([]uint, n, n)
+		result[i] = make([]uint, n)
 		for j := range result[i] {
 			result[i][j] = maxVal
 		}

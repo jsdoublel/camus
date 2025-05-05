@@ -1,4 +1,4 @@
-// package implementing scoring for networks
+// Package implementing scoring for networks
 package score
 
 import (
