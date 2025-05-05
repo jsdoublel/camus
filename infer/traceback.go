@@ -38,11 +38,15 @@ type cycleTrace struct {
 	pathW  *cycleTraceNode // beginning of linked-list w path
 	pathU  *cycleTraceNode // beginning of linked-list u path
 	wTrace *trace          // trace below w
+	uTrace *trace          // trace below u
 	branch gr.Branch       // branch forming cycle
 }
 
 func (tr cycleTrace) traceback() []gr.Branch {
 	result := append((*tr.wTrace).traceback(), tr.branch)
+	if tr.uTrace != nil {
+		result = append(result, (*tr.uTrace).traceback()...)
+	}
 	if tr.pathU != nil {
 		result = append(result, tr.pathU.traceUp()...)
 	}
