@@ -28,7 +28,7 @@ type DP struct {
 	NumNodes     int          // number of nodes
 }
 
-// stores accumlated dp scores for v ~> w paths
+// stores accumulated dp scores for v ~> w paths
 type pathDPScores struct {
 	scores     []uint
 	traceNodes []*cycleTraceNode
@@ -100,7 +100,7 @@ func (dp *DP) RunDP() [][]gr.Branch {
 	return result
 }
 
-func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
+func (dp DP) solve(v *tree.Node) ([]uint, []trace) {
 	lID, rID := dp.TreeData.Children[v.Id()][0].Id(), dp.TreeData.Children[v.Id()][1].Id()
 	scores := make([]uint, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
 	traces := make([]trace, 1, dp.NumNodes)
@@ -160,7 +160,7 @@ func bestSplit(l, r []uint, k int) (int, int, error) {
 
 // Calculates score for given top node v; returns score and best edge.
 // k indicates that the edge being added is the k^th edge.
-func (dp *DP) scoreV(v *tree.Node, k int) (uint, trace) {
+func (dp DP) scoreV(v *tree.Node, k int) (uint, trace) {
 	if k == 0 {
 		panic("scoreV should never be called with zero k value")
 	}
@@ -185,7 +185,7 @@ func (dp *DP) scoreV(v *tree.Node, k int) (uint, trace) {
 }
 
 // Add up dp scores along path from v ~> w
-func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
+func (dp DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
 	pathScores := pathDPScores{
 		make([]uint, dp.NumNodes),
 		make([]*cycleTraceNode, dp.NumNodes),
@@ -209,7 +209,7 @@ func (dp *DP) accumlateDPScores(v *tree.Node, prevK int) pathDPScores {
 	return pathScores
 }
 
-func (dp *DP) cycleLen(u, w int) int {
+func (dp DP) cycleLen(u, w int) int {
 	v := dp.TreeData.LCA(u, w)
 	length := (dp.TreeData.Depths[u] - dp.TreeData.Depths[v]) + (dp.TreeData.Depths[w] - dp.TreeData.Depths[v]) + 1
 	if v == u { // we have to account for the edge above v that our new edge is anchored to
@@ -258,7 +258,7 @@ func (dp *DP) scoreU(u, sub, v *tree.Node, pathScores pathDPScores, prevK int) (
 	return score, bestW, traceback
 }
 
-func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
+func (dp DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
 	score := uint(0)
 	for _, q := range dp.TreeData.Quartets(v.Id()) {
 		if QuartetScore(q, u, w, v, wSub, dp.TreeData) == gr.Qeq {
@@ -278,11 +278,12 @@ func QuartetScore(q *gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int 
 	for _, t := range q.Taxa {
 		tID := td.NodeID(t)
 		var lca int
-		if !td.InLeafset(v.Id(), t) {
+		switch {
+		case !td.InLeafset(v.Id(), t):
 			lca = 0
-		} else if td.InLeafset(wSub.Id(), t) || td.InLeafset(u.Id(), bottom) {
+		case td.InLeafset(wSub.Id(), t) || td.InLeafset(u.Id(), bottom):
 			lca = td.LCA(w.Id(), tID)
-		} else {
+		default:
 			lca = td.LCA(u.Id(), tID)
 		}
 		cycleNodes[lca] = true

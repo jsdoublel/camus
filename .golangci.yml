@@ -1,0 +1,17 @@
+version: 2
+
+linters:
+  enable:
+    - govet        
+    - unused       
+    - errcheck     
+    - staticcheck  
+    - gocritic     
+
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  exclude-use-default: false
+
