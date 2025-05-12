@@ -95,7 +95,11 @@ func readGeneTreesFile(genetreesFile string, format Format) (*GeneTrees, error) 
 	if err != nil {
 		return nil, fmt.Errorf("error opening %s, %w", genetreesFile, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(fmt.Sprintf("could not close file %s, %s", genetreesFile, err))
+		}
+	}()
 	geneTreeList := make([]*tree.Tree, 0)
 	geneTreeNames := make([]string, 0)
 	switch format {
@@ -154,7 +158,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 			if cur.Tip() {
 				p, err := prev.Parent()
 				if err != nil && err.Error() != "The node has no parent : May be the root?" {
-					panic(fmt.Sprintf("%s", cur.Name()))
+					panic(cur.Name())
 				}
 				for _, n := range prev.Neigh() {
 					if n != cur && n != p {
@@ -162,7 +166,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 					}
 				}
 				if branch.IDs[gr.Ui] != 0 || v == nil {
-					panic(fmt.Sprintf("%s", cur.Name()))
+					panic(cur.Name())
 				}
 				branch.IDs[gr.Ui] = v.Id()
 			} else {
@@ -172,7 +176,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 					}
 				}
 				if branch.IDs[gr.Wi] != 0 || v == nil {
-					panic(fmt.Sprintf("%s", cur.Name()))
+					panic(cur.Name())
 				}
 				branch.IDs[gr.Wi] = v.Id()
 			}
@@ -188,7 +192,9 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 			return nil, fmt.Errorf("%w, label %s is unmatched", ErrInvalidFormat, label)
 		}
 	}
-	ntw.UpdateTipIndex()
+	if err := ntw.UpdateTipIndex(); err != nil {
+		return nil, fmt.Errorf("network %w", ErrMulTree)
+	}
 	return &gr.Network{NetTree: ntw, Reticulations: ret}, nil
 }
 
@@ -214,5 +220,7 @@ func WriteBranchScoresToCSV(scores []*map[string]float64, names []string) {
 	}
 	writer := csv.NewWriter(os.Stdout)
 	defer writer.Flush()
-	writer.WriteAll(data)
+	if err := writer.WriteAll(data); err != nil {
+		panic(fmt.Sprintf("error writing csv file: %s", err))
+	}
 }

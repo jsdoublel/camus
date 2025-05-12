@@ -38,9 +38,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/graphs"
 	"github.com/jsdoublel/camus/infer"
-	"github.com/jsdoublel/camus/prep"
+	pr "github.com/jsdoublel/camus/prep"
 	"github.com/jsdoublel/camus/score"
 )
 
@@ -54,16 +54,16 @@ const (
 
 type Command int
 
-type args struct {
-	command      Command     // infer or score
-	gtFormat     prep.Format // gene tree file format
-	treeFile     string      // constraint or network tree file
-	geneTreeFile string      // gene trees
-}
-
 var parseCommand = map[string]Command{
 	"infer": Infer,
 	"score": Score,
+}
+
+type args struct {
+	command      Command   // infer or score
+	gtFormat     pr.Format // gene tree file format
+	treeFile     string    // constraint or network tree file
+	geneTreeFile string    // gene trees
 }
 
 func parseArgs() args {
@@ -91,7 +91,7 @@ func parseArgs() args {
 			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
-	format := prep.Newick
+	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ]")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
@@ -130,7 +130,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("CAMUS version %s", Version)
-	tre, geneTrees, err := prep.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
+	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
 	}
@@ -142,11 +142,11 @@ func main() {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
 		for _, branches := range results {
-			fmt.Println(graphs.MakeNetwork(td, branches).Newick())
+			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
 		log.Println("running score...")
-		network, err := prep.ConvertToNetwork(tre)
+		network, err := pr.ConvertToNetwork(tre)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -154,7 +154,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		prep.WriteBranchScoresToCSV(scores, geneTrees.Names)
+		pr.WriteBranchScoresToCSV(scores, geneTrees.Names)
 	default:
 		panic(fmt.Sprintf("inavlid command (%d)", args.command))
 	}

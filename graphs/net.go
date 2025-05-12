@@ -30,7 +30,7 @@ func (br Branch) Collide(br2 Branch) bool {
 	return (br.IDs[0] == br2.IDs[0] ||
 		br.IDs[0] == br2.IDs[1] ||
 		br.IDs[1] == br2.IDs[0] ||
-		br.IDs[1] == br.IDs[1])
+		br.IDs[1] == br2.IDs[1])
 }
 
 // Makes extended newick network out of newick tree and branch data computed by
@@ -60,14 +60,18 @@ func MakeNetwork(td *TreeData, branches []Branch) *Network {
 		}
 		r := td.Tree.NewNode()
 		r.SetName(fmt.Sprintf("#H%d", i))
-		td.Tree.GraftTipOnEdge(r, uEdge)
+		if _, _, _, err := td.Tree.GraftTipOnEdge(r, uEdge); err != nil {
+			panic(err)
+		}
 		r = td.Tree.NewNode()
 		r.SetName("####")
 		wEdge, err := w.ParentEdge()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting w: %s", err))
 		}
-		td.Tree.GraftTipOnEdge(r, wEdge)
+		if _, _, _, err := td.Tree.GraftTipOnEdge(r, wEdge); err != nil {
+			panic(err)
+		}
 		p, err := r.Parent()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork after grafting w: %s", err))

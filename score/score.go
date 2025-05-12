@@ -32,7 +32,9 @@ func CalculateReticulationScore(ntw *gr.Network, gtrees []*tree.Tree) ([]*map[st
 	results := make([]*map[string]float64, len(gtrees))
 	for i, gtre := range gtrees {
 		prep.LogEveryNPercent(i, 10, len(gtrees), fmt.Sprintf("scoring gene tree %d of %d", i+1, len(gtrees)))
-		gtre.UpdateTipIndex()
+		if err := gtre.UpdateTipIndex(); err != nil {
+			return nil, fmt.Errorf("gene tree %w", prep.ErrMulTree)
+		}
 		totals := make(map[string]uint)
 		supported := make(map[string]uint)
 		gtre.UnRoot()

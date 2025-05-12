@@ -21,15 +21,14 @@ var (
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, error) {
-	tre.UpdateTipIndex()
+	if err := tre.UpdateTipIndex(); err != nil {
+		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
+	}
 	if !tre.Rooted() {
 		return nil, fmt.Errorf("constraint tree is %w", ErrUnrooted)
 	}
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
-	}
-	if !IsSingleCopy(tre) {
-		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
 	qCounts, err := processQuartets(geneTrees, tre)
 	if err != nil {
@@ -52,18 +51,14 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[gr.Quartet]ui
 	countNew := uint(0)
 	for i, gt := range geneTrees {
 		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
-		if !IsSingleCopy(gt) {
+		if err := gt.UpdateTipIndex(); err != nil {
 			return nil, fmt.Errorf("gene tree on line %d : %w", i, ErrMulTree)
 		}
-		gt.UpdateTipIndex()
 		newQuartets, err := gr.QuartetsFromTree(gt, tre)
 		if err != nil {
 			return nil, err
 		}
 		for quartet, count := range newQuartets {
-			if count < 0 {
-				panic(fmt.Sprintf("negative quartet count %d", count))
-			}
 			if treeQuartets[quartet] == 0 {
 				qCounts[quartet] += count
 				countNew += count
