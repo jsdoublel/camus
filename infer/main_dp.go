@@ -42,6 +42,10 @@ func (cl *cycleDPLookups) solveK(prevK int, dp *DP) {
 			cl.scores[cur.Id()] = make([]uint, 0)
 			cl.traceNodes[cur.Id()] = make([]*cycleTraceNode, 0)
 		}
+		cl.grow(cur.Id())
+		if len(cl.scores[cur.Id()])-1 != prevK {
+			panic(fmt.Sprintf("wrong size cycle dp tables: len %d, k %d", len(cl.scores), prevK))
+		}
 		if cur == cl.v { // don't want to look at parent of root/v
 			return
 		}
@@ -66,8 +70,13 @@ func (cl *cycleDPLookups) solveK(prevK int, dp *DP) {
 	})
 }
 
+func (cl *cycleDPLookups) grow(i int) {
+	cl.scores[i] = append(cl.scores[i], 0)
+	cl.traceNodes[i] = append(cl.traceNodes[i], nil)
+}
+
 func (cl *cycleDPLookups) set(i, k int, score uint, traceNode cycleTraceNode) {
-	cl.scores[i][k] = score // TODO: these probably need to be appends
+	cl.scores[i][k] = score
 	cl.traceNodes[i][k] = &traceNode
 }
 
@@ -229,6 +238,9 @@ func (dp *DP) cycleLen(br gr.Branch) int {
 
 func (dp *DP) scoreUDown(v *tree.Node, vCycleScores *cycleDPLookups, prevK int) (bestScore uint, traceback *cycleTrace, err error) {
 	SubtreePreOrder(v, func(w *tree.Node) {
+		if v == w {
+			return
+		}
 		edgeScore := dp.scoreEdge(v, w, v, v)
 		wK, wDown, err := BestSplit(vCycleScores.scores[w.Id()], dp.DP[w.Id()], prevK)
 		if err != nil { // no valid split, so we don't consider this edge

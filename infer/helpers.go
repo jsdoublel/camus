@@ -53,7 +53,7 @@ func BestSplit(l, r []uint, k int) (int, int, error) {
 	}
 	bestScore := maxVal
 	bestKL, bestKR := -1, -1
-	for i := max(0, k-len(r)-1); i <= min(k, len(l)-1); i++ {
+	for i := max(0, k-(len(r)-1)); i <= min(k, len(l)-1); i++ {
 		if curScore := l[i] + r[k-i]; curScore > bestScore || bestScore == maxVal {
 			bestScore = curScore
 			bestKL, bestKR = i, k-i
