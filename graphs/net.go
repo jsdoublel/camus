@@ -19,7 +19,7 @@ const (
 )
 
 type Branch struct {
-	IDs [2]int
+	IDs [2]int // {0: u, 1: w}
 }
 
 func (br Branch) Empty() bool {
