@@ -35,7 +35,7 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((G,F),(A,H));",
 			},
-			result: "(((#H0,A),((((B,(C)#H1),(#H1,D)),E),F)),(G,(H)#H0));",
+			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
 		},
 		{
 			name:      "two-edge two",
@@ -117,10 +117,10 @@ func TestCAMUS(t *testing.T) {
 				"((F,G),(E,H));",
 				"((R,A),(B,H));",
 			},
-			result: "(R,((A,((((#H0,B),C),D),((E,(F)#H1),(#H1,G)))),(H)#H0));",
+			result: "(R,((A,((((B)#H0,C),D),((E,(F)#H1),(#H1,G)))),(#H0,H)));",
 		},
 		{
-			name:      "test under node w lookup",
+			name:      "avoid over-adding edges 2",
 			constTree: "(R,((A,(((B,C),D),((E,F),G))),H));",
 			geneTrees: []string{
 				"((C,D),(B,H));",
@@ -128,7 +128,7 @@ func TestCAMUS(t *testing.T) {
 				"((R,A),(B,H));",
 				"((R,D),(E,H));",
 			},
-			result: "(R,((A,((((B,(C)#H1),(#H1,D)),((E,(F)#H2),(#H2,G))))#H0),(#H0,H)));",
+			result: "(R,((A,(((B,(C)#H1),(#H1,D)),(((#H0,E),F),G))),(H)#H0));",
 		},
 		{
 			name:      "test under node u lookup",
@@ -140,7 +140,7 @@ func TestCAMUS(t *testing.T) {
 				"((H,R),(E,C));",
 				"((I,R),(J,A));",
 			},
-			result: "(R,(((A)#H0,(I,(#H0,J))),(((((B,(C)#H3),(#H3,D)))#H1,H),(#H1,((E,(F)#H2),(#H2,G))))));",
+			result: "(R,(((A)#H0,(I,(#H0,J))),(((#H1,((B,(C)#H2),(#H2,D))),H),(((E)#H1,F),G))));",
 		},
 	}
 	for _, test := range testCases {
@@ -196,7 +196,7 @@ func TestCAMUS_Large(t *testing.T) {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
 			if strings.TrimSpace(string(bts)) != ntw.Newick() {
-				t.Errorf("%s != %s, result != expected", string(bts), ntw.Newick())
+				t.Errorf("%s != %s, result != expected", ntw.Newick(), string(bts))
 			}
 		})
 	}
@@ -209,7 +209,7 @@ func BenchmarkCAMUS(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		CAMUS(tre, quartets.Trees)
 	}
 }
