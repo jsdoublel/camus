@@ -13,7 +13,7 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 
 	gr "github.com/jsdoublel/camus/graphs"
-	"github.com/jsdoublel/camus/prep"
+	pr "github.com/jsdoublel/camus/prep"
 )
 
 const maxVal = ^uint(0)
@@ -30,38 +30,39 @@ type DP struct {
 }
 
 // Stores DP info for lookups corresponding to a given vertex v
-type cycleDPLookups struct {
+type cycleDP struct {
 	v          *tree.Node
 	scores     [][]uint            // score for each path (scores[w][k]); unique struct exists for each v
 	traceNodes [][]*cycleTraceNode // backtrace for each path (traceNodes[w][k])
 }
 
-func (cl *cycleDPLookups) solveK(prevK int, dp *DP) {
-	SubtreePreOrder(cl.v, func(cur *tree.Node) {
+// Updates the cycle lookup DP struct for values of k up to prevK
+func (cdp *cycleDP) update(prevK int, dp *DP) {
+	SubtreePreOrder(cdp.v, func(cur *tree.Node) {
 		if prevK == 0 {
-			cl.scores[cur.Id()] = make([]uint, 0)
-			cl.traceNodes[cur.Id()] = make([]*cycleTraceNode, 0)
+			cdp.scores[cur.Id()] = make([]uint, 0)
+			cdp.traceNodes[cur.Id()] = make([]*cycleTraceNode, 0)
 		}
-		cl.grow(cur.Id())
-		if len(cl.scores[cur.Id()])-1 != prevK {
-			panic(fmt.Sprintf("wrong size cycle dp tables: len %d, k %d", len(cl.scores), prevK))
+		cdp.grow(cur.Id())
+		if len(cdp.scores[cur.Id()])-1 != prevK {
+			panic(fmt.Sprintf("wrong size cycle dp tables: len %d, k %d", len(cdp.scores), prevK))
 		}
-		if cur == cl.v { // don't want to look at parent of root/v
+		if cur == cdp.v { // don't want to look at parent of root/v
 			return
 		}
 		p, err := cur.Parent()
-		if cl.v != dp.TreeData.Root && err != nil {
+		if cdp.v != dp.TreeData.Root && err != nil {
 			panic(err)
-		} else if p == cl.v { // if parent is v, then sibling node of cur is also in the cycle
+		} else if p == cdp.v { // if parent is v, then sibling node of cur is also in the cycle
 			return
 		}
 		sibId := dp.TreeData.Sibling(cur).Id()
-		pScores, pTraces := cl.scores[p.Id()], cl.traceNodes[p.Id()]
+		pScores, pTraces := cdp.scores[p.Id()], cdp.traceNodes[p.Id()]
 		pK, sibK, err := BestSplit(pScores, dp.DP[sibId], prevK)
 		if err != nil {
 			return
 		}
-		cl.set(
+		cdp.set(
 			cur.Id(),
 			prevK,
 			pScores[pK]+dp.DP[sibId][sibK],
@@ -70,25 +71,25 @@ func (cl *cycleDPLookups) solveK(prevK int, dp *DP) {
 	})
 }
 
-func (cl *cycleDPLookups) grow(i int) {
-	cl.scores[i] = append(cl.scores[i], 0)
-	cl.traceNodes[i] = append(cl.traceNodes[i], nil)
+func (cdp *cycleDP) grow(i int) {
+	cdp.scores[i] = append(cdp.scores[i], 0)
+	cdp.traceNodes[i] = append(cdp.traceNodes[i], nil)
 }
 
-func (cl *cycleDPLookups) set(i, k int, score uint, traceNode cycleTraceNode) {
-	cl.scores[i][k] = score
-	cl.traceNodes[i][k] = &traceNode
+func (cdp *cycleDP) set(i, k int, score uint, traceNode cycleTraceNode) {
+	cdp.scores[i][k] = score
+	cdp.traceNodes[i][k] = &traceNode
 }
 
-func (cl *cycleDPLookups) get(i, k int) (uint, *cycleTraceNode) {
-	return cl.scores[i][k], cl.traceNodes[i][k]
+func (cdp *cycleDP) get(i, k int) (uint, *cycleTraceNode) {
+	return cdp.scores[i][k], cdp.traceNodes[i][k]
 }
 
 // Runs CAMUS algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
 func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch, error) {
 	log.Println("beginning data preprocessing")
-	td, err := prep.Preprocess(tre, geneTrees)
+	td, err := pr.Preprocess(tre, geneTrees)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
@@ -114,7 +115,7 @@ func (dp *DP) RunDP() [][]gr.Branch {
 	dp.TreeData.Tree.PostOrder(func(v, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !v.Tip() {
 			count++
-			prep.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
+			pr.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
 			scores, edgeTrace := dp.solve(v)
 			dp.DP[v.Id()] = scores
 			dp.Traceback[v.Id()] = edgeTrace
@@ -141,19 +142,20 @@ func (dp *DP) RunDP() [][]gr.Branch {
 	return result
 }
 
+// Solve DP problem for vertex v for all k until it stops improving
 func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 	lID, rID := dp.TreeData.Children[v.Id()][0].Id(), dp.TreeData.Children[v.Id()][1].Id()
 	scores := make([]uint, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
 	traces := make([]trace, 1, dp.NumNodes)
 	scores[0] = dp.DP[lID][0] + dp.DP[rID][0]
 	traces[0] = noCycleTrace{[2]*trace{&dp.Traceback[lID][0], &dp.Traceback[rID][0]}}
-	vCycleDP := cycleDPLookups{
+	vCycleDP := cycleDP{
 		v:          v,
 		scores:     make([][]uint, dp.NumNodes),
 		traceNodes: make([][]*cycleTraceNode, dp.NumNodes),
 	}
 	for k := 1; ; k++ {
-		score, edgeTrace, errAdd := dp.scoreV(v, k, &vCycleDP) // TODO: refactor into a function to make only a single error
+		score, edgeTrace, errAdd := dp.scoreAddEdgeK(v, k, &vCycleDP) // TODO: refactor into a function to make only a single error
 		lK, rK, errNoAdd := BestSplit(dp.DP[lID], dp.DP[rID], k)
 		noEdgeScore := dp.DP[lID][lK] + dp.DP[rID][rK]
 		if (errAdd != nil || scores[k-1] >= score) && (errNoAdd != nil || scores[k-1] >= noEdgeScore) {
@@ -181,20 +183,20 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 	return scores, traces
 }
 
-// Calculates score for given top node v; returns score and best edge.
-// k indicates that the edge being added is the k^th edge.
-func (dp *DP) scoreV(v *tree.Node, k int, vCycleDP *cycleDPLookups) (bestScore uint, bestCycleTrace *cycleTrace, err error) {
+// Calculates score for given top node v assuming an edge is added; returns
+// score and best edge. k indicates that the edge being added is the k^th edge.
+func (dp *DP) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP) (bestScore uint, bestCycleTrace *cycleTrace, err error) {
 	if k <= 0 {
-		panic("scoreV should never be called with zero or negative k value")
+		panic("should never be called with zero or negative k value")
 	}
 	prevK := k - 1
 	bestCycleLen := 0
-	vCycleDP.solveK(prevK, dp)
+	vCycleDP.update(prevK, dp)
 	for _, c := range dp.TreeData.Children[v.Id()] {
 		if c.Tip() {
 			continue
 		}
-		score, curCycleTrace, err := dp.scoreUDown(v, vCycleDP, prevK)
+		score, curCycleTrace, err := dp.scoreEdgesDown(v, vCycleDP, prevK)
 		if err != nil {
 			continue
 		}
@@ -206,7 +208,7 @@ func (dp *DP) scoreV(v *tree.Node, k int, vCycleDP *cycleDPLookups) (bestScore u
 		}
 	}
 	SubtreePostOrder(v, func(u, otherSubtree *tree.Node) {
-		score, curCycleTrace, err := dp.scoreUAcross(u, otherSubtree, v, vCycleDP, prevK)
+		score, curCycleTrace, err := dp.scoreEdgesAcross(u, otherSubtree, v, vCycleDP, prevK)
 		if err != nil {
 			return
 		}
@@ -236,23 +238,24 @@ func (dp *DP) cycleLen(br gr.Branch) int {
 	return length
 }
 
-func (dp *DP) scoreUDown(v *tree.Node, vCycleScores *cycleDPLookups, prevK int) (bestScore uint, traceback *cycleTrace, err error) {
+// Scores edges for a branch going from v to all ancestors w
+func (dp *DP) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP, prevK int) (bestScore uint, traceback *cycleTrace, err error) {
 	SubtreePreOrder(v, func(w *tree.Node) {
 		if v == w {
 			return
 		}
-		edgeScore := dp.scoreEdge(v, w, v, v)
-		wK, wDown, err := BestSplit(vCycleScores.scores[w.Id()], dp.DP[w.Id()], prevK)
+		edgeScore := dp.getEdgeScore(v, w, v, v)
+		wPathIdx, wDownIdx, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
 		if err != nil { // no valid split, so we don't consider this edge
 			return
 		}
-		wScore, wTrace := vCycleScores.get(w.Id(), wK)
-		score := edgeScore + wScore + dp.DP[w.Id()][wDown]
+		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathIdx)
+		score := edgeScore + wScore + dp.DP[w.Id()][wDownIdx]
 		if score > bestScore || traceback == nil {
 			traceback = &cycleTrace{
-				pathW:  wTrace,
-				wTrace: &dp.Traceback[w.Id()][wDown],
-				branch: gr.Branch{IDs: [2]int{v.Id(), w.Id()}},
+				pathW:      wPathTrace,
+				wDownTrace: &dp.Traceback[w.Id()][wDownIdx],
+				branch:     gr.Branch{IDs: [2]int{v.Id(), w.Id()}},
 			}
 			bestScore = score
 		}
@@ -263,8 +266,8 @@ func (dp *DP) scoreUDown(v *tree.Node, vCycleScores *cycleDPLookups, prevK int) 
 	return bestScore, traceback, nil
 }
 
-// Score branch u -> w (for w in subtree under sub); returns score, best w
-func (dp *DP) scoreUAcross(u, sub, v *tree.Node, vCycleScores *cycleDPLookups, prevK int) (bestScore uint, traceback *cycleTrace, err error) {
+// Score branch u -> w (for all w in subtree under sub)
+func (dp *DP) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP, prevK int) (bestScore uint, traceback *cycleTrace, err error) {
 	if v == u {
 		panic("u should not equal v, use scoreUDown instead")
 	}
@@ -272,11 +275,11 @@ func (dp *DP) scoreUAcross(u, sub, v *tree.Node, vCycleScores *cycleDPLookups, p
 		if u == w {
 			panic("u should not equal w")
 		}
-		edgeScore := dp.scoreEdge(u, w, v, sub)
+		edgeScore := dp.getEdgeScore(u, w, v, sub)
 		indices, err := FourWayBestSplit(
 			[4][]uint{
-				vCycleScores.scores[w.Id()],
-				vCycleScores.scores[u.Id()],
+				vCycleDP.scores[w.Id()],
+				vCycleDP.scores[u.Id()],
 				dp.DP[w.Id()],
 				dp.DP[u.Id()],
 			},
@@ -285,18 +288,17 @@ func (dp *DP) scoreUAcross(u, sub, v *tree.Node, vCycleScores *cycleDPLookups, p
 		if err != nil { // no valid split, so we don't consider this edge
 			return
 		}
-		// TODO: fix variable names around here -- what the hell is even this!!
-		wK, uK, downW, downU := indices[0], indices[1], indices[2], indices[3]
-		wScore, wTrace := vCycleScores.get(w.Id(), wK)
-		uScore, uTrace := vCycleScores.get(u.Id(), uK)
-		score := edgeScore + wScore + uScore + dp.DP[w.Id()][downW] + dp.DP[u.Id()][downU]
+		wPathIdx, uPathIdx, wDownIdx, uDownIdx := indices[0], indices[1], indices[2], indices[3]
+		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathIdx)
+		uScore, uPathTrace := vCycleDP.get(u.Id(), uPathIdx)
+		score := edgeScore + wScore + uScore + dp.DP[w.Id()][wDownIdx] + dp.DP[u.Id()][uDownIdx]
 		if score > bestScore || traceback == nil {
 			traceback = &cycleTrace{
-				pathW:  wTrace,
-				pathU:  uTrace,
-				wTrace: &dp.Traceback[w.Id()][downW],
-				uTrace: &dp.Traceback[u.Id()][downU],
-				branch: gr.Branch{IDs: [2]int{u.Id(), w.Id()}},
+				pathW:      wPathTrace,
+				pathU:      uPathTrace,
+				wDownTrace: &dp.Traceback[w.Id()][wDownIdx],
+				uDownTrace: &dp.Traceback[u.Id()][uDownIdx],
+				branch:     gr.Branch{IDs: [2]int{u.Id(), w.Id()}},
 			}
 			bestScore = score
 		}
@@ -307,7 +309,7 @@ func (dp *DP) scoreUAcross(u, sub, v *tree.Node, vCycleScores *cycleDPLookups, p
 	return bestScore, traceback, nil
 }
 
-func (dp *DP) scoreEdge(u, w, v, wSub *tree.Node) uint {
+func (dp *DP) getEdgeScore(u, w, v, wSub *tree.Node) uint {
 	score := dp.brScoreCache[u.Id()][w.Id()]
 	if score != maxVal {
 		return score

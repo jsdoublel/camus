@@ -106,15 +106,6 @@ func isBinary(node *tree.Node, allowUnifurcations bool) bool {
 	return isBinary(children[0], allowUnifurcations) && isBinary(children[1], allowUnifurcations)
 }
 
-func IsSingleCopy(tre *tree.Tree) bool {
-	labels := make(map[string]bool)
-	for _, l := range tre.Tips() {
-		labels[l.Name()] = true
-	}
-	// have to use less efficient tre.Tips() because of weird behavior of gotree with multrees
-	return len(labels) == len(tre.Tips())
-}
-
 func LogEveryNPercent(i, n, total int, message string) {
 	if (i+1)%max(total/int(math.Ceil(float64(100)/float64(n))), 1) == 0 {
 		log.Print(message)

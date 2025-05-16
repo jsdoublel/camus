@@ -12,7 +12,7 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	"github.com/jsdoublel/camus/prep"
+	pr "github.com/jsdoublel/camus/prep"
 )
 
 func TestCalculateRecticulationScore(t *testing.T) {
@@ -54,7 +54,7 @@ func TestCalculateRecticulationScore(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid newick in file %s", err)
 			}
-			ntw, err := prep.ConvertToNetwork(tre)
+			ntw, err := pr.ConvertToNetwork(tre)
 			if err != nil {
 				t.Fatalf("test case failed with unexpected error %s", err)
 			}
@@ -113,11 +113,11 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, genes, err := prep.ReadInputFiles(test.network, test.gtrees, prep.Newick)
+			tre, genes, err := pr.ReadInputFiles(test.network, test.gtrees, pr.Newick)
 			if err != nil {
 				t.Fatalf("failed to read in input files %s", err)
 			}
-			network, err := prep.ConvertToNetwork(tre)
+			network, err := pr.ConvertToNetwork(tre)
 			if err != nil {
 				t.Fatalf("failed to convert tree to network %s", err)
 			}
@@ -131,7 +131,7 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 			}
 			oldStdout := os.Stdout
 			os.Stdout = w
-			prep.WriteBranchScoresToCSV(scores, genes.Names)
+			pr.WriteBranchScoresToCSV(scores, genes.Names)
 			w.Close()
 			os.Stdout = oldStdout
 			var buf bytes.Buffer
@@ -151,11 +151,11 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
 	netFile := "../testdata/large/network.nwk"
 	geneTrees := "../testdata/large/gene-trees.nwk"
-	tre, genes, err := prep.ReadInputFiles(netFile, geneTrees, prep.Newick)
+	tre, genes, err := pr.ReadInputFiles(netFile, geneTrees, pr.Newick)
 	if err != nil {
 		b.Fatalf("failed to read in input files %s", err)
 	}
-	network, err := prep.ConvertToNetwork(tre)
+	network, err := pr.ConvertToNetwork(tre)
 	if err != nil {
 		b.Fatalf("failed to convert tree to network %s", err)
 	}
