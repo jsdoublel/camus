@@ -24,7 +24,7 @@ var ErrNoValidSplit = errors.New("no valid split")
 type DP struct {
 	DP           [][]uint     // score for each dp subproblem (DP[v][k])
 	Traceback    [][]trace    // traceback for each dp subproblem (Traceback[v][k])
-	TreeData     *gr.TreeData // preprocessed data for our constraint tree
+	Tree         *gr.TreeData // preprocessed data for our constraint tree
 	NumNodes     int          // number of nodes
 	brScoreCache [][]uint     // caches branch scores so they are not recomputed (INDEXED [u][w] ONLY!!)
 }
@@ -51,12 +51,12 @@ func (cdp *cycleDP) update(prevK int, dp *DP) {
 			return
 		}
 		p, err := cur.Parent()
-		if cdp.v != dp.TreeData.Root && err != nil {
+		if cdp.v != dp.Tree.Root() && err != nil {
 			panic(err)
 		} else if p == cdp.v { // if parent is v, then sibling node of cur is also in the cycle
 			return
 		}
-		sibId := dp.TreeData.Sibling(cur).Id()
+		sibId := dp.Tree.Sibling(cur).Id()
 		pScores, pTraces := cdp.scores[p.Id()], cdp.traceNodes[p.Id()]
 		pK, sibK, err := BestSplit(pScores, dp.DP[sibId], prevK)
 		if err != nil {
@@ -94,11 +94,11 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch,
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	log.Println("preprocessing finished, beginning dp algorithm")
-	n := len(td.Tree.Nodes())
+	n := len(td.Nodes())
 	dp := &DP{
 		DP:           make([][]uint, n),
 		Traceback:    make([][]trace, n),
-		TreeData:     td,
+		Tree:         td,
 		brScoreCache: makeBrScoreCache(n),
 		NumNodes:     n,
 	}
@@ -106,13 +106,13 @@ func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch,
 }
 
 func (dp *DP) RunDP() [][]gr.Branch {
-	n, err := dp.TreeData.Tree.NbTips()
+	n, err := dp.Tree.NbTips()
 	if err != nil {
 		panic(err)
 	}
 	count := 0
 	totalDP := len(dp.DP) - n
-	dp.TreeData.Tree.PostOrder(func(v, prev *tree.Node, e *tree.Edge) (keep bool) {
+	dp.Tree.PostOrder(func(v, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !v.Tip() {
 			count++
 			pr.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
@@ -126,15 +126,15 @@ func (dp *DP) RunDP() [][]gr.Branch {
 		}
 		return true
 	})
-	numOptimal := len(dp.DP[dp.TreeData.Root.Id()]) - 1
+	numOptimal := len(dp.DP[dp.Tree.Root().Id()]) - 1
 	log.Printf("%d edges identified\n", numOptimal)
 	log.Println("beginning traceback")
 	result := make([][]gr.Branch, numOptimal)
 	for k := range numOptimal + 1 {
 		if k != 0 {
-			finalScore := dp.DP[dp.TreeData.Tree.Root().Id()][k]
+			finalScore := dp.DP[dp.Tree.Root().Id()][k]
 			log.Printf("dp scored %d at root with %d edges\n", finalScore, k)
-			log.Printf("%f percent of quartets satisfied", 100*(float64(finalScore)/float64(dp.TreeData.TotalNumQuartets())))
+			log.Printf("%f percent of quartets satisfied", 100*(float64(finalScore)/float64(dp.Tree.TotalNumQuartets())))
 			result[k-1] = dp.traceback(k)
 		}
 	}
@@ -144,7 +144,7 @@ func (dp *DP) RunDP() [][]gr.Branch {
 
 // Solve DP problem for vertex v for all k until it stops improving
 func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
-	lID, rID := dp.TreeData.Children[v.Id()][0].Id(), dp.TreeData.Children[v.Id()][1].Id()
+	lID, rID := dp.Tree.Children[v.Id()][0].Id(), dp.Tree.Children[v.Id()][1].Id()
 	scores := make([]uint, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
 	traces := make([]trace, 1, dp.NumNodes)
 	scores[0] = dp.DP[lID][0] + dp.DP[rID][0]
@@ -192,7 +192,7 @@ func (dp *DP) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP) (bestScore u
 	prevK := k - 1
 	bestCycleLen := 0
 	vCycleDP.update(prevK, dp)
-	for _, c := range dp.TreeData.Children[v.Id()] {
+	for _, c := range dp.Tree.Children[v.Id()] {
 		if c.Tip() {
 			continue
 		}
@@ -230,8 +230,8 @@ func (dp *DP) cycleLen(br gr.Branch) int {
 		panic("branch was empty!")
 	}
 	u, w := br.IDs[gr.Ui], br.IDs[gr.Wi]
-	v := dp.TreeData.LCA(u, w)
-	length := (dp.TreeData.Depths[u] - dp.TreeData.Depths[v]) + (dp.TreeData.Depths[w] - dp.TreeData.Depths[v]) + 1
+	v := dp.Tree.LCA(u, w)
+	length := (dp.Tree.Depths[u] - dp.Tree.Depths[v]) + (dp.Tree.Depths[w] - dp.Tree.Depths[v]) + 1
 	if v == u { // we have to account for the edge above v that our new edge is anchored to
 		length += 1
 	}
@@ -245,16 +245,16 @@ func (dp *DP) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP, prevK int) (bestSc
 			return
 		}
 		edgeScore := dp.getEdgeScore(v, w, v, v)
-		wPathIdx, wDownIdx, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
+		wPathK, wDownK, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
 		if err != nil { // no valid split, so we don't consider this edge
 			return
 		}
-		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathIdx)
-		score := edgeScore + wScore + dp.DP[w.Id()][wDownIdx]
+		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathK)
+		score := edgeScore + wScore + dp.DP[w.Id()][wDownK]
 		if score > bestScore || traceback == nil {
 			traceback = &cycleTrace{
 				pathW:      wPathTrace,
-				wDownTrace: &dp.Traceback[w.Id()][wDownIdx],
+				wDownTrace: &dp.Traceback[w.Id()][wDownK],
 				branch:     gr.Branch{IDs: [2]int{v.Id(), w.Id()}},
 			}
 			bestScore = score
@@ -288,16 +288,16 @@ func (dp *DP) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP, prevK in
 		if err != nil { // no valid split, so we don't consider this edge
 			return
 		}
-		wPathIdx, uPathIdx, wDownIdx, uDownIdx := indices[0], indices[1], indices[2], indices[3]
-		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathIdx)
-		uScore, uPathTrace := vCycleDP.get(u.Id(), uPathIdx)
-		score := edgeScore + wScore + uScore + dp.DP[w.Id()][wDownIdx] + dp.DP[u.Id()][uDownIdx]
+		wPathK, uPathK, wDownK, uDownK := indices[0], indices[1], indices[2], indices[3]
+		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathK)
+		uScore, uPathTrace := vCycleDP.get(u.Id(), uPathK)
+		score := edgeScore + wScore + uScore + dp.DP[w.Id()][wDownK] + dp.DP[u.Id()][uDownK]
 		if score > bestScore || traceback == nil {
 			traceback = &cycleTrace{
 				pathW:      wPathTrace,
 				pathU:      uPathTrace,
-				wDownTrace: &dp.Traceback[w.Id()][wDownIdx],
-				uDownTrace: &dp.Traceback[u.Id()][uDownIdx],
+				wDownTrace: &dp.Traceback[w.Id()][wDownK],
+				uDownTrace: &dp.Traceback[u.Id()][uDownK],
 				branch:     gr.Branch{IDs: [2]int{u.Id(), w.Id()}},
 			}
 			bestScore = score
@@ -315,9 +315,9 @@ func (dp *DP) getEdgeScore(u, w, v, wSub *tree.Node) uint {
 		return score
 	}
 	score = uint(0)
-	for _, q := range dp.TreeData.Quartets(v.Id()) {
-		if QuartetScore(q, u, w, v, wSub, dp.TreeData) == gr.Qeq {
-			score += dp.TreeData.NumQuartet(q)
+	for _, q := range dp.Tree.Quartets(v.Id()) {
+		if QuartetScore(q, u, w, v, wSub, dp.Tree) == gr.Qeq {
+			score += dp.Tree.NumQuartet(q)
 		}
 	}
 	dp.brScoreCache[u.Id()][w.Id()] = score
@@ -401,7 +401,7 @@ func neighborTaxaQ(q *gr.Quartet, i int) int {
 }
 
 func (dp *DP) traceback(k int) []gr.Branch {
-	return dp.Traceback[dp.TreeData.Root.Id()][k].traceback()
+	return dp.Traceback[dp.Tree.Root().Id()][k].traceback()
 }
 
 func makeBrScoreCache(n int) [][]uint {

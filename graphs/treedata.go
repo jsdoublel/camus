@@ -7,9 +7,9 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 )
 
+// Expanded tree struct containing necessary preprocessed data
 type TreeData struct {
-	Tree          *tree.Tree        // Tree object
-	Root          *tree.Node        // Root for which data is calculated
+	tree.Tree
 	Children      [][]*tree.Node    // Children for each node
 	IdToNodes     []*tree.Node      // Mapping between id and node pointer
 	quartetSet    [][]*Quartet      // Quartets relevant for each subtree
@@ -24,7 +24,6 @@ type TreeData struct {
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
 // don't need quartets.
 func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
-	root := tre.Root()
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
@@ -35,8 +34,7 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
 		qSets = mapQuartetsToVertices(tre, qCounts, leafsets)
 	}
 	tipIndexMap := makeTipIndexMap(tre)
-	return &TreeData{Tree: tre,
-		Root:          root,
+	return &TreeData{Tree: *tre,
 		Children:      children,
 		lca:           lca,
 		leafsets:      leafsets,
@@ -62,8 +60,8 @@ func mapIdToNodes(tre *tree.Tree) []*tree.Node {
 // Verify that tree still has the same root, and thus the data is still
 // applicable
 func (td *TreeData) Verify() {
-	root := td.Tree.Root()
-	if root != td.Root {
+	root := td.Root()
+	if root != td.Root() {
 		panic("TreeData root is wrong!")
 	}
 }
@@ -125,7 +123,7 @@ func calcLeafset(tre *tree.Tree, children [][]*tree.Node) []*bitset.BitSet {
 	return leafset
 }
 
-// Caculates the LCA for every pair of nodes
+// Calculates the LCA for every pair of nodes
 func calcLCAs(tre *tree.Tree, children [][]*tree.Node) [][]int {
 	nNodes := len(tre.Nodes())
 	lca, below := make([][]int, nNodes), make([][]bool, nNodes) // below[i][j] = true means node j is below node i
@@ -241,7 +239,7 @@ func (td *TreeData) Sibling(node *tree.Node) *tree.Node {
 // Returns leafset as string for printing/testing
 func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	result := "{"
-	tips := td.Tree.AllTipNames()
+	tips := td.AllTipNames()
 	for i := range len(tips) {
 		// for i, t := range td.leafsets[n.Id()] {
 		if td.leafsets[n.Id()].Test(uint(i)) {
@@ -288,8 +286,7 @@ func (td *TreeData) TotalNumQuartets() uint {
 func (td *TreeData) Clone() *TreeData {
 	tre := td.Tree.Clone()
 	return &TreeData{
-		Tree:        tre,
-		Root:        tre.Root(),
+		Tree:        *tre,
 		Children:    children(tre),
 		IdToNodes:   mapIdToNodes(tre),
 		Depths:      td.Depths,
