@@ -28,7 +28,10 @@ func TestMakeNetwork(t *testing.T) {
 				t.Fatalf("%s cannot be parsed as newick. Test case is written incorrectly", test.constTree)
 			}
 			t.Logf("root %s", constTree.Root().Name())
-			constTree.UpdateTipIndex()
+			err = constTree.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
+			}
 			td := MakeTreeData(constTree, nil)
 			edges := make([]Branch, len(test.edges))
 			for i, edge := range test.edges {

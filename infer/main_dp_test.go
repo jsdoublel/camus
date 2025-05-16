@@ -256,6 +256,9 @@ func BenchmarkCAMUS(b *testing.B) {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
 	for b.Loop() {
-		CAMUS(tre, quartets.Trees)
+		_, _, err := CAMUS(tre, quartets.Trees)
+		if err != nil {
+			b.Fatalf("CAMUS failed with error %s", err)
+		}
 	}
 }
