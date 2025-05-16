@@ -155,21 +155,19 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 		traceNodes: make([][]*cycleTraceNode, dp.NumNodes),
 	}
 	for k := 1; ; k++ {
-		score, edgeTrace, errAdd := dp.scoreAddEdgeK(v, k, &vCycleDP) // TODO: refactor into a function to make only a single error
-		lK, rK, errNoAdd := BestSplit(dp.DP[lID], dp.DP[rID], k)
-		noEdgeScore := dp.DP[lID][lK] + dp.DP[rID][rK]
-		if (errAdd != nil || scores[k-1] >= score) && (errNoAdd != nil || scores[k-1] >= noEdgeScore) {
+		var score uint
+		var backtrace trace
+		if noEdgeScore, noEdgeTrace, err := dp.scoreNoAddEdgeK(lID, rID, k); err == nil {
+			score, backtrace = noEdgeScore, noEdgeTrace
+		}
+		if edgeScore, edgeTrace, err := dp.scoreAddEdgeK(v, k, &vCycleDP); err == nil && edgeScore > score {
+			score, backtrace = edgeScore, edgeTrace
+		}
+		if backtrace == nil || scores[k-1] >= score {
 			break
 		}
-		if errAdd == nil && score > noEdgeScore {
-			scores = append(scores, score)
-			traces = append(traces, edgeTrace)
-		} else if errNoAdd == nil {
-			scores = append(scores, noEdgeScore)
-			traces = append(traces, &noCycleTrace{
-				prevs: [2]*trace{&dp.Traceback[lID][lK], &dp.Traceback[rID][rK]},
-			})
-		}
+		scores = append(scores, score)
+		traces = append(traces, backtrace)
 		if k == dp.NumNodes*dp.NumNodes {
 			panic("runaway loop")
 		}
@@ -181,6 +179,14 @@ func (dp *DP) solve(v *tree.Node) ([]uint, []trace) {
 		}
 	}
 	return scores, traces
+}
+
+// Calculate score for vertex v assuming we do not add an edge
+func (dp *DP) scoreNoAddEdgeK(lId, rId, k int) (score uint, backtrace *noCycleTrace, err error) {
+	lK, rK, err := BestSplit(dp.DP[lId], dp.DP[rId], k)
+	score = dp.DP[lId][lK] + dp.DP[rId][rK]
+	backtrace = &noCycleTrace{prevs: [2]*trace{&dp.Traceback[lId][lK], &dp.Traceback[rId][rK]}}
+	return
 }
 
 // Calculates score for given top node v assuming an edge is added; returns
