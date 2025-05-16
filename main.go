@@ -7,7 +7,7 @@ usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>
 
 commands:
 
-	infer		find level-1 network given constraint tree and gene trees
+	infer		finds level-1 networks given constraint tree and gene trees
 	score		score each reticulation branch with respects to gene trees
 
 positional arguments:
@@ -72,7 +72,7 @@ func parseArgs() args {
 			"usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>\n",
 			"\n",
 			"commands:\n\n",
-			"  infer\t\tfind level-1 network given constraint tree and gene trees\n",
+			"  infer\t\tfinds level-1 networks given constraint tree and gene trees\n",
 			"  score\t\tscore each reticulation branch with respects to gene trees\n",
 			"\n",
 			"positional arguments:\n\n",

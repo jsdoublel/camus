@@ -146,19 +146,18 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 		return nil, fmt.Errorf("network is %w", ErrNonBinary)
 	}
 	ret := make(map[string]gr.Branch)
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%w, too many or invalid matching reticulation label %v", ErrInvalidFormat, r)
-		}
-	}()
+	var errNode *tree.Node
 	ntw.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+		if errNode != nil {
+			return true
+		}
 		if strings.Contains(cur.Name(), "#") {
 			branch := ret[cur.Name()]
 			var v *tree.Node
 			if cur.Tip() {
 				p, err := prev.Parent()
 				if err != nil && err.Error() != "The node has no parent : May be the root?" {
-					panic(cur.Name())
+					panic(fmt.Sprintf("err from backbone tree: %s", err))
 				}
 				for _, n := range prev.Neigh() {
 					if n != cur && n != p {
@@ -166,7 +165,8 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 					}
 				}
 				if branch.IDs[gr.Ui] != 0 || v == nil {
-					panic(cur.Name())
+					errNode = cur
+					return true
 				}
 				branch.IDs[gr.Ui] = v.Id()
 			} else {
@@ -176,7 +176,8 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 					}
 				}
 				if branch.IDs[gr.Wi] != 0 || v == nil {
-					panic(cur.Name())
+					errNode = cur
+					return true
 				}
 				branch.IDs[gr.Wi] = v.Id()
 			}
@@ -184,6 +185,9 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 		}
 		return true
 	})
+	if errNode != nil {
+		return nil, fmt.Errorf("%w, too many or invalid matching reticulation label %s", ErrInvalidFormat, errNode.Name())
+	}
 	if len(ret) == 0 {
 		return nil, fmt.Errorf("%w - not a network", ErrNoReticulations)
 	}
