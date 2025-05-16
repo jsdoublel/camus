@@ -9,7 +9,7 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 
 	gr "github.com/jsdoublel/camus/graphs"
-	"github.com/jsdoublel/camus/prep"
+	pr "github.com/jsdoublel/camus/prep"
 )
 
 func TestCAMUS(t *testing.T) {
@@ -220,7 +220,7 @@ func TestCAMUS_Large(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, quartets, err := prep.ReadInputFiles(test.constTree, test.geneTrees, prep.Newick)
+			tre, quartets, err := pr.ReadInputFiles(test.constTree, test.geneTrees, pr.Newick)
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
@@ -251,7 +251,7 @@ func TestCAMUS_Large(t *testing.T) {
 func BenchmarkCAMUS(b *testing.B) {
 	constTreeFile := "../testdata/large/constraint.nwk"
 	geneTreeFile := "../testdata/large/gene-trees.nwk"
-	tre, quartets, err := prep.ReadInputFiles(constTreeFile, geneTreeFile, prep.Newick)
+	tre, quartets, err := pr.ReadInputFiles(constTreeFile, geneTreeFile, pr.Newick)
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
