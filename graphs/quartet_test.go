@@ -50,9 +50,12 @@ func TestNewQuartet(t *testing.T) {
 				t.Error("invalid newick tree; test is written wrong")
 			}
 			tre, err := newick.NewParser(strings.NewReader(test.tre)).Parse()
-			tre.UpdateTipIndex()
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
+			}
+			err = tre.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
 			}
 			q, err := NewQuartet(qTree, tre)
 			if err != nil {
@@ -112,7 +115,10 @@ func TestCompare(t *testing.T) {
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
 			}
-			tre.UpdateTipIndex()
+			err = tre.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
+			}
 			q1, err := NewQuartet(t1, tre)
 			if err != nil {
 				t.Errorf("produced err %+v", err)
@@ -161,7 +167,10 @@ func TestQuartetsFromTree(t *testing.T) {
 			if err != nil {
 				t.Error("invalid newick tree; test is written wrong")
 			}
-			tre.UpdateTipIndex()
+			err = tre.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
+			}
 			qSet, err := QuartetsFromTree(tre, tre)
 			if err != nil {
 				t.Error(err)

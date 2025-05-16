@@ -151,7 +151,10 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Fatal("invalid newick tree; test is written wrong")
 			}
-			tre.UpdateTipIndex()
+			err = tre.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
+			}
 			rqList := []*tree.Tree{}
 			for _, nwk := range test.rqList {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()

@@ -71,8 +71,10 @@ func TestMakeTreeData(t *testing.T) {
 				}
 				q = append(q, tmp)
 			}
-			tre.UpdateTipIndex()
-			// qs, err := processQuartets(q, tre)
+			err = tre.UpdateTipIndex()
+			if err != nil {
+				t.Error(err)
+			}
 			qc, err := makeQCounts(q, tre)
 			if err != nil {
 				t.Error("invalid quartet; test is written wrong")

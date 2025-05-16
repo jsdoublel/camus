@@ -94,11 +94,12 @@ func TestReadInputFiles(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile, parseFormat[test.format])
-			if !errors.Is(err, test.expectedErr) {
+			switch {
+			case !errors.Is(err, test.expectedErr):
 				t.Errorf("Failed with unexpected error %+v", err)
-			} else if errors.Is(err, test.expectedErr) && err != nil {
+			case errors.Is(err, test.expectedErr) && err != nil:
 				t.Logf("%s", err)
-			} else if test.expectedErr == nil {
+			case test.expectedErr == nil:
 				taxaset := tre.AllTipNames()
 				if !reflect.DeepEqual(taxaset, test.taxaset) {
 					t.Errorf("Taxaset of tree not equal to expected (%v != %v)", taxaset, test.taxaset)

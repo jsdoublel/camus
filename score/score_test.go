@@ -67,14 +67,14 @@ func TestCalculateRecticulationScore(t *testing.T) {
 				gtrees[i] = tmp
 			}
 			result, err := CalculateReticulationScore(ntw, gtrees)
-			if err != nil && !errors.Is(err, test.expectedErr) {
+			switch {
+			case err != nil && !errors.Is(err, test.expectedErr):
 				t.Errorf("test case failed with unexpected error %s", err)
-			} else if err != nil {
+			case err != nil:
 				t.Logf("%s", err)
-			} else if !compareScoreMaps(result, test.expected) {
+			case !compareScoreMaps(result, test.expected):
 				t.Error("result != expected", result, test.expected)
 			}
-
 		})
 	}
 }
@@ -132,10 +132,16 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 			oldStdout := os.Stdout
 			os.Stdout = w
 			pr.WriteBranchScoresToCSV(scores, genes.Names)
-			w.Close()
+			err = w.Close()
+			if err != nil {
+				t.Fatalf("could not close pipe: %s", err)
+			}
 			os.Stdout = oldStdout
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			_, err = io.Copy(&buf, r)
+			if err != nil {
+				t.Fatalf("could not copy stdout: %s", err)
+			}
 			result := strings.TrimSpace(buf.String())
 			expBytes, err := os.ReadFile(test.expected)
 			if err != nil {
@@ -159,7 +165,10 @@ func BenchmarkCalculateRecticulationScore(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to convert tree to network %s", err)
 	}
-	for i := 0; i < b.N; i++ {
-		CalculateReticulationScore(network, genes.Trees)
+	for b.Loop() {
+		_, err := CalculateReticulationScore(network, genes.Trees)
+		if err != nil {
+			b.Fatalf("Failed to calculate reticulation scores: %s", err)
+		}
 	}
 }
