@@ -14,10 +14,11 @@ import (
 
 func TestCAMUS(t *testing.T) {
 	testCases := []struct {
-		name      string
-		constTree string
-		geneTrees []string
-		result    string
+		name        string
+		constTree   string
+		geneTrees   []string
+		expNumEdges int
+		result      string
 	}{
 		{
 			name:      "basic one-edge",
@@ -26,7 +27,8 @@ func TestCAMUS(t *testing.T) {
 				"(A,(B,(C,D)));",
 				"(B,(C,D),E);",
 			},
-			result: "(A,(B,((C)#H0,((#H0,D),(E,(F,(G,(H,(I,J)))))))));",
+			expNumEdges: 1,
+			result:      "(A,(B,((C)#H0,((#H0,D),(E,(F,(G,(H,(I,J)))))))));",
 		},
 		{
 			name:      "basic two-edges",
@@ -35,7 +37,8 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((G,F),(A,H));",
 			},
-			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
+			expNumEdges: 2,
+			result:      "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
 		},
 		{
 			name:      "two-edge two",
@@ -44,7 +47,8 @@ func TestCAMUS(t *testing.T) {
 				"((J,G),(H,I));",
 				"((C,G),(E,F));",
 			},
-			result: "(A,(B,(C,(D,((E)#H0,((#H0,F),(G,((H)#H1,((#H1,I),J)))))))));",
+			expNumEdges: 2,
+			result:      "(A,(B,(C,(D,((E)#H0,((#H0,F),(G,((H)#H1,((#H1,I),J)))))))));",
 		},
 		{
 			name:      "two-edge case two",
@@ -53,7 +57,8 @@ func TestCAMUS(t *testing.T) {
 				"((A,B),(C,D));",
 				"((A,F),(G,E));",
 			},
-			result: "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),(#H0,F))),(G,H));",
+			expNumEdges: 2,
+			result:      "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),(#H0,F))),(G,H));",
 		},
 		{
 			name:      "one-sided cycle test",
@@ -65,7 +70,8 @@ func TestCAMUS(t *testing.T) {
 				"((B,D),(A,E));",
 				"((C,D),(A,E));",
 			},
-			result: "((#H0,((((A)#H0,B),C),D)),E);",
+			expNumEdges: 1,
+			result:      "((#H0,((((A)#H0,B),C),D)),E);",
 		},
 		{
 			name:      "double one-sided cycle test",
@@ -83,7 +89,8 @@ func TestCAMUS(t *testing.T) {
 				"((H,I),(D,J));",
 				"((E,I),(A,J));",
 			},
-			result: "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
+			expNumEdges: 2,
+			result:      "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
 		},
 		{
 			name:      "duplicate quartet basic",
@@ -95,7 +102,8 @@ func TestCAMUS(t *testing.T) {
 				"((D,C),(A,E));",
 				"((D,C),(A,E));",
 			},
-			result: "(((#H0,((((A)#H0,B),C),D)),E),F);",
+			expNumEdges: 1,
+			result:      "(((#H0,((((A)#H0,B),C),D)),E),F);",
 		},
 		{
 			name:      "duplicate quartet basic 2",
@@ -107,7 +115,8 @@ func TestCAMUS(t *testing.T) {
 				"((C,B),(A,D));",
 				"((D,C),(A,E));",
 			},
-			result: "((#H0,(((((A,B))#H0,C),D),E)),F);",
+			expNumEdges: 1,
+			result:      "((#H0,(((((A,B))#H0,C),D),E)),F);",
 		},
 		{
 			name:      "avoid over-adding edges",
@@ -117,7 +126,8 @@ func TestCAMUS(t *testing.T) {
 				"((F,G),(E,H));",
 				"((R,A),(B,H));",
 			},
-			result: "(R,((A,((((B)#H0,C),D),((E,(F)#H1),(#H1,G)))),(#H0,H)));",
+			expNumEdges: 2,
+			result:      "(R,((A,((((B)#H0,C),D),((E,(F)#H1),(#H1,G)))),(#H0,H)));",
 		},
 		{
 			name:      "avoid over-adding edges 2",
@@ -128,7 +138,8 @@ func TestCAMUS(t *testing.T) {
 				"((R,A),(B,H));",
 				"((R,D),(E,H));",
 			},
-			result: "(R,((A,(((B,(C)#H1),(#H1,D)),(((#H0,E),F),G))),(H)#H0));",
+			expNumEdges: 2,
+			result:      "(R,((A,(((B,(C)#H1),(#H1,D)),(((#H0,E),F),G))),(H)#H0));",
 		},
 		{
 			name:      "test under node u lookup",
@@ -140,7 +151,24 @@ func TestCAMUS(t *testing.T) {
 				"((H,R),(E,C));",
 				"((I,R),(J,A));",
 			},
-			result: "(R,(((A)#H0,(I,(#H0,J))),(((#H1,((B,(C)#H2),(#H2,D))),H),(((E)#H1,F),G))));",
+			expNumEdges: 3,
+			result:      "(R,(((A)#H0,(I,(#H0,J))),(((#H1,((B,(C)#H2),(#H2,D))),H),(((E)#H1,F),G))));",
+		},
+		{
+			name:      "cycle below base of one-sided cycle",
+			constTree: "(((((A,B),C),(D,(F,(G,H)))),E),R);",
+			geneTrees: []string{
+				"((B,C),(D,A));",
+				"((B,C),(D,E));",
+				"((B,C),(A,E));",
+				"((B,D),(A,E));",
+				"((C,D),(A,E));",
+				"((F,G),(H,E));",
+				"((F,G),(H,E));",
+				"((E,C),(A,R));",
+			},
+			expNumEdges: 2,
+			result:      "((#H0,(((((A)#H0,B),C),(D,((F)#H1,((#H1,G),H)))),E)),R);",
 		},
 	}
 	for _, test := range testCases {
@@ -159,6 +187,14 @@ func TestCAMUS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CAMUS failed with error %s", err)
 		}
+		if len(results) != test.expNumEdges {
+			t.Errorf("inferred number of edges %d not equal to expected %d", len(results), test.expNumEdges)
+		}
+		for i, res := range results {
+			if len(res) != i+1 {
+				t.Errorf("unexpected number of branches %d, expected %d", len(res), i+1)
+			}
+		}
 		result := gr.MakeNetwork(td, results[len(results)-1]).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
@@ -168,16 +204,18 @@ func TestCAMUS(t *testing.T) {
 
 func TestCAMUS_Large(t *testing.T) {
 	testCases := []struct {
-		name      string
-		constTree string
-		geneTrees string
-		result    string
+		name        string
+		constTree   string
+		geneTrees   string
+		expNumEdges int
+		result      string
 	}{
 		{
-			name:      "pauls data",
-			constTree: "../testdata/large/constraint.nwk",
-			geneTrees: "../testdata/large/gene-trees.nwk",
-			result:    "../testdata/large/network.nwk",
+			name:        "pauls data",
+			constTree:   "../testdata/large/constraint.nwk",
+			geneTrees:   "../testdata/large/gene-trees.nwk",
+			expNumEdges: 5,
+			result:      "../testdata/large/network.nwk",
 		},
 	}
 	for _, test := range testCases {
@@ -194,6 +232,14 @@ func TestCAMUS_Large(t *testing.T) {
 			bts, err := os.ReadFile(test.result)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
+			}
+			if len(results) != test.expNumEdges {
+				t.Errorf("inferred number of edges %d not equal to expected %d", len(results), test.expNumEdges)
+			}
+			for i, res := range results {
+				if len(res) != i+1 {
+					t.Errorf("unexpected number of branches %d, expected %d", len(res), i+1)
+				}
 			}
 			if strings.TrimSpace(string(bts)) != ntw.Newick() {
 				t.Errorf("%s != %s, result != expected", ntw.Newick(), string(bts))
