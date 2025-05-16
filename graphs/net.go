@@ -58,18 +58,18 @@ func MakeNetwork(td *TreeData, branches []Branch) *Network {
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting u (id %d): %s", u.Id(), err))
 		}
-		r := td.Tree.NewNode()
+		r := td.NewNode()
 		r.SetName(fmt.Sprintf("#H%d", i))
-		if _, _, _, err := td.Tree.GraftTipOnEdge(r, uEdge); err != nil {
+		if _, _, _, err := td.GraftTipOnEdge(r, uEdge); err != nil {
 			panic(err)
 		}
-		r = td.Tree.NewNode()
+		r = td.NewNode()
 		r.SetName("####")
 		wEdge, err := w.ParentEdge()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting w: %s", err))
 		}
-		if _, _, _, err := td.Tree.GraftTipOnEdge(r, wEdge); err != nil {
+		if _, _, _, err := td.GraftTipOnEdge(r, wEdge); err != nil {
 			panic(err)
 		}
 		p, err := r.Parent()
@@ -78,8 +78,8 @@ func MakeNetwork(td *TreeData, branches []Branch) *Network {
 		}
 		p.SetName(fmt.Sprintf("#H%d", i))
 	}
-	cleanTree(td.Tree)
-	return &Network{NetTree: td.Tree, Reticulations: ret}
+	cleanTree(&td.Tree)
+	return &Network{NetTree: &td.Tree, Reticulations: ret}
 }
 
 func (ntw *Network) Newick() string {
@@ -89,7 +89,7 @@ func (ntw *Network) Newick() string {
 	return nwk
 }
 
-// Deletes all branch lengths and support values (since they might be missleading)
+// Deletes all branch lengths and support values (since they might be misleading)
 func cleanTree(tre *tree.Tree) {
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if e != nil {
@@ -101,14 +101,14 @@ func cleanTree(tre *tree.Tree) {
 }
 
 func (ntw *Network) Level1(td *TreeData) bool {
-	branchs := make([]string, 0)
+	branches := make([]string, 0)
 	for k := range ntw.Reticulations {
-		branchs = append(branchs, k)
+		branches = append(branches, k)
 	}
-	for i := range branchs {
-		for j := i + 1; j < len(branchs); j++ {
-			r1 := ntw.Reticulations[branchs[i]]
-			r2 := ntw.Reticulations[branchs[j]]
+	for i := range branches {
+		for j := i + 1; j < len(branches); j++ {
+			r1 := ntw.Reticulations[branches[i]]
+			r2 := ntw.Reticulations[branches[j]]
 			vR1 := td.LCA(r1.IDs[0], r1.IDs[1])
 			vR2 := td.LCA(r2.IDs[0], r2.IDs[1])
 			if vR1 == vR2 || illSorted(vR1, vR2, r1, td) || illSorted(vR2, vR1, r2, td) {

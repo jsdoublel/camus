@@ -156,6 +156,6 @@ func main() {
 		}
 		pr.WriteBranchScoresToCSV(scores, geneTrees.Names)
 	default:
-		panic(fmt.Sprintf("inavlid command (%d)", args.command))
+		panic(fmt.Sprintf("invalid command (%d)", args.command))
 	}
 }
