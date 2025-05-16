@@ -9,7 +9,6 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-
 ## Installation
 
 CAMUS should be able to build on any operating system, though it has only been
@@ -65,9 +64,15 @@ camus infer <constraint_tree> <gene_trees>
 ```
 
 Given a rooted, binary, constraint tree $T$ and a list of input trees
-$\mathcal{G}$, the CAMUS algorithm finds the level-1 network inducing the
-maximum number of quartets from $\mathcal{G}$ that respects the constraint tree
-$T$.
+$\mathcal{G}$, the CAMUS algorithm finds the level-1 networks inducing the
+maximum number of quartets from $\mathcal{G}$ that contains the constraint tree
+$T$
+
+CAMUS finds networks for different values of $k$, where $k$ is the number of
+edges added to the network. For example, if the best possible network that
+contains $T$ has $m$ edges, then CAMUS will output $m$ networks $N_1, N_2,
+\cdots, N_m$, where $N_i$ is optimal under the constraint that it contains
+exactly $i$ edges.
 
 Since these added edges are directed edges, it is a requirement that any
 quartet that contributes to the maximum contain exactly one taxon from the clade
@@ -84,7 +89,7 @@ CAMUS has the following inputs and outputs:
 
 **Output**
 
-- *Output Network:* Level-1 network written in extended newick format.
+- *Output Network:* Level-1 networks written in extended newick format.
 
 CAMUS, when run with the `infer` command, should be invoked with the constraint
 tree file path and gene trees file path as positional arguments in that order;
