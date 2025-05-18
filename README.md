@@ -2,7 +2,7 @@
 
 [![build](https://github.com/jsdoublel/camus/actions/workflows/go.yml/badge.svg)](https://github.com/jsdoublel/camus/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/jsdoublel/camus.svg)](https://pkg.go.dev/github.com/jsdoublel/camus)
-[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/jsdoublel/camus)](https://go.dev/)
+[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/jsdoublel/camus?logo=go)](https://go.dev/)
 [![GitHub License](https://img.shields.io/github/license/jsdoublel/camus)](https://github.com/jsdoublel/camus/blob/main/LICENSE.txt)
 
 CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
