@@ -36,7 +36,7 @@ Once Go is installed, clone the repository and build the project with the follow
 ```
 git clone https://github.com/jsdoublel/camus.git
 cd camus
-go build
+make build
 ```
 
 ### Download the binaries

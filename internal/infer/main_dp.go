@@ -12,8 +12,8 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	gr "github.com/jsdoublel/camus/graphs"
-	pr "github.com/jsdoublel/camus/prep"
+	gr "github.com/jsdoublel/camus/internal/graphs"
+	pr "github.com/jsdoublel/camus/internal/prep"
 )
 
 const maxVal = ^uint(0)

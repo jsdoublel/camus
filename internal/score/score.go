@@ -8,9 +8,9 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	gr "github.com/jsdoublel/camus/graphs"
-	"github.com/jsdoublel/camus/infer"
-	pr "github.com/jsdoublel/camus/prep"
+	gr "github.com/jsdoublel/camus/internal/graphs"
+	"github.com/jsdoublel/camus/internal/infer"
+	pr "github.com/jsdoublel/camus/internal/prep"
 )
 
 var ErrNotLevel1 = errors.New("not level-1")

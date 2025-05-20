@@ -38,10 +38,10 @@ import (
 	"log"
 	"os"
 
-	gr "github.com/jsdoublel/camus/graphs"
-	"github.com/jsdoublel/camus/infer"
-	pr "github.com/jsdoublel/camus/prep"
-	"github.com/jsdoublel/camus/score"
+	gr "github.com/jsdoublel/camus/internal/graphs"
+	"github.com/jsdoublel/camus/internal/infer"
+	pr "github.com/jsdoublel/camus/internal/prep"
+	"github.com/jsdoublel/camus/internal/score"
 )
 
 const (

@@ -1,6 +1,6 @@
 package infer
 
-import gr "github.com/jsdoublel/camus/graphs"
+import gr "github.com/jsdoublel/camus/internal/graphs"
 
 // traceback for node v if there is not an edge (stored in DP.Traceback struct field)
 type trace interface {

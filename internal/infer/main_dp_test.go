@@ -2,15 +2,18 @@ package infer
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	gr "github.com/jsdoublel/camus/graphs"
-	pr "github.com/jsdoublel/camus/prep"
+	gr "github.com/jsdoublel/camus/internal/graphs"
+	pr "github.com/jsdoublel/camus/internal/prep"
 )
+
+const testData = "../../testdata/"
 
 func TestCAMUS(t *testing.T) {
 	testCases := []struct {
@@ -212,10 +215,10 @@ func TestCAMUS_Large(t *testing.T) {
 	}{
 		{
 			name:        "pauls data",
-			constTree:   "../testdata/large/constraint.nwk",
-			geneTrees:   "../testdata/large/gene-trees.nwk",
+			constTree:   filepath.Join(testData, "large/constraint.nwk"),
+			geneTrees:   filepath.Join(testData, "large/gene-trees.nwk"),
 			expNumEdges: 5,
-			result:      "../testdata/large/network.nwk",
+			result:      filepath.Join(testData, "large/network.nwk"),
 		},
 	}
 	for _, test := range testCases {
@@ -249,8 +252,8 @@ func TestCAMUS_Large(t *testing.T) {
 }
 
 func BenchmarkCAMUS(b *testing.B) {
-	constTreeFile := "../testdata/large/constraint.nwk"
-	geneTreeFile := "../testdata/large/gene-trees.nwk"
+	constTreeFile := filepath.Join(testData, "large/constraint.nwk")
+	geneTreeFile := filepath.Join(testData, "large/gene-trees.nwk")
 	tre, quartets, err := pr.ReadInputFiles(constTreeFile, geneTreeFile, pr.Newick)
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/evolbioinfo/gotree/tree"
 
-	gr "github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
 var (

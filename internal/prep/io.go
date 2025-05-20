@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	gr "github.com/jsdoublel/camus/graphs"
+	gr "github.com/jsdoublel/camus/internal/graphs"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/io/nexus"

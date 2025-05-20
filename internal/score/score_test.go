@@ -6,14 +6,17 @@ import (
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/tree"
 
-	pr "github.com/jsdoublel/camus/prep"
+	pr "github.com/jsdoublel/camus/internal/prep"
 )
+
+const testData = "../../testdata"
 
 func TestCalculateRecticulationScore(t *testing.T) {
 	testCases := []struct {
@@ -106,9 +109,9 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 	}{
 		{
 			name:     "pauls data",
-			network:  "../testdata/large/network.nwk",
-			gtrees:   "../testdata/large/gene-trees.nwk",
-			expected: "../testdata/large/scores.csv",
+			network:  filepath.Join(testData, "large/network.nwk"),
+			gtrees:   filepath.Join(testData, "large/gene-trees.nwk"),
+			expected: filepath.Join(testData, "large/scores.csv"),
 		},
 	}
 	for _, test := range testCases {
@@ -155,8 +158,8 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 }
 
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
-	netFile := "../testdata/large/network.nwk"
-	geneTrees := "../testdata/large/gene-trees.nwk"
+	netFile := filepath.Join(testData, "large/network.nwk")
+	geneTrees := filepath.Join(testData, "large/gene-trees.nwk")
 	tre, genes, err := pr.ReadInputFiles(netFile, geneTrees, pr.Newick)
 	if err != nil {
 		b.Fatalf("failed to read in input files %s", err)
