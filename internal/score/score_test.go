@@ -6,7 +6,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,9 +15,7 @@ import (
 	pr "github.com/jsdoublel/camus/internal/prep"
 )
 
-const testData = "../../testdata"
-
-func TestCalculateRecticulationScore(t *testing.T) {
+func TestRecticulationScore(t *testing.T) {
 	testCases := []struct {
 		name        string
 		network     string
@@ -69,7 +66,7 @@ func TestCalculateRecticulationScore(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			result, err := CalculateReticulationScore(ntw, gtrees)
+			result, err := ReticulationScore(ntw, gtrees)
 			switch {
 			case err != nil && !errors.Is(err, test.expectedErr):
 				t.Errorf("test case failed with unexpected error %s", err)
@@ -109,9 +106,9 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 	}{
 		{
 			name:     "pauls data",
-			network:  filepath.Join(testData, "large/network.nwk"),
-			gtrees:   filepath.Join(testData, "large/gene-trees.nwk"),
-			expected: filepath.Join(testData, "large/scores.csv"),
+			network:  "testdata/network.nwk",
+			gtrees:   "testdata/gene-trees.nwk",
+			expected: "testdata/scores.csv",
 		},
 	}
 	for _, test := range testCases {
@@ -124,7 +121,7 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to convert tree to network %s", err)
 			}
-			scores, err := CalculateReticulationScore(network, genes.Trees)
+			scores, err := ReticulationScore(network, genes.Trees)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
@@ -134,7 +131,7 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 			}
 			oldStdout := os.Stdout
 			os.Stdout = w
-			pr.WriteBranchScoresToCSV(scores, genes.Names)
+			pr.WriteRetScoresToCSV(scores, genes.Names)
 			err = w.Close()
 			if err != nil {
 				t.Fatalf("could not close pipe: %s", err)
@@ -158,8 +155,8 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 }
 
 func BenchmarkCalculateRecticulationScore(b *testing.B) {
-	netFile := filepath.Join(testData, "large/network.nwk")
-	geneTrees := filepath.Join(testData, "large/gene-trees.nwk")
+	netFile := "testdata/network.nwk"
+	geneTrees := "testdata/gene-trees.nwk"
 	tre, genes, err := pr.ReadInputFiles(netFile, geneTrees, pr.Newick)
 	if err != nil {
 		b.Fatalf("failed to read in input files %s", err)
@@ -169,7 +166,7 @@ func BenchmarkCalculateRecticulationScore(b *testing.B) {
 		b.Fatalf("failed to convert tree to network %s", err)
 	}
 	for b.Loop() {
-		_, err := CalculateReticulationScore(network, genes.Trees)
+		_, err := ReticulationScore(network, genes.Trees)
 		if err != nil {
 			b.Fatalf("Failed to calculate reticulation scores: %s", err)
 		}

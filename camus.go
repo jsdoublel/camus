@@ -92,7 +92,7 @@ func parseArgs() args {
 		)
 	}
 	format := pr.Newick
-	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ]")
+	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	flag.Parse()
@@ -137,7 +137,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.CAMUS(tre, geneTrees.Trees)
+		td, results, err := infer.Infer(tre, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -150,11 +150,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		scores, err := score.CalculateReticulationScore(network, geneTrees.Trees)
+		scores, err := score.ReticulationScore(network, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		pr.WriteBranchScoresToCSV(scores, geneTrees.Names)
+		pr.WriteRetScoresToCSV(scores, geneTrees.Names)
 	default:
 		panic(fmt.Sprintf("invalid command (%d)", args.command))
 	}

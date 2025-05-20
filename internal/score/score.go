@@ -23,7 +23,7 @@ type reticulation struct {
 	wSub *tree.Node
 }
 
-func CalculateReticulationScore(ntw *gr.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
+func ReticulationScore(ntw *gr.Network, gtrees []*tree.Tree) ([]*map[string]float64, error) {
 	td := gr.MakeTreeData(ntw.NetTree, nil)
 	if !ntw.Level1(td) {
 		return nil, fmt.Errorf("network is %w", ErrNotLevel1)

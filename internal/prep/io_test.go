@@ -2,14 +2,11 @@ package prep
 
 import (
 	"errors"
-	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/tree"
 )
-
-const testData = "../../testdata"
 
 func TestReadInputFiles(t *testing.T) {
 	testCases := []struct {
@@ -23,8 +20,8 @@ func TestReadInputFiles(t *testing.T) {
 	}{
 		{
 			name:        "basic",
-			treeFile:    filepath.Join(testData, "prep/constraint.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nwk"),
+			treeFile:    "testdata/constraint.nwk",
+			quartetFile: "testdata/quartets.nwk",
 			taxaset:     []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
 			numGenes:    2,
 			format:      "newick",
@@ -32,8 +29,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "non-unique const tree",
-			treeFile:    filepath.Join(testData, "prep/quartets.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nwk"),
+			treeFile:    "testdata/quartets.nwk",
+			quartetFile: "testdata/quartets.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -41,8 +38,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "bad const tree",
-			treeFile:    filepath.Join(testData, "prep/badtree.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nwk"),
+			treeFile:    "testdata/badtree.nwk",
+			quartetFile: "testdata/quartets.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -50,8 +47,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "bad const tree (no ;)",
-			treeFile:    filepath.Join(testData, "prep/badtree-nosemi.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nwk"),
+			treeFile:    "testdata/badtree-nosemi.nwk",
+			quartetFile: "testdata/quartets.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -59,8 +56,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "empty const tree",
-			treeFile:    filepath.Join(testData, "prep/empty.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nwk"),
+			treeFile:    "testdata/empty.nwk",
+			quartetFile: "testdata/quartets.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -68,8 +65,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "bad gene tree trees",
-			treeFile:    filepath.Join(testData, "prep/constraint.nwk"),
-			quartetFile: filepath.Join(testData, "prep/badtree.nwk"),
+			treeFile:    "testdata/constraint.nwk",
+			quartetFile: "testdata/badtree.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -77,8 +74,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "empty gene trees",
-			treeFile:    filepath.Join(testData, "prep/constraint.nwk"),
-			quartetFile: filepath.Join(testData, "prep/empty.nwk"),
+			treeFile:    "testdata/constraint.nwk",
+			quartetFile: "testdata/empty.nwk",
 			taxaset:     []string{},
 			numGenes:    -1,
 			format:      "newick",
@@ -86,8 +83,8 @@ func TestReadInputFiles(t *testing.T) {
 		},
 		{
 			name:        "basic nexus",
-			treeFile:    filepath.Join(testData, "prep/constraint.nwk"),
-			quartetFile: filepath.Join(testData, "prep/quartets.nex"),
+			treeFile:    "testdata/constraint.nwk",
+			quartetFile: "testdata/quartets.nex",
 			taxaset:     []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"},
 			numGenes:    2,
 			format:      "nexus",
@@ -125,7 +122,7 @@ func TestConvertToNetwork(t *testing.T) {
 	}{
 		{
 			name:        "basic test",
-			networkFile: filepath.Join(testData, "prep/net.nwk"),
+			networkFile: "testdata/net.nwk",
 			expNetwork:  "(((9,0),(7,(6,(#H0,8h0u)))),((#H2,(12,((3,(14h2w)#H2),10))h2u),((((5,(#H1,13h1u)),((2h1w)#H1,11))h0w)#H0,(1,4))));",
 			expReticulations: map[string][2]string{
 				"#H0": {"8h0u", "h0w"},
@@ -136,44 +133,44 @@ func TestConvertToNetwork(t *testing.T) {
 		},
 		{
 			name:             "unresolved",
-			networkFile:      filepath.Join(testData, "prep/unresolved.nwk"),
+			networkFile:      "testdata/unresolved.nwk",
 			expNetwork:       "",
 			expReticulations: nil,
 			expectedErr:      ErrNonBinary,
 		},
 		{
 			name:             "non-unique network",
-			networkFile:      filepath.Join(testData, "prep/multi-net.nwk"),
+			networkFile:      "testdata/multi-net.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrInvalidFile,
 		},
 		{
 			name:             "bad network",
-			networkFile:      filepath.Join(testData, "prep/badtree.nwk"),
+			networkFile:      "testdata/badtree.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrInvalidFormat,
 		},
 		{
 			name:             "bad network (no ;)",
-			networkFile:      filepath.Join(testData, "prep/badtree-nosemi.nwk"),
+			networkFile:      "testdata/badtree-nosemi.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrInvalidFormat,
 		},
 		{
 			name:             "empty",
-			networkFile:      filepath.Join(testData, "prep/empty.nwk"),
+			networkFile:      "testdata/empty.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrInvalidFile,
 		},
 		{
 			name:             "no reticulations",
-			networkFile:      filepath.Join(testData, "prep/constraint.nwk"),
+			networkFile:      "testdata/constraint.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrNoReticulations,
 		},
 		{
 			name:             "unrooted",
-			networkFile:      filepath.Join(testData, "prep/unrooted-net.nwk"),
+			networkFile:      "testdata/unrooted-net.nwk",
 			expReticulations: nil,
 			expectedErr:      ErrUnrooted,
 		},

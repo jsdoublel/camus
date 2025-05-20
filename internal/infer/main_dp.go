@@ -85,9 +85,9 @@ func (cdp *cycleDP) get(i, k int) (uint, *cycleTraceNode) {
 	return cdp.scores[i][k], cdp.traceNodes[i][k]
 }
 
-// Runs CAMUS algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
+// Runs Infer algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
-func CAMUS(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch, error) {
+func Infer(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, [][]gr.Branch, error) {
 	log.Println("beginning data preprocessing")
 	td, err := pr.Preprocess(tre, geneTrees)
 	if err != nil {

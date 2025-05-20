@@ -2,7 +2,6 @@ package infer
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,9 +12,7 @@ import (
 	pr "github.com/jsdoublel/camus/internal/prep"
 )
 
-const testData = "../../testdata/"
-
-func TestCAMUS(t *testing.T) {
+func TestInfer(t *testing.T) {
 	testCases := []struct {
 		name        string
 		constTree   string
@@ -186,9 +183,9 @@ func TestCAMUS(t *testing.T) {
 				t.Fatalf("cannot parse %s as newick tree", g)
 			}
 		}
-		td, results, err := CAMUS(constTree, geneTrees)
+		td, results, err := Infer(constTree, geneTrees)
 		if err != nil {
-			t.Fatalf("CAMUS failed with error %s", err)
+			t.Fatalf("Infer failed with error %s", err)
 		}
 		if len(results) != test.expNumEdges {
 			t.Errorf("inferred number of edges %d not equal to expected %d", len(results), test.expNumEdges)
@@ -205,7 +202,7 @@ func TestCAMUS(t *testing.T) {
 	}
 }
 
-func TestCAMUS_Large(t *testing.T) {
+func TestInfer_Large(t *testing.T) {
 	testCases := []struct {
 		name        string
 		constTree   string
@@ -215,10 +212,10 @@ func TestCAMUS_Large(t *testing.T) {
 	}{
 		{
 			name:        "pauls data",
-			constTree:   filepath.Join(testData, "large/constraint.nwk"),
-			geneTrees:   filepath.Join(testData, "large/gene-trees.nwk"),
+			constTree:   "testdata/constraint.nwk",
+			geneTrees:   "testdata/gene-trees.nwk",
 			expNumEdges: 5,
-			result:      filepath.Join(testData, "large/network.nwk"),
+			result:      "testdata/network.nwk",
 		},
 	}
 	for _, test := range testCases {
@@ -227,7 +224,7 @@ func TestCAMUS_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
-			td, results, err := CAMUS(tre, quartets.Trees)
+			td, results, err := Infer(tre, quartets.Trees)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
@@ -251,17 +248,17 @@ func TestCAMUS_Large(t *testing.T) {
 	}
 }
 
-func BenchmarkCAMUS(b *testing.B) {
-	constTreeFile := filepath.Join(testData, "large/constraint.nwk")
-	geneTreeFile := filepath.Join(testData, "large/gene-trees.nwk")
+func BenchmarkInfer(b *testing.B) {
+	constTreeFile := "testdata/constraint.nwk"
+	geneTreeFile := "testdata/gene-trees.nwk"
 	tre, quartets, err := pr.ReadInputFiles(constTreeFile, geneTreeFile, pr.Newick)
 	if err != nil {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
 	for b.Loop() {
-		_, _, err := CAMUS(tre, quartets.Trees)
+		_, _, err := Infer(tre, quartets.Trees)
 		if err != nil {
-			b.Fatalf("CAMUS failed with error %s", err)
+			b.Fatalf("Infer failed with error %s", err)
 		}
 	}
 }
