@@ -183,8 +183,8 @@ func TestProcessQuartets(t *testing.T) {
 			for _, q := range expectedList {
 				expected[*q] += 1
 			}
-			if !reflect.DeepEqual(*result, expected) {
-				t.Errorf("actual %s != expected %s", gr.QSetToString(*result, tre), gr.QSetToString(expected, tre))
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("actual %s != expected %s", gr.QSetToString(result, tre), gr.QSetToString(expected, tre))
 			}
 		})
 	}

@@ -23,7 +23,7 @@ type TreeData struct {
 
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
 // don't need quartets.
-func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
+func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
@@ -41,7 +41,7 @@ func MakeTreeData(tre *tree.Tree, qCounts *map[Quartet]uint) *TreeData {
 		IdToNodes:     idMap,
 		Depths:        depths,
 		quartetSet:    qSets,
-		quartetCounts: qCounts,
+		quartetCounts: &qCounts,
 		tipIndexMap:   tipIndexMap,
 		NLeaves:       len(tre.AllTipNames()),
 	}
@@ -175,7 +175,7 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[Quartet]uint, leafsets []*bitset.BitSet) [][]*Quartet {
+func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []*bitset.BitSet) [][]*Quartet {
 	qSets := make([][]*Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
@@ -183,7 +183,7 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts *map[Quartet]uint, leafsets [
 	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		qSets[cur.Id()] = make([]*Quartet, 0)
-		for q := range *qCounts {
+		for q := range qCounts {
 			found := 0
 			for i := range 4 {
 				if q.Taxa[i] >= n {

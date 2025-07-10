@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	Version    = "v0.3.0"
+	Version    = "v0.4.0"
 	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
@@ -64,6 +64,7 @@ type args struct {
 	gtFormat     pr.Format // gene tree file format
 	treeFile     string    // constraint or network tree file
 	geneTreeFile string    // gene trees
+	quartetMode  pr.QMode  // quartet filter mode
 }
 
 func parseArgs() args {
@@ -93,6 +94,8 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
+	var qMode pr.QMode = 0
+	flag.Var(&qMode, "q", "quartet filter mode `number` [0, 2] (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	flag.Parse()
@@ -116,6 +119,7 @@ func parseArgs() args {
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
+		quartetMode:  qMode,
 	}
 }
 
@@ -137,7 +141,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees)
+		td, results, err := infer.Infer(tre, geneTrees.Trees, args.quartetMode)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -145,6 +149,9 @@ func main() {
 			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
+		if args.quartetMode != 0 {
+			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
+		}
 		log.Println("running score...")
 		network, err := pr.ConvertToNetwork(tre)
 		if err != nil {
