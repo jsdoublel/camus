@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
+	"strconv"
 
 	"github.com/evolbioinfo/gotree/tree"
 
@@ -18,9 +20,27 @@ var (
 	ErrMulTree   = errors.New("contains duplicate labels")
 )
 
+type QMode int
+
+func (mode *QMode) Set(n string) error {
+	res, err := strconv.Atoi(n)
+	if err != nil {
+		return err
+	}
+	if res < 0 || res > 2 {
+		return fmt.Errorf("quartet mode %d out of range", res)
+	}
+	*mode = QMode(res)
+	return nil
+}
+
+func (mode *QMode) String() string {
+	return strconv.Itoa(int(*mode))
+}
+
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, qMode QMode) (*gr.TreeData, error) {
 	if err := tre.UpdateTipIndex(); err != nil {
 		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
@@ -30,7 +50,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, error) {
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
-	qCounts, err := processQuartets(geneTrees, tre)
+	qCounts, err := processQuartets(geneTrees, tre, qMode)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +60,12 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree) (*gr.TreeData, error) {
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[gr.Quartet]uint, error) {
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qMode QMode) (map[gr.Quartet]uint, error) {
 	treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
+	taxaSets := make(map[[4]int]struct{})
 	qCounts := make(map[gr.Quartet]uint)
 	countGTree := len(geneTrees)
 	countTotal := uint(0)
@@ -59,6 +80,9 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[gr.Quartet]ui
 			return nil, err
 		}
 		for quartet, count := range newQuartets {
+			if _, exists := taxaSets[quartet.Taxa]; !exists {
+				taxaSets[quartet.Taxa] = struct{}{}
+			}
 			if treeQuartets[quartet] == 0 {
 				qCounts[quartet] += count
 				countNew += count
@@ -67,7 +91,33 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree) (*map[gr.Quartet]ui
 		}
 	}
 	log.Printf("%d gene trees provided, containing %d quartets; %d new quartet trees were found\n", countGTree, countTotal, countNew)
-	return &qCounts, nil
+	if qMode != 0 {
+		filterQuartets(qCounts, taxaSets, qMode)
+	}
+	return qCounts, nil
+}
+
+func filterQuartets(qCounts map[gr.Quartet]uint, taxaSets map[[4]int]struct{}, qMode QMode) {
+	for taxaSet := range taxaSets {
+		quartets := []gr.Quartet{gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo1},
+			gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo2},
+			gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo3}}
+		counts := []uint{qCounts[quartets[0]], qCounts[quartets[1]], qCounts[quartets[2]]}
+		switch qMode {
+		case 1:
+			minQ := quartets[slices.Index(counts, slices.Min(counts))]
+			delete(qCounts, minQ)
+		case 2:
+			maxQ := quartets[slices.Index(counts, slices.Max(counts))]
+			for _, q := range quartets {
+				if q != maxQ {
+					delete(qCounts, q)
+				}
+			}
+		default:
+			panic("invalid quartet mode case")
+		}
+	}
 }
 
 func NetworkIsBinary(ntw *tree.Tree) bool {
