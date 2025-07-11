@@ -80,7 +80,7 @@ func TestMakeTreeData(t *testing.T) {
 				t.Error("invalid quartet; test is written wrong")
 			}
 
-			treeData := MakeTreeData(tre, &qc)
+			treeData := MakeTreeData(tre, qc)
 			lca := treeData.lca
 			leafset := treeData.leafsets
 			quartetSets := treeData.quartetSet
