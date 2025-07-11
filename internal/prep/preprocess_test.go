@@ -124,12 +124,14 @@ func TestProcessQuartets(t *testing.T) {
 	testCases := []struct {
 		name     string
 		tre      string
+		qMode    QMode
 		rqList   []string
 		expected []string
 	}{
 		{
-			name: "basic",
-			tre:  "((((a,b),c),d),f);",
+			name:  "basic",
+			tre:   "((((a,b),c),d),f);",
+			qMode: 0,
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -142,6 +144,50 @@ func TestProcessQuartets(t *testing.T) {
 				"(((c,d),f),a);",
 				"((b,d),(a,f));",
 				"((c,f),(d,b));",
+			},
+		},
+		{
+			name:  "q mode 1",
+			tre:   "((((a,b),c),d),f);",
+			qMode: 1,
+			rqList: []string{
+				"(((a,b),c),d);",
+				"(((a,b),c),f);",
+				"(((a,b),d),f);",
+				"(((c,d),f),a);",
+				"(((d,b),a),f);",
+				"((c,f),(d,b));",
+				"((c,b),(d,f));",
+				"((c,d),(f,b));",
+				"((c,d),(f,b));",
+			},
+			expected: []string{
+				"((c,f),(d,b));",
+				"(((c,d),f),a);",
+				"((b,d),(a,f));",
+				"((c,d),(f,b));",
+				"((c,d),(f,b));",
+			},
+		},
+		{
+			name:  "q mode 2",
+			tre:   "((((a,b),c),d),f);",
+			qMode: 2,
+			rqList: []string{
+				"(((a,b),c),d);",
+				"(((a,b),c),f);",
+				"(((a,b),d),f);",
+				"(((c,d),f),a);",
+				"(((d,b),a),f);",
+				"((c,f),(d,b));",
+				"((c,d),(f,b));",
+				"((c,d),(f,b));",
+			},
+			expected: []string{
+				"(((c,d),f),a);",
+				"((b,d),(a,f));",
+				"((c,d),(f,b));",
+				"((c,d),(f,b));",
 			},
 		},
 	}
@@ -163,7 +209,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre, 0)
+			result, err := processQuartets(rqList, tre, test.qMode)
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
