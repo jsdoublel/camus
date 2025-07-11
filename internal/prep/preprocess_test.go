@@ -110,7 +110,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees)
+			_, err = Preprocess(tre, gtrees, 0)
 			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else if err != nil {
@@ -163,7 +163,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre)
+			result, err := processQuartets(rqList, tre, 0)
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}

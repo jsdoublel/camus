@@ -99,9 +99,9 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qMode QMode) (map[g
 
 func filterQuartets(qCounts map[gr.Quartet]uint, taxaSets map[[4]int]struct{}, qMode QMode) {
 	for taxaSet := range taxaSets {
-		quartets := []gr.Quartet{gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo1},
-			gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo2},
-			gr.Quartet{Taxa: taxaSet, Topology: gr.Qtopo3}}
+		quartets := []gr.Quartet{{Taxa: taxaSet, Topology: gr.Qtopo1},
+			{Taxa: taxaSet, Topology: gr.Qtopo2},
+			{Taxa: taxaSet, Topology: gr.Qtopo3}}
 		counts := []uint{qCounts[quartets[0]], qCounts[quartets[1]], qCounts[quartets[2]]}
 		switch qMode {
 		case 1:
