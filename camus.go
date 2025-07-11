@@ -12,7 +12,7 @@ commands:
 
 positional arguments:
 
-	<tree>			constraint newick tree (infer) or network (score)
+	<tree>	constraint newick tree (infer) or network (score)
 	<gene_trees>	gene tree newick file
 
 flags:
@@ -20,6 +20,8 @@ flags:
 	-f format
 	  	gene tree format [ newick | nexus ] (default "newick")
 	-h	prints this message and exits
+	-q number
+	  	quartet filter mode number [0, 2] (default 0)
 	-v	prints version number and exits
 
 examples:

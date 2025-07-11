@@ -54,8 +54,15 @@ There are two main commands for CAMUS: `infer` and `score`, followed by two posi
 indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
 
 - `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
+- `-q quartet filter mode [0, 2] (default 0)` defines quartet filtering mode
 - `-h` prints usage information and exits
 - `-v` prints software version and exits
+  
+#### Quartet filter mode
+
+Quartet filter mode is a mode for filtering out lower frequency quartet topologies. Since there are three quartet topologies for every for taxa, valid values range from 0 to 2. Mode 0 filters out no quartets, mode 1 filters out the single least fequently seen quartet, and mode 2 filters out the two least fequently seen quartets. 
+
+> Quartet filter mode currently only works with the `infer` command.
 
 ### Infer
 
