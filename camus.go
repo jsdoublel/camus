@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	Version    = "v0.4.0"
+	Version    = "v0.4.1"
 	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
@@ -62,11 +62,11 @@ var parseCommand = map[string]Command{
 }
 
 type args struct {
-	command      Command   // infer or score
-	gtFormat     pr.Format // gene tree file format
-	treeFile     string    // constraint or network tree file
-	geneTreeFile string    // gene trees
-	quartetMode  pr.QMode  // quartet filter mode
+	command      Command                 // infer or score
+	gtFormat     pr.Format               // gene tree file format
+	treeFile     string                  // constraint or network tree file
+	geneTreeFile string                  // gene trees
+	quartetOpts  pr.QuartetFilterOptions // quartet filter options
 }
 
 func parseArgs() args {
@@ -96,8 +96,12 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
-	var qMode pr.QMode = 0
-	flag.Var(&qMode, "q", "quartet filter mode `number` [0, 2] (default 0)")
+	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
+	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
+	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
+	if err != nil {
+		parserError(err.Error())
+	}
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	flag.Parse()
@@ -121,7 +125,7 @@ func parseArgs() args {
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
-		quartetMode:  qMode,
+		quartetOpts:  *qOpts,
 	}
 }
 
@@ -143,7 +147,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees, args.quartetMode)
+		td, results, err := infer.Infer(tre, geneTrees.Trees, args.quartetOpts)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -151,7 +155,7 @@ func main() {
 			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
-		if args.quartetMode != 0 {
+		if !args.quartetOpts.QuartetFilterOff() {
 			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
 		}
 		log.Println("running score...")
