@@ -60,7 +60,9 @@ indicating the inputs. Addtionally, there are the following flags that preceed t
   
 #### Quartet filter mode
 
-Quartet filter mode is a mode for filtering out lower frequency quartet topologies. Since there are three quartet topologies for every for taxa, valid values range from 0 to 2. Mode 0 filters out no quartets, mode 1 filters out the single least fequently seen quartet, and mode 2 filters out the two least fequently seen quartets. 
+Quartet filtering mode filters out less frequent quartet topologies. Mode `-q
+0` disables quartet filtering; `-q 1` applies a less restrictive quartet
+filtering, and `-q 2` is the most restrictive quartetfiltering.
 
 > Quartet filter mode currently only works with the `infer` command.
 
