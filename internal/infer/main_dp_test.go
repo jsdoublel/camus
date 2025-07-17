@@ -183,7 +183,7 @@ func TestInfer(t *testing.T) {
 				t.Fatalf("cannot parse %s as newick tree", g)
 			}
 		}
-		td, results, err := Infer(constTree, geneTrees, 0)
+		td, results, err := Infer(constTree, geneTrees, pr.QuartetFilterOptions{})
 		if err != nil {
 			t.Fatalf("Infer failed with error %s", err)
 		}
@@ -224,7 +224,7 @@ func TestInfer_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
-			td, results, err := Infer(tre, quartets.Trees, 0)
+			td, results, err := Infer(tre, quartets.Trees, pr.QuartetFilterOptions{})
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
@@ -256,7 +256,7 @@ func BenchmarkInfer(b *testing.B) {
 		b.Fatalf("Could not read input files for benchmark (error %s)", err)
 	}
 	for b.Loop() {
-		_, _, err := Infer(tre, quartets.Trees, 0)
+		_, _, err := Infer(tre, quartets.Trees, pr.QuartetFilterOptions{})
 		if err != nil {
 			b.Fatalf("Infer failed with error %s", err)
 		}

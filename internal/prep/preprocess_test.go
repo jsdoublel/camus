@@ -110,7 +110,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees, 0)
+			_, err = Preprocess(tre, gtrees, QuartetFilterOptions{})
 			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else if err != nil {
@@ -124,14 +124,14 @@ func TestProcessQuartets(t *testing.T) {
 	testCases := []struct {
 		name     string
 		tre      string
-		qMode    QMode
+		opts     QuartetFilterOptions
 		rqList   []string
 		expected []string
 	}{
 		{
-			name:  "basic",
-			tre:   "((((a,b),c),d),f);",
-			qMode: 0,
+			name: "basic",
+			tre:  "((((a,b),c),d),f);",
+			opts: QuartetFilterOptions{mode: 0, threshold: 0},
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -147,9 +147,9 @@ func TestProcessQuartets(t *testing.T) {
 			},
 		},
 		{
-			name:  "q mode 1",
-			tre:   "((((a,b),c),d),f);",
-			qMode: 1,
+			name: "q mode 1",
+			tre:  "((((a,b),c),d),f);",
+			opts: QuartetFilterOptions{mode: 1, threshold: 0},
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -162,7 +162,6 @@ func TestProcessQuartets(t *testing.T) {
 				"((c,d),(f,b));",
 			},
 			expected: []string{
-				"((c,f),(d,b));",
 				"(((c,d),f),a);",
 				"((b,d),(a,f));",
 				"((c,d),(f,b));",
@@ -170,9 +169,9 @@ func TestProcessQuartets(t *testing.T) {
 			},
 		},
 		{
-			name:  "q mode 2",
-			tre:   "((((a,b),c),d),f);",
-			qMode: 2,
+			name: "q mode 2",
+			tre:  "((((a,b),c),d),f);",
+			opts: QuartetFilterOptions{mode: 1, threshold: 0},
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -184,6 +183,7 @@ func TestProcessQuartets(t *testing.T) {
 				"((c,d),(f,b));",
 			},
 			expected: []string{
+				"((c,f),(d,b));",
 				"(((c,d),f),a);",
 				"((b,d),(a,f));",
 				"((c,d),(f,b));",
@@ -209,7 +209,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre, test.qMode)
+			result, err := processQuartets(rqList, tre, test.opts)
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}

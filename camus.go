@@ -3,7 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>
+usage: camus [ -f <format> | -q <mode> | -f <threshold> | -h | -v ] <command> <tree> <gene_trees>
 
 commands:
 
@@ -20,8 +20,10 @@ flags:
 	-f format
 	  	gene tree format [ newick | nexus ] (default "newick")
 	-h	prints this message and exits
-	-q number
+	-q int
 	  	quartet filter mode number [0, 2] (default 0)
+	-t float
+	  	threshold for quartet filter [0, 1] (default 0)
 	-v	prints version number and exits
 
 examples:
@@ -72,7 +74,7 @@ type args struct {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [ -f <format> | -h | -v ] <command> <tree> <gene_trees>\n",
+			"usage: camus [ -f <format> | -q <mode> | -f <threshold> | -h | -v ] <command> <tree> <gene_trees>\n",
 			"\n",
 			"commands:\n\n",
 			"  infer\t\tfinds level-1 networks given constraint tree and gene trees\n",
