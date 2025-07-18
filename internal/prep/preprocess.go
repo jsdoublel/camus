@@ -81,11 +81,8 @@ func (thresh Threshold) Keep(counts []uint) bool {
 	if len(counts) != 3 {
 		panic("there should be three counts, one for each quartet topology")
 	}
-	var sum uint
-	for _, c := range counts {
-		sum += c
-	}
 	slices.Sort(counts)
+	sum := counts[0] + counts[1]
 	return uint(float64(thresh)*float64(sum)) < counts[1]-counts[0]
 }
 

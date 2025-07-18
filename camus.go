@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	Version    = "v0.4.1"
+	Version    = "v0.4.2"
 	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
