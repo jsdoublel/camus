@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	Version    = "v0.4.2"
+	Version    = "v0.4.3"
 	ErrMessage = "Sisyphus was not happy :("
 
 	Infer Command = iota
@@ -100,13 +100,13 @@ func parseArgs() args {
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
+	help := flag.Bool("h", false, "prints this message and exits")
+	ver := flag.Bool("v", false, "prints version number and exits")
+	flag.Parse()
 	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
 	if err != nil {
 		parserError(err.Error())
 	}
-	help := flag.Bool("h", false, "prints this message and exits")
-	ver := flag.Bool("v", false, "prints version number and exits")
-	flag.Parse()
 	if *help {
 		flag.Usage()
 		os.Exit(0)

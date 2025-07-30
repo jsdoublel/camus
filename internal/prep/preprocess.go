@@ -30,11 +30,11 @@ type QuartetFilterOptions struct {
 
 func SetQuartetFilterOptions(mode int, threshold float64) (*QuartetFilterOptions, error) {
 	var m QMode
-	if err := m.Set(mode); err == nil {
+	if err := m.Set(mode); err != nil {
 		return nil, err
 	}
 	var t Threshold
-	if err := t.Set(threshold); err == nil {
+	if err := t.Set(threshold); err != nil {
 		return nil, err
 	}
 	return &QuartetFilterOptions{mode: m, threshold: t}, nil
@@ -66,7 +66,7 @@ func (mode QMode) String() string {
 type Threshold float64
 
 func (thresh *Threshold) Set(n float64) error {
-	if n <= 0 || n >= 1 {
+	if n < 0 || n > 1 {
 		return fmt.Errorf("threshold %f is %w", n, ErrTypeOutRange)
 	}
 	*thresh = Threshold(n)
@@ -117,7 +117,6 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilter
 	qCounts := make(map[gr.Quartet]uint)
 	countGTree := len(geneTrees)
 	countTotal := uint(0)
-	// countNew := uint(0)
 	for i, gt := range geneTrees {
 		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
 		if err := gt.UpdateTipIndex(); err != nil {
