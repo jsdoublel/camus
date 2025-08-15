@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/bits-and-blooms/bitset v1.22.0
 	github.com/evolbioinfo/gotree v0.4.5
+	golang.org/x/sync v0.11.0
 )
 
 require (
