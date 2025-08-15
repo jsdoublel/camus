@@ -3,6 +3,7 @@ package prep
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/evolbioinfo/gotree/tree"
+	"golang.org/x/sync/errgroup"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
@@ -26,6 +28,13 @@ var (
 type QuartetFilterOptions struct {
 	mode      QMode     // mode (value between 0 and 1)
 	threshold Threshold // threshold for filtering [0, 1]
+}
+
+// Result type for quartet workers
+type QuartetWorkerResult struct {
+	idx     int                 // gene tree index (line in file)
+	qResult map[gr.Quartet]uint // quartets in gene tree from idx
+	err     error               // error for worker
 }
 
 func SetQuartetFilterOptions(mode int, threshold float64) (*QuartetFilterOptions, error) {
@@ -113,34 +122,54 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilter
 	if err != nil {
 		panic(err)
 	}
-	taxaSets := make(map[[4]int]struct{})
 	qCounts := make(map[gr.Quartet]uint)
 	countGTree := len(geneTrees)
 	countTotal := uint(0)
-	for i, gt := range geneTrees {
-		LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
-		if err := gt.UpdateTipIndex(); err != nil {
-			return nil, fmt.Errorf("gene tree on line %d : %w", i, ErrMulTree)
-		}
-		newQuartets, err := gr.QuartetsFromTree(gt, tre)
-		if err != nil {
-			return nil, err
-		}
-		for quartet, count := range newQuartets {
-			if _, exists := taxaSets[quartet.Taxa]; !exists {
-				taxaSets[quartet.Taxa] = struct{}{}
+	g, ctx := errgroup.WithContext(context.Background())
+	g.SetLimit(10) // TODO: update
+	results := make(chan QuartetWorkerResult, 1024)
+	done := make(chan struct{}) // blocks until we're done merging total quartet counts
+	go func() {                 // merger routine
+		for r := range results {
+			for q, c := range r.qResult {
+				qCounts[q] += c
+				countTotal += c
 			}
-			qCounts[quartet] += count
-			countTotal += count
 		}
+		close(done)
+	}()
+	for i, gt := range geneTrees {
+		i, gt := i, gt
+		g.Go(func() error {
+			// LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
+			if err := gt.UpdateTipIndex(); err != nil {
+				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)
+			}
+			newQuartets, err := gr.QuartetsFromTree(gt, tre)
+			if err != nil {
+				return err
+			}
+			localCounts := make(map[gr.Quartet]uint)
+			for quartet, count := range newQuartets {
+				if treeQuartets[quartet] == 0 {
+					localCounts[quartet] += count
+				}
+			}
+			select {
+			case results <- QuartetWorkerResult{idx: i, qResult: localCounts, err: nil}:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
 	}
-	log.Printf("%d gene trees provided, containing %d quartets\n", countGTree, countTotal)
-	if qOpts.mode != 0 {
-		filterQuartets(qCounts, taxaSets, qOpts)
+	err = g.Wait()
+	close(results)
+	<-done
+	if err != nil {
+		return nil, err
 	}
-	for q := range treeQuartets {
-		delete(qCounts, q)
-	}
+	log.Printf("%d gene trees provided, containing %d quartets not in the constraint tree\n", countGTree, countTotal)
 	return qCounts, nil
 }
 
