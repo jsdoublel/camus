@@ -2,14 +2,11 @@
 package prep
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log"
 	"math"
-	"slices"
-	"strconv"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -24,12 +21,6 @@ var (
 	ErrTypeOutRange = errors.New("out of type range")
 )
 
-// Options for quartet filter mode
-type QuartetFilterOptions struct {
-	mode      QMode     // mode (value between 0 and 1)
-	threshold Threshold // threshold for filtering [0, 1]
-}
-
 // Result type for quartet workers
 type QuartetWorkerResult struct {
 	idx     int                 // gene tree index (line in file)
@@ -37,67 +28,103 @@ type QuartetWorkerResult struct {
 	err     error               // error for worker
 }
 
-func SetQuartetFilterOptions(mode int, threshold float64) (*QuartetFilterOptions, error) {
-	var m QMode
-	if err := m.Set(mode); err != nil {
-		return nil, err
-	}
-	var t Threshold
-	if err := t.Set(threshold); err != nil {
-		return nil, err
-	}
-	return &QuartetFilterOptions{mode: m, threshold: t}, nil
-}
+// UNUSED quartet filter stuff below
+// // Options for quartet filter mode
+// type QuartetFilterOptions struct {
+// 	mode      QMode     // mode (value between 0 and 1)
+// 	threshold Threshold // threshold for filtering [0, 1]
+// }
+//
+// func SetQuartetFilterOptions(mode int, threshold float64) (*QuartetFilterOptions, error) {
+// 	var m QMode
+// 	if err := m.Set(mode); err != nil {
+// 		return nil, err
+// 	}
+// 	var t Threshold
+// 	if err := t.Set(threshold); err != nil {
+// 		return nil, err
+// 	}
+// 	return &QuartetFilterOptions{mode: m, threshold: t}, nil
+// }
+//
+// func (opts QuartetFilterOptions) QuartetFilterOff() bool {
+// 	return opts.mode == 0
+// }
+//
+// type QMode int
+//
+// const (
+// 	NonRestrictive QMode = iota + 1
+// 	Restrictive
+// )
+//
+// func (mode *QMode) Set(n int) error {
+// 	if n < 0 || n > 2 {
+// 		return fmt.Errorf("quartet mode %d is %w", n, ErrTypeOutRange)
+// 	}
+// 	*mode = QMode(n)
+// 	return nil
+// }
+//
+// func (mode QMode) String() string {
+// 	return strconv.Itoa(int(mode))
+// }
+//
+// type Threshold float64
+//
+// func (thresh *Threshold) Set(n float64) error {
+// 	if n < 0 || n > 1 {
+// 		return fmt.Errorf("threshold %f is %w", n, ErrTypeOutRange)
+// 	}
+// 	*thresh = Threshold(n)
+// 	return nil
+// }
+//
+// func (thresh Threshold) String() string {
+// 	return strconv.FormatFloat(float64(thresh), 'f', -1, 64)
+// }
+//
+// func (thresh Threshold) Keep(counts []uint) bool {
+// 	if len(counts) != 3 {
+// 		panic("there should be three counts, one for each quartet topology")
+// 	}
+// 	slices.Sort(counts)
+// 	sum := counts[0] + counts[1]
+// 	return uint(float64(thresh)*float64(sum)) < counts[1]-counts[0]
+// }
+//
+// func filterQuartets(qCounts map[gr.Quartet]uint, taxaSets map[[4]int]struct{}, opts QuartetFilterOptions) {
+// 	for taxaSet := range taxaSets {
+// 		quartets := []gr.Quartet{
+// 			{Taxa: taxaSet, Topology: gr.Qtopo1},
+// 			{Taxa: taxaSet, Topology: gr.Qtopo2},
+// 			{Taxa: taxaSet, Topology: gr.Qtopo3},
+// 		}
+// 		counts := []uint{qCounts[quartets[0]], qCounts[quartets[1]], qCounts[quartets[2]]}
+// 		slices.SortFunc(quartets, func(q1, q2 gr.Quartet) int {
+// 			// return int(qCounts[q1]) - int(qCounts[q2])
+// 			return cmp.Compare(qCounts[q1], qCounts[q2])
+// 		})
+// 		if !opts.threshold.Keep(counts) {
+// 			delete(qCounts, quartets[0])
+// 			delete(qCounts, quartets[1])
+// 			continue
+// 		}
+// 		switch opts.mode {
+// 		case NonRestrictive:
+// 		case Restrictive:
+// 			delete(qCounts, quartets[0])
+// 		default:
+// 			panic("invalid quartet mode case")
+// 		}
+// 	}
+// }
 
-func (opts QuartetFilterOptions) QuartetFilterOff() bool {
-	return opts.mode == 0
-}
-
-type QMode int
-
-const (
-	NonRestrictive QMode = iota + 1
-	Restrictive
-)
-
-func (mode *QMode) Set(n int) error {
-	if n < 0 || n > 2 {
-		return fmt.Errorf("quartet mode %d is %w", n, ErrTypeOutRange)
-	}
-	*mode = QMode(n)
-	return nil
-}
-
-func (mode QMode) String() string {
-	return strconv.Itoa(int(mode))
-}
-
-type Threshold float64
-
-func (thresh *Threshold) Set(n float64) error {
-	if n < 0 || n > 1 {
-		return fmt.Errorf("threshold %f is %w", n, ErrTypeOutRange)
-	}
-	*thresh = Threshold(n)
-	return nil
-}
-
-func (thresh Threshold) String() string {
-	return strconv.FormatFloat(float64(thresh), 'f', -1, 64)
-}
-
-func (thresh Threshold) Keep(counts []uint) bool {
-	if len(counts) != 3 {
-		panic("there should be three counts, one for each quartet topology")
-	}
-	slices.Sort(counts)
-	sum := counts[0] + counts[1]
-	return uint(float64(thresh)*float64(sum)) < counts[1]-counts[0]
-}
+// END UNUSED
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, qOpts QuartetFilterOptions) (*gr.TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeData, error) {
 	if err := tre.UpdateTipIndex(); err != nil {
 		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
@@ -107,7 +134,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, qOpts QuartetFilterOptio
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
-	qCounts, err := processQuartets(geneTrees, tre, qOpts)
+	qCounts, err := processQuartets(geneTrees, tre, nprocs)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +144,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, qOpts QuartetFilterOptio
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilterOptions) (map[gr.Quartet]uint, error) {
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint, error) {
 	treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
@@ -126,8 +153,8 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilter
 	countGTree := len(geneTrees)
 	countTotal := uint(0)
 	g, ctx := errgroup.WithContext(context.Background())
-	g.SetLimit(10) // TODO: update
-	results := make(chan QuartetWorkerResult, 1024)
+	g.SetLimit(nprocs)
+	results := make(chan QuartetWorkerResult, 2*nprocs)
 	done := make(chan struct{}) // blocks until we're done merging total quartet counts
 	go func() {                 // merger routine
 		for r := range results {
@@ -141,7 +168,6 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilter
 	for i, gt := range geneTrees {
 		i, gt := i, gt
 		g.Go(func() error {
-			// LogEveryNPercent(i, 10, len(geneTrees), fmt.Sprintf("processed %d out of %d gene trees", i+1, countGTree))
 			if err := gt.UpdateTipIndex(); err != nil {
 				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)
 			}
@@ -171,33 +197,6 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, qOpts QuartetFilter
 	}
 	log.Printf("%d gene trees provided, containing %d quartets not in the constraint tree\n", countGTree, countTotal)
 	return qCounts, nil
-}
-
-func filterQuartets(qCounts map[gr.Quartet]uint, taxaSets map[[4]int]struct{}, opts QuartetFilterOptions) {
-	for taxaSet := range taxaSets {
-		quartets := []gr.Quartet{
-			{Taxa: taxaSet, Topology: gr.Qtopo1},
-			{Taxa: taxaSet, Topology: gr.Qtopo2},
-			{Taxa: taxaSet, Topology: gr.Qtopo3},
-		}
-		counts := []uint{qCounts[quartets[0]], qCounts[quartets[1]], qCounts[quartets[2]]}
-		slices.SortFunc(quartets, func(q1, q2 gr.Quartet) int {
-			// return int(qCounts[q1]) - int(qCounts[q2])
-			return cmp.Compare(qCounts[q1], qCounts[q2])
-		})
-		if !opts.threshold.Keep(counts) {
-			delete(qCounts, quartets[0])
-			delete(qCounts, quartets[1])
-			continue
-		}
-		switch opts.mode {
-		case NonRestrictive:
-		case Restrictive:
-			delete(qCounts, quartets[0])
-		default:
-			panic("invalid quartet mode case")
-		}
-	}
 }
 
 func NetworkIsBinary(ntw *tree.Tree) bool {

@@ -20,10 +20,8 @@ flags:
 	-f format
 	  	gene tree format [ newick | nexus ] (default "newick")
 	-h	prints this message and exits
-	-q int
-	  	quartet filter mode number [0, 2] (default 0)
-	-t float
-	  	threshold for quartet filter [0, 1] (default 0)
+	-n int
+	  	number of parallel processes
 	-v	prints version number and exits
 
 examples:
@@ -41,6 +39,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	"github.com/jsdoublel/camus/internal/infer"
@@ -49,8 +48,8 @@ import (
 )
 
 const (
-	Version    = "v0.4.4"
-	ErrMessage = "Sisyphus was not happy :("
+	Version    = "v0.5.0"
+	ErrMessage = "CAMUS incountered an error ::"
 
 	Infer Command = iota
 	Score
@@ -64,11 +63,26 @@ var parseCommand = map[string]Command{
 }
 
 type args struct {
-	command      Command                 // infer or score
-	gtFormat     pr.Format               // gene tree file format
-	treeFile     string                  // constraint or network tree file
-	geneTreeFile string                  // gene trees
-	quartetOpts  pr.QuartetFilterOptions // quartet filter options
+	command      Command   // infer or score
+	gtFormat     pr.Format // gene tree file format
+	treeFile     string    // constraint or network tree file
+	geneTreeFile string    // gene trees
+	nprocs       int       // number of parallel processes
+	// quartetOpts  pr.QuartetFilterOptions // quartet filter options
+}
+
+func setNProcs(nprocs int) int {
+	maxProcs := runtime.GOMAXPROCS(0)
+	switch {
+	case nprocs > maxProcs:
+		log.Printf("%d is greater than available processes (%d); limit set to %d\n", nprocs, maxProcs, maxProcs)
+		return maxProcs
+	case nprocs < 0:
+		log.Printf("defaulting to %d processes\n", maxProcs)
+		return maxProcs
+	default:
+		return nprocs
+	}
 }
 
 func parseArgs() args {
@@ -98,15 +112,16 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
-	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
-	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
+	// mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
+	// thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
+	nprocs := flag.Int("n", 0, "number of parallel processes")
 	flag.Parse()
-	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
-	if err != nil {
-		parserError(err.Error())
-	}
+	// qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
+	// if err != nil {
+	// 	parserError(err.Error())
+	// }
 	if *help {
 		flag.Usage()
 		os.Exit(0)
@@ -127,7 +142,8 @@ func parseArgs() args {
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
-		quartetOpts:  *qOpts,
+		nprocs:       setNProcs(*nprocs),
+		// quartetOpts:  *qOpts,
 	}
 }
 
@@ -149,7 +165,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees, args.quartetOpts)
+		td, results, err := infer.Infer(tre, geneTrees.Trees, args.nprocs)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -157,9 +173,9 @@ func main() {
 			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
-		if !args.quartetOpts.QuartetFilterOff() {
-			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
-		}
+		// if !args.quartetOpts.QuartetFilterOff() {
+		// 	log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
+		// }
 		log.Println("running score...")
 		network, err := pr.ConvertToNetwork(tre)
 		if err != nil {
