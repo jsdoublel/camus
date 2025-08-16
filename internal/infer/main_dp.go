@@ -14,19 +14,20 @@ import (
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	pr "github.com/jsdoublel/camus/internal/prep"
+	"github.com/jsdoublel/camus/internal/score"
 )
-
-const maxVal = ^uint(0)
 
 var ErrNoValidSplit = errors.New("no valid split")
 
+const MaxValue = ^uint(0)
+
 // Stores main dp algorithm data
 type DP struct {
-	DP           [][]uint     // score for each dp subproblem (DP[v][k])
-	Traceback    [][]trace    // traceback for each dp subproblem (Traceback[v][k])
-	Tree         *gr.TreeData // preprocessed data for our constraint tree
-	NumNodes     int          // number of nodes
-	brScoreCache [][]uint     // caches branch scores so they are not recomputed (INDEXED [u][w] ONLY!!)
+	DP         [][]uint     // score for each dp subproblem (DP[v][k])
+	Traceback  [][]trace    // traceback for each dp subproblem (Traceback[v][k])
+	Tree       *gr.TreeData // preprocessed data for our constraint tree
+	NumNodes   int          // number of nodes
+	EdgeScores [][]uint     // caches branch scores so they are not recomputed (INDEXED [u][w] ONLY!!)
 }
 
 // Stores DP info for lookups corresponding to a given vertex v
@@ -96,11 +97,11 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeData, []
 	log.Println("preprocessing finished, beginning dp algorithm")
 	n := len(td.Nodes())
 	dp := &DP{
-		DP:           make([][]uint, n),
-		Traceback:    make([][]trace, n),
-		Tree:         td,
-		brScoreCache: makeBrScoreCache(n),
-		NumNodes:     n,
+		DP:         make([][]uint, n),
+		Traceback:  make([][]trace, n),
+		Tree:       td,
+		EdgeScores: score.CalculateEdgeScores(td, nprocs),
+		NumNodes:   n,
 	}
 	return td, dp.RunDP(), nil
 }
@@ -226,7 +227,7 @@ func (dp *DP) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP) (bestScore u
 		}
 	})
 	if bestCycleTrace == nil {
-		return maxVal, nil, ErrNoValidSplit
+		return MaxValue, nil, ErrNoValidSplit
 	}
 	return bestScore, bestCycleTrace, nil
 }
@@ -250,7 +251,7 @@ func (dp *DP) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP, prevK int) (bestSc
 		if v == w {
 			return
 		}
-		edgeScore := dp.getEdgeScore(v, w, v, v)
+		edgeScore := dp.EdgeScores[v.Id()][w.Id()]
 		wPathK, wDownK, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
 		if err != nil { // no valid split, so we don't consider this edge
 			return
@@ -267,7 +268,7 @@ func (dp *DP) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP, prevK int) (bestSc
 		}
 	})
 	if traceback == nil {
-		return maxVal, nil, ErrNoValidSplit
+		return MaxValue, nil, ErrNoValidSplit
 	}
 	return bestScore, traceback, nil
 }
@@ -281,7 +282,7 @@ func (dp *DP) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP, prevK in
 		if u == w {
 			panic("u should not equal w")
 		}
-		edgeScore := dp.getEdgeScore(u, w, v, sub)
+		edgeScore := dp.EdgeScores[u.Id()][w.Id()]
 		indices, err := FourWayBestSplit(
 			[4][]uint{
 				vCycleDP.scores[w.Id()],
@@ -310,113 +311,11 @@ func (dp *DP) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP, prevK in
 		}
 	})
 	if traceback == nil {
-		return maxVal, nil, ErrNoValidSplit
+		return MaxValue, nil, ErrNoValidSplit
 	}
 	return bestScore, traceback, nil
 }
 
-func (dp *DP) getEdgeScore(u, w, v, wSub *tree.Node) uint {
-	score := dp.brScoreCache[u.Id()][w.Id()]
-	if score != maxVal {
-		return score
-	}
-	score = uint(0)
-	for _, q := range dp.Tree.Quartets(v.Id()) {
-		if QuartetScore(q, u, w, v, wSub, dp.Tree) == gr.Qeq {
-			score += dp.Tree.NumQuartet(q)
-		}
-	}
-	dp.brScoreCache[u.Id()][w.Id()] = score
-	return score
-}
-
-func QuartetScore(q *gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
-	bottom, bi, unique := uniqueTaxaBelowNodeFromQ(w, q, td)
-	if !unique || bottom == -1 {
-		return gr.Qdiff
-	}
-	cycleNodes := make(map[int]bool)
-	taxaToLCA := make(map[int]int) // tip index -> lca
-	for _, t := range q.Taxa {
-		tID := td.NodeID(t)
-		var lca int
-		switch {
-		case !td.InLeafset(v.Id(), t):
-			lca = 0
-		case td.InLeafset(wSub.Id(), t) || td.InLeafset(u.Id(), bottom):
-			lca = td.LCA(w.Id(), tID)
-		default:
-			lca = td.LCA(u.Id(), tID)
-		}
-		cycleNodes[lca] = true
-		taxaToLCA[t] = lca
-	}
-	if len(cycleNodes) != 4 {
-		return gr.Qdiff
-	}
-	neighbor := neighborTaxaQ(q, bi)
-	lcaDepths := make(map[int]int) // node ID -> depth
-	for k, v := range cycleNodes {
-		if v {
-			lcaDepths[k] = td.Depths[k]
-		}
-	}
-	nLeaves := td.NLeaves
-	minW, maxU, bestTaxa := nLeaves, -1, -1
-	taxaInU := false
-	for _, t := range q.Taxa {
-		d := lcaDepths[taxaToLCA[t]]
-		if !taxaInU && (td.InLeafset(wSub.Id(), t) && d < minW) {
-			minW = d
-			bestTaxa = t
-		} else if !td.InLeafset(wSub.Id(), t) && d > maxU {
-			taxaInU = true
-			maxU = d
-			bestTaxa = t
-		}
-	}
-	if bestTaxa == neighbor {
-		return gr.Qeq
-	} else {
-		return gr.Qneq
-	}
-}
-
-// Returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa)
-func uniqueTaxaBelowNodeFromQ(n *tree.Node, q *gr.Quartet, td *gr.TreeData) (int, int, bool) {
-	taxaID, taxaIndex := -1, -1
-	for i, t := range q.Taxa {
-		if td.InLeafset(n.Id(), t) && taxaID == -1 {
-			taxaID, taxaIndex = t, i
-		} else if td.InLeafset(n.Id(), t) {
-			return taxaID, taxaIndex, false
-		}
-	}
-	return taxaID, taxaIndex, true
-}
-
-// Return neighbor of taxa at index i in quartet
-func neighborTaxaQ(q *gr.Quartet, i int) int {
-	b := (q.Topology >> i) % 2
-	for j := range 4 {
-		if j != i && (q.Topology>>j)%2 == b {
-			return q.Taxa[j]
-		}
-	}
-	panic("invalid quartet or bad i")
-}
-
 func (dp *DP) traceback(k int) []gr.Branch {
 	return dp.Traceback[dp.Tree.Root().Id()][k].traceback()
-}
-
-func makeBrScoreCache(n int) [][]uint {
-	result := make([][]uint, n)
-	for i := range result {
-		result[i] = make([]uint, n)
-		for j := range result[i] {
-			result[i][j] = maxVal
-		}
-	}
-	return result
 }

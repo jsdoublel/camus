@@ -51,10 +51,10 @@ func BestSplit(l, r []uint, k int) (int, int, error) {
 	if len(l)+len(r)-2 < k {
 		return 0, 0, ErrNoValidSplit
 	}
-	bestScore := maxVal
+	bestScore := MaxValue
 	bestKL, bestKR := -1, -1
 	for i := max(0, k-(len(r)-1)); i <= min(k, len(l)-1); i++ {
-		if curScore := l[i] + r[k-i]; curScore > bestScore || bestScore == maxVal {
+		if curScore := l[i] + r[k-i]; curScore > bestScore || bestScore == MaxValue {
 			bestScore = curScore
 			bestKL, bestKR = i, k-i
 		}
