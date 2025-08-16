@@ -9,7 +9,6 @@ import (
 	"github.com/evolbioinfo/gotree/tree"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
-	"github.com/jsdoublel/camus/internal/infer"
 	pr "github.com/jsdoublel/camus/internal/prep"
 )
 
@@ -44,7 +43,7 @@ func ReticulationScore(ntw *gr.Network, gtrees []*tree.Tree) ([]*map[string]floa
 		}
 		gtre.Quartets(false, func(q *tree.Quartet) {
 			for label, branch := range reticulations {
-				comp := infer.QuartetScore(
+				comp := QuartetScore(
 					gr.QuartetFromTreeQ(q, constMap),
 					branch.u,
 					branch.w,
