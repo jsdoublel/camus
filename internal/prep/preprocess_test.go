@@ -3,6 +3,7 @@ package prep
 import (
 	"errors"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -110,7 +111,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees, QuartetFilterOptions{})
+			_, err = Preprocess(tre, gtrees, runtime.GOMAXPROCS(0))
 			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else if err != nil {
@@ -122,16 +123,16 @@ func TestPreprocess_Errors(t *testing.T) {
 
 func TestProcessQuartets(t *testing.T) {
 	testCases := []struct {
-		name     string
-		tre      string
-		opts     QuartetFilterOptions
+		name string
+		tre  string
+		// opts     QuartetFilterOptions
 		rqList   []string
 		expected []string
 	}{
 		{
 			name: "basic",
 			tre:  "((((a,b),c),d),f);",
-			opts: QuartetFilterOptions{mode: 0, threshold: 0},
+			// opts: QuartetFilterOptions{mode: 0, threshold: 0},
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -146,32 +147,32 @@ func TestProcessQuartets(t *testing.T) {
 				"((c,f),(d,b));",
 			},
 		},
-		{
-			name: "q mode 1",
-			tre:  "((((a,b),c),d),f);",
-			opts: QuartetFilterOptions{mode: 1, threshold: 0},
-			rqList: []string{
-				"(((a,b),c),d);",
-				"(((a,b),c),f);",
-				"(((a,b),d),f);",
-				"(((c,d),f),a);",
-				"(((d,b),a),f);",
-				"((c,f),(d,b));",
-				"((c,b),(d,f));",
-				"((c,d),(f,b));",
-				"((c,d),(f,b));",
-			},
-			expected: []string{
-				"(((c,d),f),a);",
-				"((b,d),(a,f));",
-				"((c,d),(f,b));",
-				"((c,d),(f,b));",
-			},
-		},
+		// {
+		// 	name: "q mode 1",
+		// 	tre:  "((((a,b),c),d),f);",
+		// 	opts: QuartetFilterOptions{mode: 1, threshold: 0},
+		// 	rqList: []string{
+		// 		"(((a,b),c),d);",
+		// 		"(((a,b),c),f);",
+		// 		"(((a,b),d),f);",
+		// 		"(((c,d),f),a);",
+		// 		"(((d,b),a),f);",
+		// 		"((c,f),(d,b));",
+		// 		"((c,b),(d,f));",
+		// 		"((c,d),(f,b));",
+		// 		"((c,d),(f,b));",
+		// 	},
+		// 	expected: []string{
+		// 		"(((c,d),f),a);",
+		// 		"((b,d),(a,f));",
+		// 		"((c,d),(f,b));",
+		// 		"((c,d),(f,b));",
+		// 	},
+		// },
 		{
 			name: "q mode 2",
 			tre:  "((((a,b),c),d),f);",
-			opts: QuartetFilterOptions{mode: 1, threshold: 0},
+			// opts: QuartetFilterOptions{mode: 1, threshold: 0},
 			rqList: []string{
 				"(((a,b),c),d);",
 				"(((a,b),c),f);",
@@ -209,7 +210,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-			result, err := processQuartets(rqList, tre, test.opts)
+			result, err := processQuartets(rqList, tre, runtime.GOMAXPROCS(0))
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
