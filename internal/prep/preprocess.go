@@ -166,7 +166,6 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 		close(done)
 	}()
 	for i, gt := range geneTrees {
-		i, gt := i, gt
 		g.Go(func() error {
 			if err := gt.UpdateTipIndex(); err != nil {
 				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)

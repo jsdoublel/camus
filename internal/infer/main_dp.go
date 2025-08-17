@@ -94,13 +94,18 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeData, []
 	if err != nil {
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
-	log.Println("preprocessing finished, beginning dp algorithm")
+	log.Println("calculating edge scores")
 	n := len(td.Nodes())
+	edgeScores, err := score.CalculateEdgeScores(td, nprocs)
+	if err != nil {
+		return nil, nil, err
+	}
+	log.Println("preprocessing finished, beginning dp algorithm")
 	dp := &DP{
 		DP:         make([][]uint, n),
 		Traceback:  make([][]trace, n),
 		Tree:       td,
-		EdgeScores: score.CalculateEdgeScores(td, nprocs),
+		EdgeScores: edgeScores,
 		NumNodes:   n,
 	}
 	return td, dp.RunDP(), nil
