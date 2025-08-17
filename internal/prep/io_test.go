@@ -123,11 +123,11 @@ func TestConvertToNetwork(t *testing.T) {
 		{
 			name:        "basic test",
 			networkFile: "testdata/net.nwk",
-			expNetwork:  "(((9,0),(7,(6,(#H0,8h0u)))),((#H2,(12,((3,(14h2w)#H2),10))h2u),((((5,(#H1,13h1u)),((2h1w)#H1,11))h0w)#H0,(1,4))));",
+			expNetwork:  "(((9,0),(7,(6,(#H1,8h0u)))),((#H3,(12,((3,(14h2w)#H3),10))h2u),((((5,(#H2,13h1u)),((2h1w)#H2,11))h0w)#H1,(1,4))));",
 			expReticulations: map[string][2]string{
-				"#H0": {"8h0u", "h0w"},
-				"#H1": {"13h1u", "2h1w"},
-				"#H2": {"h2u", "14h2w"},
+				"#H1": {"8h0u", "h0w"},
+				"#H2": {"13h1u", "2h1w"},
+				"#H3": {"h2u", "14h2w"},
 			},
 			expectedErr: nil,
 		},

@@ -52,14 +52,14 @@ func MakeNetwork(td *TreeData, branches []Branch) *Network {
 		return 0
 	})
 	for i, branch := range branches {
-		ret[fmt.Sprintf("#H%d", i)] = branch
+		ret[fmt.Sprintf("#H%d", i+1)] = branch
 		u, w := td.IdToNodes[branch.IDs[Ui]], td.IdToNodes[branch.IDs[Wi]]
 		uEdge, err := u.ParentEdge()
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork getting u (id %d): %s", u.Id(), err))
 		}
 		r := td.NewNode()
-		r.SetName(fmt.Sprintf("#H%d", i))
+		r.SetName(fmt.Sprintf("#H%d", i+1))
 		if _, _, _, err := td.GraftTipOnEdge(r, uEdge); err != nil {
 			panic(err)
 		}
@@ -76,7 +76,7 @@ func MakeNetwork(td *TreeData, branches []Branch) *Network {
 		if err != nil {
 			panic(fmt.Sprintf("error in MakeNetwork after grafting w: %s", err))
 		}
-		p.SetName(fmt.Sprintf("#H%d", i))
+		p.SetName(fmt.Sprintf("#H%d", i+1))
 	}
 	cleanTree(&td.Tree)
 	return &Network{NetTree: &td.Tree, Reticulations: ret}

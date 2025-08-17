@@ -25,7 +25,7 @@ func TestRecticulationScore(t *testing.T) {
 	}{
 		{
 			name:    "basic",
-			network: "(((9,0),(7,(6,(#H0,8h0u)))),((#H2,(12,((3,(14h2w)#H2),10))h2u),((((5,(#H1,13h1u)),((2h1w)#H1,11))h0w)#H0,(1,4))));",
+			network: "(((9,0),(7,(6,(#H1,8h0u)))),((#H3,(12,((3,(14h2w)#H3),10))h2u),((((5,(#H2,13h1u)),((2h1w)#H2,11))h0w)#H1,(1,4))));",
 			gtrees: []string{
 				"((0,9),(5,7));",
 				"((5,7),(9,6));",
@@ -33,16 +33,16 @@ func TestRecticulationScore(t *testing.T) {
 				"((5,9),(7,6));",
 			},
 			expected: []*map[string]float64{
-				{"#H0": math.NaN(), "#H1": math.NaN(), "#H2": math.NaN()},
-				{"#H0": float64(0), "#H1": math.NaN(), "#H2": math.NaN()},
-				{"#H0": float64(1), "#H1": math.NaN(), "#H2": math.NaN()},
-				{"#H0": float64(0), "#H1": math.NaN(), "#H2": math.NaN()},
+				{"#H1": math.NaN(), "#H2": math.NaN(), "#H3": math.NaN()},
+				{"#H1": float64(0), "#H2": math.NaN(), "#H3": math.NaN()},
+				{"#H1": float64(1), "#H2": math.NaN(), "#H3": math.NaN()},
+				{"#H1": float64(0), "#H2": math.NaN(), "#H3": math.NaN()},
 			},
 			expectedErr: nil,
 		},
 		{
 			name:        "not level-1",
-			network:     "(A,(B,(#H1,(C,(#H0,(D,(E,(F,((G,(H,((I,J))#H1)))#H0))))))));",
+			network:     "(A,(B,(#H2,(C,(#H1,(D,(E,(F,((G,(H,((I,J))#H2)))#H1))))))));",
 			gtrees:      nil,
 			expected:    nil,
 			expectedErr: ErrNotLevel1,

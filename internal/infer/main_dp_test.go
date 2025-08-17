@@ -28,7 +28,7 @@ func TestInfer(t *testing.T) {
 				"(B,(C,D),E);",
 			},
 			expNumEdges: 1,
-			result:      "(A,(B,((C)#H0,((#H0,D),(E,(F,(G,(H,(I,J)))))))));",
+			result:      "(A,(B,((C)#H1,((#H1,D),(E,(F,(G,(H,(I,J)))))))));",
 		},
 		{
 			name:      "basic two-edges",
@@ -38,7 +38,7 @@ func TestInfer(t *testing.T) {
 				"((G,F),(A,H));",
 			},
 			expNumEdges: 2,
-			result:      "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),F)),(G,(#H0,H)));",
+			result:      "(((A)#H1,((((B,(C)#H2),(#H2,D)),E),F)),(G,(#H1,H)));",
 		},
 		{
 			name:      "two-edge two",
@@ -48,7 +48,7 @@ func TestInfer(t *testing.T) {
 				"((C,G),(E,F));",
 			},
 			expNumEdges: 2,
-			result:      "(A,(B,(C,(D,((E)#H0,((#H0,F),(G,((H)#H1,((#H1,I),J)))))))));",
+			result:      "(A,(B,(C,(D,((E)#H1,((#H1,F),(G,((H)#H2,((#H2,I),J)))))))));",
 		},
 		{
 			name:      "two-edge case two",
@@ -58,7 +58,7 @@ func TestInfer(t *testing.T) {
 				"((A,F),(G,E));",
 			},
 			expNumEdges: 2,
-			result:      "(((A)#H0,((((B,(C)#H1),(#H1,D)),E),(#H0,F))),(G,H));",
+			result:      "(((A)#H1,((((B,(C)#H2),(#H2,D)),E),(#H1,F))),(G,H));",
 		},
 		{
 			name:      "one-sided cycle test",
@@ -71,7 +71,7 @@ func TestInfer(t *testing.T) {
 				"((C,D),(A,E));",
 			},
 			expNumEdges: 1,
-			result:      "((#H0,((((A)#H0,B),C),D)),E);",
+			result:      "((#H1,((((A)#H1,B),C),D)),E);",
 		},
 		{
 			name:      "double one-sided cycle test",
@@ -90,7 +90,7 @@ func TestInfer(t *testing.T) {
 				"((E,I),(A,J));",
 			},
 			expNumEdges: 2,
-			result:      "((#H0,(((((((#H1,((((A)#H1,B),C),D)))#H0,E),F),G),H),I)),J);",
+			result:      "((#H1,(((((((#H2,((((A)#H2,B),C),D)))#H1,E),F),G),H),I)),J);",
 		},
 		{
 			name:      "duplicate quartet basic",
@@ -103,7 +103,7 @@ func TestInfer(t *testing.T) {
 				"((D,C),(A,E));",
 			},
 			expNumEdges: 1,
-			result:      "(((#H0,((((A)#H0,B),C),D)),E),F);",
+			result:      "(((#H1,((((A)#H1,B),C),D)),E),F);",
 		},
 		{
 			name:      "duplicate quartet basic 2",
@@ -116,7 +116,7 @@ func TestInfer(t *testing.T) {
 				"((D,C),(A,E));",
 			},
 			expNumEdges: 1,
-			result:      "((#H0,(((((A,B))#H0,C),D),E)),F);",
+			result:      "((#H1,(((((A,B))#H1,C),D),E)),F);",
 		},
 		{
 			name:      "avoid over-adding edges",
@@ -127,7 +127,7 @@ func TestInfer(t *testing.T) {
 				"((R,A),(B,H));",
 			},
 			expNumEdges: 2,
-			result:      "(R,((A,((((B)#H0,C),D),((E,(F)#H1),(#H1,G)))),(#H0,H)));",
+			result:      "(R,((A,((((B)#H1,C),D),((E,(F)#H2),(#H2,G)))),(#H1,H)));",
 		},
 		{
 			name:      "avoid over-adding edges 2",
@@ -139,7 +139,7 @@ func TestInfer(t *testing.T) {
 				"((R,D),(E,H));",
 			},
 			expNumEdges: 2,
-			result:      "(R,((A,(((B,(C)#H1),(#H1,D)),(((#H0,E),F),G))),(H)#H0));",
+			result:      "(R,((A,(((B,(C)#H2),(#H2,D)),(((#H1,E),F),G))),(H)#H1));",
 		},
 		{
 			name:      "test under node u lookup",
@@ -152,7 +152,7 @@ func TestInfer(t *testing.T) {
 				"((I,R),(J,A));",
 			},
 			expNumEdges: 3,
-			result:      "(R,(((A)#H0,(I,(#H0,J))),(((#H1,((B,(C)#H2),(#H2,D))),H),(((E)#H1,F),G))));",
+			result:      "(R,(((A)#H1,(I,(#H1,J))),(((#H2,((B,(C)#H3),(#H3,D))),H),(((E)#H2,F),G))));",
 		},
 		{
 			name:      "cycle below base of one-sided cycle",
@@ -168,7 +168,7 @@ func TestInfer(t *testing.T) {
 				"((E,C),(A,R));",
 			},
 			expNumEdges: 2,
-			result:      "((#H0,(((((A)#H0,B),C),(D,((F)#H1,((#H1,G),H)))),E)),R);",
+			result:      "((#H1,(((((A)#H1,B),C),(D,((F)#H2,((#H2,G),H)))),E)),R);",
 		},
 	}
 	for _, test := range testCases {
