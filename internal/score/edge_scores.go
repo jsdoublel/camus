@@ -1,26 +1,32 @@
 package score
 
 import (
+	"context"
+
 	"github.com/evolbioinfo/gotree/tree"
+	"golang.org/x/sync/errgroup"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
 // Calculate scores for all edges
-func CalculateEdgeScores(td *gr.TreeData, nprocs int) [][]uint {
+func CalculateEdgeScores(td *gr.TreeData, nprocs int) ([][]uint, error) {
 	n := len(td.Nodes())
 	edgeScores := make([][]uint, n)
+	g, _ := errgroup.WithContext(context.Background())
+	g.SetLimit(nprocs)
 	for u := range n {
-		edgeScores[u] = make([]uint, n)
-		for w := range n {
-			if shouldCalcEdge(u, w, td) {
-				edgeScores[u][w] = getEdgeScore(u, w, td)
-			} else {
-				edgeScores[u][w] = 0
+		g.Go(func() error {
+			edgeScores[u] = make([]uint, n)
+			for w := range n {
+				if shouldCalcEdge(u, w, td) {
+					edgeScores[u][w] = getEdgeScore(u, w, td)
+				}
 			}
-		}
+			return nil
+		})
 	}
-	return edgeScores
+	return edgeScores, g.Wait()
 }
 
 func shouldCalcEdge(u, w int, td *gr.TreeData) bool {
