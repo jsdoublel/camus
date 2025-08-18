@@ -214,7 +214,7 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
-			expectedList := []*gr.Quartet{}
+			expectedList := []gr.Quartet{}
 			for _, nwk := range test.expected {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 				if err != nil {
@@ -228,7 +228,7 @@ func TestProcessQuartets(t *testing.T) {
 			}
 			expected := make(map[gr.Quartet]uint)
 			for _, q := range expectedList {
-				expected[*q] += 1
+				expected[q] += 1
 			}
 			if !reflect.DeepEqual(result, expected) {
 				t.Errorf("actual %s != expected %s", gr.QSetToString(result, tre), gr.QSetToString(expected, tre))

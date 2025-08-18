@@ -68,14 +68,14 @@ func getWSubtree(u, w, v int, td *gr.TreeData) *tree.Node {
 	}
 }
 
-func QuartetScore(q *gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
+func QuartetScore(q gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
 	bottom, bi, unique := uniqueTaxaBelowNodeFromQ(w, q, td)
 	if !unique || bottom == Max16Bit {
 		return gr.Qdiff
 	}
 	cycleNodes := make(map[int]bool)
 	taxaToLCA := make(map[uint16]int) // tip index -> lca
-	for _, t := range q.Taxa {
+	for _, t := range q.Taxa() {
 		tID := td.NodeID(t)
 		var lca int
 		switch {
@@ -103,7 +103,7 @@ func QuartetScore(q *gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int 
 	minW, maxU := nLeaves, -1
 	var bestTaxa uint16
 	taxaInU := false
-	for _, t := range q.Taxa {
+	for _, t := range q.Taxa() {
 		d := lcaDepths[taxaToLCA[t]]
 		if !taxaInU && (td.InLeafset(uint16(wSub.Id()), t) && d < minW) {
 			minW = d
@@ -122,10 +122,10 @@ func QuartetScore(q *gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int 
 }
 
 // Returns -1 for both id and index if no taxa is found, true if taxa is unique (or there isn't a taxa)
-func uniqueTaxaBelowNodeFromQ(n *tree.Node, q *gr.Quartet, td *gr.TreeData) (uint16, int, bool) {
+func uniqueTaxaBelowNodeFromQ(n *tree.Node, q gr.Quartet, td *gr.TreeData) (uint16, int, bool) {
 	taxaID := Max16Bit
 	taxaIndex := -1
-	for i, t := range q.Taxa {
+	for i, t := range q.Taxa() {
 		if td.InLeafset(uint16(n.Id()), t) && taxaID == Max16Bit {
 			taxaID, taxaIndex = t, i
 		} else if td.InLeafset(uint16(n.Id()), t) {
@@ -136,11 +136,11 @@ func uniqueTaxaBelowNodeFromQ(n *tree.Node, q *gr.Quartet, td *gr.TreeData) (uin
 }
 
 // Return neighbor of taxa at index i in quartet
-func neighborTaxaQ(q *gr.Quartet, i int) uint16 {
-	b := (q.Topology >> i) % 2
+func neighborTaxaQ(q gr.Quartet, i int) uint16 {
+	b := (q.Topology() >> i) % 2
 	for j := range 4 {
-		if j != i && (q.Topology>>j)%2 == b {
-			return q.Taxa[j]
+		if j != i && (q.Topology()>>j)%2 == b {
+			return q.Taxon(j)
 		}
 	}
 	panic("invalid quartet or bad i")

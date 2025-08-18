@@ -158,7 +158,7 @@ func leafsetEqualityTester(leafset []*bitset.BitSet, testLeafset map[string][]st
 	return true, nil
 }
 
-func quartetSetEqualityTester(quartetSets [][]*Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
+func quartetSetEqualityTester(quartetSets [][]Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
 	for k, v := range testQS {
 		node, err := getNode(k, tre)
 		if err != nil {
@@ -205,7 +205,7 @@ func makeQCounts(qList []*tree.Tree, constTree *tree.Tree) (map[Quartet]uint, er
 		if err != nil {
 			return nil, err
 		}
-		result[*q] += 1
+		result[q] += 1
 	}
 	return result, nil
 }
