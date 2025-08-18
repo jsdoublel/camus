@@ -12,7 +12,7 @@ type TreeData struct {
 	tree.Tree
 	Children      [][]*tree.Node    // Children for each node
 	IdToNodes     []*tree.Node      // Mapping between id and node pointer
-	quartetSet    [][]*Quartet      // Quartets relevant for each subtree
+	quartetSet    [][]Quartet       // Quartets relevant for each subtree
 	quartetCounts *map[Quartet]uint // Count of each unique quartet topology
 	Depths        []int             // Distance from all nodes to the root
 	leafsets      []*bitset.BitSet  // Leaves under each node
@@ -29,7 +29,7 @@ func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
 	idMap := mapIdToNodes(tre)
-	var qSets [][]*Quartet
+	var qSets [][]Quartet
 	if qCounts != nil {
 		qSets = mapQuartetsToVertices(tre, qCounts, leafsets)
 	}
@@ -175,26 +175,26 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []*bitset.BitSet) [][]*Quartet {
-	qSets := make([][]*Quartet, len(tre.Nodes()))
+func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []*bitset.BitSet) [][]Quartet {
+	qSets := make([][]Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
 		panic(err)
 	}
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
-		qSets[cur.Id()] = make([]*Quartet, 0)
+		qSets[cur.Id()] = make([]Quartet, 0)
 		for q := range qCounts {
 			found := 0
 			for i := range 4 {
-				if q.Taxa[i] >= uint16(n) {
+				if q.Taxon(i) >= uint16(n) {
 					panic("cannot map quartet taxa to constraint tree")
-				} else if leafsets[cur.Id()].Test(uint(q.Taxa[i])) {
+				} else if leafsets[cur.Id()].Test(uint(q.Taxon(i))) {
 					// } else if leafsets[cur.Id()][q.Taxa[i]] {
 					found++
 				}
 			}
 			if found >= 3 {
-				qSets[cur.Id()] = append(qSets[cur.Id()], &q)
+				qSets[cur.Id()] = append(qSets[cur.Id()], q)
 			}
 		}
 		return true
@@ -254,7 +254,7 @@ func (td *TreeData) NodeID(idx uint16) int {
 }
 
 // Get quartets corresponding to a given node (by id)
-func (td *TreeData) Quartets(nid int) []*Quartet {
+func (td *TreeData) Quartets(nid int) []Quartet {
 	if td.quartetSet == nil {
 		panic("quartet set never initialized")
 	}
@@ -262,11 +262,11 @@ func (td *TreeData) Quartets(nid int) []*Quartet {
 }
 
 // Get count of quartets with a particular topology
-func (td *TreeData) NumQuartet(q *Quartet) uint {
+func (td *TreeData) NumQuartet(q Quartet) uint {
 	if td.quartetSet == nil {
 		panic("quartet counts never initialized")
 	}
-	return (*td.quartetCounts)[*q]
+	return (*td.quartetCounts)[q]
 }
 
 // n2 is under n1

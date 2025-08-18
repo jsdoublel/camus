@@ -3,26 +3,31 @@ package graphs
 import (
 	"errors"
 	"fmt"
+	"iter"
 
 	"github.com/evolbioinfo/gotree/tree"
 )
 
-type Quartet struct {
-	Taxa     [NTaxa]uint16 // should be in sorted order
-	Topology uint8         // represents one of three possible quartet topologies
-}
+type Quartet uint64
 
 const (
-	NTaxa = 4
+	NilQuartet = 0
+	NTaxa      = 4
 
-	// Possible results for quartet comparison (currently unused)
+	taxaShift = 15
+	topoShift = 60
+
+	taxaMask = (1 << taxaShift) - 1 // 0x7FFF
+	topoMask = (1 << topoShift) - 1 // 0xF
+
+	Qtopo1 = uint8(0b1100) // three quartet topologies
+	Qtopo2 = uint8(0b1010)
+	Qtopo3 = uint8(0b0110)
+
+	// Possible results for quartet comparison
 	Qneq  = iota // quartets equal
 	Qeq          // quartets not equal
 	Qdiff        // quartets on different taxa set
-
-	Qtopo1 = uint8(0b1100)
-	Qtopo2 = uint8(0b1010)
-	Qtopo3 = uint8(0b0110)
 )
 
 var (
@@ -31,16 +36,16 @@ var (
 )
 
 // Generates quartet from four leaf newick tree (only used for testing)
-func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
+func NewQuartet(qTree, tre *tree.Tree) (Quartet, error) {
 	qTaxa := qTree.AllTipNames()
 	if len(qTaxa) != 4 {
-		return nil, fmt.Errorf("%w, tree has %d != 4 leaves", ErrInvalidQuartet, len(qTaxa))
+		return 0, fmt.Errorf("%w, tree has %d != 4 leaves", ErrInvalidQuartet, len(qTaxa))
 	}
 	qTree.UnRoot()
 	if qTree.Root().Nneigh() != 3 {
-		return nil, fmt.Errorf("%w, probably does not contain bipartition", ErrInvalidQuartet)
+		return 0, fmt.Errorf("%w, probably does not contain bipartition", ErrInvalidQuartet)
 	}
-	taxaIDs := [4]uint16{}
+	taxaIDs := [4]int16{}
 	leaves := qTree.Tips()
 	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
@@ -48,7 +53,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 		if err != nil {
 			panic(err)
 		}
-		taxaIDs[i] = uint16(ti)
+		taxaIDs[i] = int16(ti)
 		r, err := l.Parent()
 		if err != nil && err.Error() == "The node has more than one parent" { // we ignore the error produced when cur = root
 			panic(fmt.Errorf("convertQuartet: %w", err))
@@ -56,11 +61,20 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 		idToBool[ti] = r == qTree.Root()
 	}
 	topo := setTopology(&taxaIDs)
-	return &Quartet{Taxa: taxaIDs, Topology: topo}, nil
+	return makeQuartet(taxaIDs, topo), nil
+}
+
+func makeQuartet(taxa [4]int16, topology uint8) Quartet {
+	var q uint64
+	for i, t := range taxa {
+		q |= uint64(t) << (taxaShift * i) // we assume positive taxa ids
+	}
+	q |= uint64(topology) << topoShift
+	return Quartet(q)
 }
 
 // Generate unit8 representing quartet topology
-func setTopology(taxaIDs *[4]uint16) uint8 {
+func setTopology(taxaIDs *[4]int16) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
 	}
@@ -76,7 +90,7 @@ func setTopology(taxaIDs *[4]uint16) uint8 {
 
 // Short 4 long int array (no build in array sort in go)
 // returns the topology as uint8
-func sortTaxa(arr *[4]uint16) uint8 {
+func sortTaxa(arr *[4]int16) uint8 {
 	topo := uint8(0b0011)
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
@@ -103,35 +117,53 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 		return nil, err
 	}
 	tre.Quartets(false, func(q *tree.Quartet) {
-		treeQuartets[*QuartetFromTreeQ(q, taxaIDsMap)] = 1
+		treeQuartets[QuartetFromTreeQ(q, taxaIDsMap)] = 1
 	})
 	return treeQuartets, nil
 }
 
 // Create quartet from gotree *tree.Quartet
-func QuartetFromTreeQ(tq *tree.Quartet, constMap []uint16) *Quartet {
-	taxaIDs := [...]uint16{constMap[tq.T1], constMap[tq.T2], constMap[tq.T3], constMap[tq.T4]}
-	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs)}
+func QuartetFromTreeQ(tq *tree.Quartet, constMap []int16) Quartet {
+	taxaIDs := [...]int16{constMap[tq.T1], constMap[tq.T2], constMap[tq.T3], constMap[tq.T4]}
+	return makeQuartet(taxaIDs, setTopology(&taxaIDs))
 }
 
-func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]uint16, error) {
+func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]int16, error) {
 	nLeavesGtree, err := gtre.NbTips()
 	if err != nil {
 		panic(fmt.Sprintf("gene tree %s", err))
 	}
-	idMap := make([]uint16, nLeavesGtree)
+	idMap := make([]int16, nLeavesGtree)
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
 		if err != nil {
 			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
 		gTreeID, err := gtre.TipIndex(name)
-		idMap[gTreeID] = uint16(constTreeID)
+		idMap[gTreeID] = int16(constTreeID)
 		if err != nil {
 			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
 	}
 	return idMap, nil
+}
+
+func (q Quartet) Topology() uint8 {
+	return uint8((q >> topoShift) & topoMask)
+}
+
+func (q Quartet) Taxon(i int) uint16 {
+	return uint16((q >> (taxaShift * i)) & taxaMask)
+}
+
+func (q Quartet) Taxa() iter.Seq2[int, uint16] {
+	return func(yield func(int, uint16) bool) {
+		for i := range 4 {
+			if !yield(i, q.Taxon(i)) {
+				return
+			}
+		}
+	}
 }
 
 // Not efficient, do no use except for testing !!!
@@ -146,10 +178,10 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	}
 	qString := "|"
 	for i := range 4 {
-		if (q.Topology>>i)%2 == 0 {
-			qString += names[q.Taxa[i]]
+		if (q.Topology()>>i)%2 == 0 {
+			qString += names[q.Taxon(i)]
 		} else {
-			qString = names[q.Taxa[i]] + qString
+			qString = names[q.Taxon(i)] + qString
 		}
 	}
 	return qString
@@ -168,13 +200,13 @@ func QSetToString(qSet map[Quartet]uint, tre *tree.Tree) string {
 //   - Qdiff (they contain different taxa)
 //   - Qneq  (they have a different topology)
 //   - Qeq   (they have the same topology)
-func (q1 *Quartet) Compare(q2 *Quartet) int {
+func (q1 *Quartet) Compare(q2 Quartet) int {
 	for i := range 4 {
-		if q1.Taxa[i] != q2.Taxa[i] {
+		if q1.Taxon(i) != q2.Taxon(i) {
 			return Qdiff
 		}
 	}
-	if q1.Topology^q2.Topology != 0b1111 && q1.Topology^q2.Topology != 0b0000 {
+	if q1.Topology()^q2.Topology() != 0b1111 && q1.Topology()^q2.Topology() != 0b0000 {
 		return Qneq
 	} else {
 		return Qeq

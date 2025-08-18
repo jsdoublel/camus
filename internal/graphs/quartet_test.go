@@ -217,12 +217,12 @@ func (tq *TestQuartet) Topology(tre *tree.Tree) (uint8, error) {
 	return topo, nil
 }
 
-func testQuartetEqual(q *Quartet, tq *TestQuartet, tre *tree.Tree) (bool, error) {
+func testQuartetEqual(q Quartet, tq *TestQuartet, tre *tree.Tree) (bool, error) {
 	tqTopo, err := tq.Topology(tre)
 	if err != nil {
 		return false, err
 	}
-	result := q.Topology ^ tqTopo
+	result := q.Topology() ^ tqTopo
 	return result == 0b0000 || result == 0b1111, nil
 }
 
@@ -241,7 +241,7 @@ func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
 		}
-		qSet[*q] += 1
+		qSet[q] += 1
 	}
 	return qSet, nil
 }
