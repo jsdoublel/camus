@@ -17,7 +17,7 @@ type TreeData struct {
 	Depths        []int             // Distance from all nodes to the root
 	leafsets      []*bitset.BitSet  // Leaves under each node
 	lca           [][]int           // LCA for each pair of node id
-	tipIndexMap   map[int]int       // Tip index to node id map
+	tipIndexMap   map[uint16]int    // Tip index to node id map
 	NLeaves       int               // Number of leaves
 }
 
@@ -186,7 +186,7 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []
 		for q := range qCounts {
 			found := 0
 			for i := range 4 {
-				if q.Taxa[i] >= n {
+				if q.Taxa[i] >= uint16(n) {
 					panic("cannot map quartet taxa to constraint tree")
 				} else if leafsets[cur.Id()].Test(uint(q.Taxa[i])) {
 					// } else if leafsets[cur.Id()][q.Taxa[i]] {
@@ -202,17 +202,17 @@ func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []
 	return qSets
 }
 
-func makeTipIndexMap(tre *tree.Tree) map[int]int {
+func makeTipIndexMap(tre *tree.Tree) map[uint16]int {
 	tips := tre.Tips()
-	tipMap := make(map[int]int, len(tips))
+	tipMap := make(map[uint16]int, len(tips))
 	for _, t := range tips {
-		tipMap[t.TipIndex()] = t.Id()
+		tipMap[uint16(t.TipIndex())] = t.Id()
 	}
 	return tipMap
 }
 
 // n2 (id) is in the leafset of n1 (id)
-func (td *TreeData) InLeafset(n1ID, n2ID int) bool {
+func (td *TreeData) InLeafset(n1ID, n2ID uint16) bool {
 	return td.leafsets[n1ID].Test(uint(n2ID))
 }
 
@@ -249,7 +249,7 @@ func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	return result[:len(result)-1] + "}"
 }
 
-func (td *TreeData) NodeID(idx int) int {
+func (td *TreeData) NodeID(idx uint16) int {
 	return td.tipIndexMap[idx]
 }
 
