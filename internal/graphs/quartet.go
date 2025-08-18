@@ -8,8 +8,8 @@ import (
 )
 
 type Quartet struct {
-	Taxa     [NTaxa]int // should be in sorted order
-	Topology uint8      // represents one of three possible quartet topologies
+	Taxa     [NTaxa]uint16 // should be in sorted order
+	Topology uint8         // represents one of three possible quartet topologies
 }
 
 const (
@@ -40,7 +40,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 	if qTree.Root().Nneigh() != 3 {
 		return nil, fmt.Errorf("%w, probably does not contain bipartition", ErrInvalidQuartet)
 	}
-	taxaIDs := [4]int{}
+	taxaIDs := [4]uint16{}
 	leaves := qTree.Tips()
 	idToBool := make(map[int]bool) // true is one side of the bipartition, false is the other
 	for i, l := range leaves {
@@ -48,7 +48,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 		if err != nil {
 			panic(err)
 		}
-		taxaIDs[i] = ti
+		taxaIDs[i] = uint16(ti)
 		r, err := l.Parent()
 		if err != nil && err.Error() == "The node has more than one parent" { // we ignore the error produced when cur = root
 			panic(fmt.Errorf("convertQuartet: %w", err))
@@ -60,7 +60,7 @@ func NewQuartet(qTree, tre *tree.Tree) (*Quartet, error) {
 }
 
 // Generate unit8 representing quartet topology
-func setTopology(taxaIDs *[4]int) uint8 {
+func setTopology(taxaIDs *[4]uint16) uint8 {
 	if len(taxaIDs) != 4 {
 		panic("taxaIDs len != 4 in setTopology")
 	}
@@ -76,7 +76,7 @@ func setTopology(taxaIDs *[4]int) uint8 {
 
 // Short 4 long int array (no build in array sort in go)
 // returns the topology as uint8
-func sortTaxa(arr *[4]int) uint8 {
+func sortTaxa(arr *[4]uint16) uint8 {
 	topo := uint8(0b0011)
 	for i := 0; i < 3; i++ {
 		for j := i + 1; j < 4; j++ {
@@ -96,8 +96,8 @@ func sortTaxa(arr *[4]int) uint8 {
 
 // Returns hashmap containing quartets from tree
 func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
-	tre.UnRoot()                           // some quartets are missed if tree is rooted
-	treeQuartets := make(map[Quartet]uint) // get quartets from tree
+	tre.UnRoot() // some quartets are missed if tree is rooted
+	treeQuartets := make(map[Quartet]uint)
 	taxaIDsMap, err := MapIDsFromConstTree(tre, constTree)
 	if err != nil {
 		return nil, err
@@ -109,24 +109,24 @@ func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
 }
 
 // Create quartet from gotree *tree.Quartet
-func QuartetFromTreeQ(tq *tree.Quartet, constMap []int) *Quartet {
-	taxaIDs := [...]int{constMap[int(tq.T1)], constMap[int(tq.T2)], constMap[int(tq.T3)], constMap[int(tq.T4)]}
+func QuartetFromTreeQ(tq *tree.Quartet, constMap []uint16) *Quartet {
+	taxaIDs := [...]uint16{constMap[tq.T1], constMap[tq.T2], constMap[tq.T3], constMap[tq.T4]}
 	return &Quartet{Taxa: taxaIDs, Topology: setTopology(&taxaIDs)}
 }
 
-func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
+func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]uint16, error) {
 	nLeavesGtree, err := gtre.NbTips()
 	if err != nil {
 		panic(fmt.Sprintf("gene tree %s", err))
 	}
-	idMap := make([]int, nLeavesGtree)
+	idMap := make([]uint16, nLeavesGtree)
 	for _, name := range gtre.AllTipNames() {
 		constTreeID, err := tre.TipIndex(name)
 		if err != nil {
 			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
 		gTreeID, err := gtre.TipIndex(name)
-		idMap[gTreeID] = constTreeID
+		idMap[gTreeID] = uint16(constTreeID)
 		if err != nil {
 			return nil, fmt.Errorf("%w, %s", ErrTipNameMismatch, err.Error())
 		}
@@ -136,13 +136,13 @@ func MapIDsFromConstTree(gtre, tre *tree.Tree) ([]int, error) {
 
 // Not efficient, do no use except for testing !!!
 func (q *Quartet) String(tre *tree.Tree) string {
-	names := make(map[int]string)
+	names := make(map[uint16]string)
 	for _, u := range tre.Tips() {
 		ti, err := tre.TipIndex(u.Name())
 		if err != nil {
 			panic(err)
 		}
-		names[ti] = u.Name()
+		names[uint16(ti)] = u.Name()
 	}
 	qString := "|"
 	for i := range 4 {
