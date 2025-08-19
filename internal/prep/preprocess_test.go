@@ -236,3 +236,40 @@ func TestProcessQuartets(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkProcessQuartets(b *testing.B) {
+	treStr := "((((a,b),c),d),f);"
+	gtreeStrs := []string{
+		"(((a,b),c),d);",
+		"(((a,b),c),f);",
+		"(((a,b),d),f);",
+		"(((c,d),f),a);",
+		"(((d,b),a),f);",
+		"((c,f),(d,b));",
+	}
+	tre, err := newick.NewParser(strings.NewReader(treStr)).Parse()
+	if err != nil {
+		b.Fatalf("invalid newick tree: %v", err)
+	}
+	gtrees := make([]*tree.Tree, len(gtreeStrs))
+	for i, nwk := range gtreeStrs {
+		gtrees[i], err = newick.NewParser(strings.NewReader(nwk)).Parse()
+		if err != nil {
+			b.Fatalf("invalid newick tree: %v", err)
+		}
+	}
+	nprocs := runtime.GOMAXPROCS(0)
+	b.ResetTimer()
+	for b.Loop() {
+		b.StopTimer()
+		treClone := tre.Clone()
+		cloned := make([]*tree.Tree, len(gtrees))
+		for j, gt := range gtrees {
+			cloned[j] = gt.Clone()
+		}
+		b.StartTimer()
+		if _, err := processQuartets(cloned, treClone, nprocs); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
