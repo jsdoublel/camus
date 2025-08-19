@@ -198,8 +198,8 @@ func getNode(label string, tre *tree.Tree) (*tree.Node, error) {
 	return nodeList[0], nil
 }
 
-func makeQCounts(qList []*tree.Tree, constTree *tree.Tree) (map[Quartet]uint, error) {
-	result := make(map[Quartet]uint)
+func makeQCounts(qList []*tree.Tree, constTree *tree.Tree) (map[Quartet]uint32, error) {
+	result := make(map[Quartet]uint32)
 	for _, qt := range qList {
 		q, err := NewQuartet(qt, constTree)
 		if err != nil {

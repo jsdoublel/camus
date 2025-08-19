@@ -51,7 +51,7 @@ func getEdgeScore(u, w int, td *gr.TreeData) uint {
 	wSub := getWSubtree(u, w, v, td)
 	for _, q := range td.Quartets(v) {
 		if QuartetScore(q, uNode, wNode, vNode, wSub, td) == gr.Qeq {
-			edgeScore += td.NumQuartet(q)
+			edgeScore += uint(td.NumQuartet(q))
 		}
 	}
 	return edgeScore

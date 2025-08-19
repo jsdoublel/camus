@@ -112,16 +112,8 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeData, []
 }
 
 func (dp *DP) RunDP() [][]gr.Branch {
-	n, err := dp.Tree.NbTips()
-	if err != nil {
-		panic(err)
-	}
-	count := 0
-	totalDP := len(dp.DP) - n
 	dp.Tree.PostOrder(func(v, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !v.Tip() {
-			count++
-			pr.LogEveryNPercent(count, 2, totalDP, fmt.Sprintf("processing dp cell %d of %d\n", count, totalDP))
 			scores, edgeTrace := dp.solve(v)
 			dp.DP[v.Id()] = scores
 			dp.Traceback[v.Id()] = edgeTrace
