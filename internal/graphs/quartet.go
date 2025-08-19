@@ -109,9 +109,9 @@ func sortTaxa(arr *[4]int16) uint8 {
 }
 
 // Returns hashmap containing quartets from tree
-func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint, error) {
+func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint32, error) {
 	tre.UnRoot() // some quartets are missed if tree is rooted
-	treeQuartets := make(map[Quartet]uint)
+	treeQuartets := make(map[Quartet]uint32)
 	taxaIDsMap, err := MapIDsFromConstTree(tre, constTree)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (q *Quartet) String(tre *tree.Tree) string {
 	return qString
 }
 
-func QSetToString(qSet map[Quartet]uint, tre *tree.Tree) string {
+func QSetToString(qSet map[Quartet]uint32, tre *tree.Tree) string {
 	str := "{"
 	for q, c := range qSet {
 		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)

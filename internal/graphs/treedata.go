@@ -10,20 +10,20 @@ import (
 // Expanded tree struct containing necessary preprocessed data
 type TreeData struct {
 	tree.Tree
-	Children      [][]*tree.Node    // Children for each node
-	IdToNodes     []*tree.Node      // Mapping between id and node pointer
-	quartetSet    [][]Quartet       // Quartets relevant for each subtree
-	quartetCounts *map[Quartet]uint // Count of each unique quartet topology
-	Depths        []int             // Distance from all nodes to the root
-	leafsets      []*bitset.BitSet  // Leaves under each node
-	lca           [][]int           // LCA for each pair of node id
-	tipIndexMap   map[uint16]int    // Tip index to node id map
-	NLeaves       int               // Number of leaves
+	Children      [][]*tree.Node      // Children for each node
+	IdToNodes     []*tree.Node        // Mapping between id and node pointer
+	quartetSet    [][]Quartet         // Quartets relevant for each subtree
+	quartetCounts *map[Quartet]uint32 // Count of each unique quartet topology
+	Depths        []int               // Distance from all nodes to the root
+	leafsets      []*bitset.BitSet    // Leaves under each node
+	lca           [][]int             // LCA for each pair of node id
+	tipIndexMap   map[uint16]int      // Tip index to node id map
+	NLeaves       int                 // Number of leaves
 }
 
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
 // don't need quartets.
-func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint) *TreeData {
+func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint32) *TreeData {
 	children := children(tre)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
@@ -175,7 +175,7 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
-func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint, leafsets []*bitset.BitSet) [][]Quartet {
+func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint32, leafsets []*bitset.BitSet) [][]Quartet {
 	qSets := make([][]Quartet, len(tre.Nodes()))
 	n, err := tre.NbTips()
 	if err != nil {
@@ -262,7 +262,7 @@ func (td *TreeData) Quartets(nid int) []Quartet {
 }
 
 // Get count of quartets with a particular topology
-func (td *TreeData) NumQuartet(q Quartet) uint {
+func (td *TreeData) NumQuartet(q Quartet) uint32 {
 	if td.quartetSet == nil {
 		panic("quartet counts never initialized")
 	}
@@ -275,8 +275,8 @@ func (td *TreeData) Under(n1ID, n2ID int) bool {
 }
 
 // returns total number of quartets (all topologies)
-func (td *TreeData) TotalNumQuartets() uint {
-	result := uint(0)
+func (td *TreeData) TotalNumQuartets() uint32 {
+	var result uint32
 	for _, count := range *td.quartetCounts {
 		result += count
 	}

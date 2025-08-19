@@ -226,7 +226,7 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				expectedList = append(expectedList, q)
 			}
-			expected := make(map[gr.Quartet]uint)
+			expected := make(map[gr.Quartet]uint32)
 			for _, q := range expectedList {
 				expected[q] += 1
 			}

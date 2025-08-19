@@ -230,8 +230,8 @@ func (tq *TestQuartet) String() string {
 	return fmt.Sprintf("%s%s|%s%s", tq.set1[0], tq.set1[1], tq.set2[0], tq.set2[1])
 }
 
-func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint, error) {
-	qSet := make(map[Quartet]uint)
+func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint32, error) {
+	qSet := make(map[Quartet]uint32)
 	for _, nwk := range list {
 		tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 		if err != nil {

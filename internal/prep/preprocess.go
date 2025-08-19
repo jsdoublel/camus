@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -23,9 +22,9 @@ var (
 
 // Result type for quartet workers
 type QuartetWorkerResult struct {
-	idx     int                 // gene tree index (line in file)
-	qResult map[gr.Quartet]uint // quartets in gene tree from idx
-	err     error               // error for worker
+	idx     int                   // gene tree index (line in file)
+	qResult map[gr.Quartet]uint32 // quartets in gene tree from idx
+	err     error                 // error for worker
 }
 
 // UNUSED quartet filter stuff below
@@ -144,14 +143,14 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeDat
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint, error) {
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
 	treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
-	qCounts := make(map[gr.Quartet]uint)
+	qCounts := make(map[gr.Quartet]uint32)
 	countGTree := len(geneTrees)
-	countTotal := uint(0)
+	// countTotal := uint(0)
 	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
 	results := make(chan QuartetWorkerResult, 2*nprocs)
@@ -160,7 +159,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 		for r := range results {
 			for q, c := range r.qResult {
 				qCounts[q] += c
-				countTotal += c
+				// countTotal += c
 			}
 		}
 		close(done)
@@ -174,7 +173,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 			if err != nil {
 				return err
 			}
-			localCounts := make(map[gr.Quartet]uint)
+			localCounts := make(map[gr.Quartet]uint32)
 			for quartet, count := range newQuartets {
 				if treeQuartets[quartet] == 0 {
 					localCounts[quartet] += count
@@ -194,7 +193,7 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("%d gene trees provided, containing %d quartets not in the constraint tree\n", countGTree, countTotal)
+	log.Printf("%d gene trees provided, containing %d quartets not in the constraint tree\n", countGTree, len(qCounts))
 	return qCounts, nil
 }
 
@@ -232,10 +231,4 @@ func isBinary(node *tree.Node, allowUnifurcations bool) bool {
 		return false
 	}
 	return isBinary(children[0], allowUnifurcations) && isBinary(children[1], allowUnifurcations)
-}
-
-func LogEveryNPercent(i, n, total int, message string) {
-	if (i+1)%max(total/int(math.Ceil(float64(100)/float64(n))), 1) == 0 {
-		log.Print(message)
-	}
 }
