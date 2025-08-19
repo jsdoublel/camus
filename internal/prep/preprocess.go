@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -19,13 +20,6 @@ var (
 	ErrMulTree      = errors.New("contains duplicate labels")
 	ErrTypeOutRange = errors.New("out of type range")
 )
-
-// Result type for quartet workers
-type QuartetWorkerResult struct {
-	idx     int                   // gene tree index (line in file)
-	qResult map[gr.Quartet]uint32 // quartets in gene tree from idx
-	err     error                 // error for worker
-}
 
 // UNUSED quartet filter stuff below
 // // Options for quartet filter mode
@@ -137,6 +131,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeDat
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("analyzing constraint tree")
 	treeData := gr.MakeTreeData(tre, qCounts)
 	return treeData, nil
 }
@@ -144,28 +139,21 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeDat
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
+	log.Printf("processing quartets")
 	treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
 	if err != nil {
 		panic(err)
 	}
 	qCounts := make(map[gr.Quartet]uint32)
 	countGTree := len(geneTrees)
-	// countTotal := uint(0)
+	var mu sync.Mutex
 	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
-	results := make(chan QuartetWorkerResult, 2*nprocs)
-	done := make(chan struct{}) // blocks until we're done merging total quartet counts
-	go func() {                 // merger routine
-		for r := range results {
-			for q, c := range r.qResult {
-				qCounts[q] += c
-				// countTotal += c
-			}
-		}
-		close(done)
-	}()
 	for i, gt := range geneTrees {
 		g.Go(func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			if err := gt.UpdateTipIndex(); err != nil {
 				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)
 			}
@@ -179,18 +167,15 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 					localCounts[quartet] += count
 				}
 			}
-			select {
-			case results <- QuartetWorkerResult{idx: i, qResult: localCounts, err: nil}:
-				return nil
-			case <-ctx.Done():
-				return ctx.Err()
+			mu.Lock()
+			for q, c := range localCounts {
+				qCounts[q] += c
 			}
+			mu.Unlock()
+			return nil
 		})
 	}
-	err = g.Wait()
-	close(results)
-	<-done
-	if err != nil {
+	if err = g.Wait(); err != nil {
 		return nil, err
 	}
 	log.Printf("%d gene trees provided, containing %d quartets not in the constraint tree\n", countGTree, len(qCounts))

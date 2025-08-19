@@ -77,8 +77,8 @@ func setNProcs(nprocs int) int {
 	case nprocs > maxProcs:
 		log.Printf("%d is greater than available processes (%d); limit set to %d\n", nprocs, maxProcs, maxProcs)
 		return maxProcs
-	case nprocs < 0:
-		log.Printf("defaulting to %d processes\n", maxProcs)
+	case nprocs <= 0:
+		log.Printf("number of processes not set; defaulting to %d processes\n", maxProcs)
 		return maxProcs
 	default:
 		return nprocs
@@ -156,8 +156,8 @@ func parserError(message string) {
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	args := parseArgs()
 	log.Printf("CAMUS version %s", Version)
+	args := parseArgs()
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
