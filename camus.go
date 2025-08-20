@@ -3,7 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [ -f <format> | -q <mode> | -f <threshold> | -h | -v ] <command> <tree> <gene_trees>
+usage: camus [-f <format>|-q <mode>|-f <threshold>|-h|-v] <command> <tree> <gene_trees>
 
 commands:
 
@@ -18,10 +18,14 @@ positional arguments:
 flags:
 
 	-f format
-	  	gene tree format [ newick | nexus ] (default "newick")
+	  	gene tree format [newick|nexus] (default "newick")
 	-h	prints this message and exits
 	-n int
 	  	number of parallel processes
+	-q int
+	  	quartet filter mode number [0, 2] (default 0)
+	-t float
+	  	threshold for quartet filter [0, 1] (default 0)
 	-v	prints version number and exits
 
 examples:
@@ -40,6 +44,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	"github.com/jsdoublel/camus/internal/infer"
@@ -88,7 +93,7 @@ func setNProcs(nprocs int) int {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [ -f <format> | -q <mode> | -f <threshold> | -h | -v ] <command> <tree> <gene_trees>\n",
+			"usage: camus [-f <format>|-q <mode>|-f <threshold>|-n <num_processes>|-h|-v] <command> <tree> <gene_trees>\n",
 			"\n",
 			"commands:\n\n",
 			"  infer\t\tfinds level-1 networks given constraint tree and gene trees\n",
@@ -111,7 +116,7 @@ func parseArgs() args {
 		)
 	}
 	format := pr.Newick
-	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
+	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -149,15 +154,16 @@ func parseArgs() args {
 
 // prints message, usage, and exits (statis code 1)
 func parserError(message string) {
-	fmt.Fprintln(os.Stderr, message)
+	fmt.Fprintln(os.Stderr, message+"\n")
 	flag.Usage()
 	os.Exit(1)
 }
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.Printf("CAMUS version %s", Version)
 	args := parseArgs()
+	log.Printf("CAMUS %s", Version)
+	log.Printf("invoked as: %s", strings.Join(os.Args, " "))
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
