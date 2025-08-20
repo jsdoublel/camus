@@ -63,12 +63,12 @@ var parseCommand = map[string]Command{
 }
 
 type args struct {
-	command      Command   // infer or score
-	gtFormat     pr.Format // gene tree file format
-	treeFile     string    // constraint or network tree file
-	geneTreeFile string    // gene trees
-	nprocs       int       // number of parallel processes
-	// quartetOpts  pr.QuartetFilterOptions // quartet filter options
+	command      Command                 // infer or score
+	gtFormat     pr.Format               // gene tree file format
+	treeFile     string                  // constraint or network tree file
+	geneTreeFile string                  // gene trees
+	nprocs       int                     // number of parallel processes
+	quartetOpts  pr.QuartetFilterOptions // quartet filter options
 }
 
 func setNProcs(nprocs int) int {
@@ -112,16 +112,16 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [ newick | nexus ] (default \"newick\")")
-	// mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
-	// thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
+	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
+	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	nprocs := flag.Int("n", 0, "number of parallel processes")
 	flag.Parse()
-	// qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
-	// if err != nil {
-	// 	parserError(err.Error())
-	// }
+	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
+	if err != nil {
+		parserError(err.Error())
+	}
 	if *help {
 		flag.Usage()
 		os.Exit(0)
@@ -143,7 +143,7 @@ func parseArgs() args {
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
 		nprocs:       setNProcs(*nprocs),
-		// quartetOpts:  *qOpts,
+		quartetOpts:  *qOpts,
 	}
 }
 
@@ -165,7 +165,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees, args.nprocs)
+		td, results, err := infer.Infer(tre, geneTrees.Trees, args.nprocs, args.quartetOpts)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -173,9 +173,9 @@ func main() {
 			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
-		// if !args.quartetOpts.QuartetFilterOff() {
-		// 	log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
-		// }
+		if !args.quartetOpts.QuartetFilterOff() {
+			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
+		}
 		log.Println("running score...")
 		network, err := pr.ConvertToNetwork(tre)
 		if err != nil {

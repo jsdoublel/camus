@@ -88,9 +88,9 @@ func (cdp *cycleDP) get(i, k int) (uint, *cycleTraceNode) {
 
 // Runs Infer algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
-func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int) (*gr.TreeData, [][]gr.Branch, error) {
+func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, qopts pr.QuartetFilterOptions) (*gr.TreeData, [][]gr.Branch, error) {
 	log.Println("beginning data preprocessing")
-	td, err := pr.Preprocess(tre, geneTrees, nprocs)
+	td, err := pr.Preprocess(tre, geneTrees, nprocs, qopts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
@@ -200,25 +200,25 @@ func (dp *DP) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP) (bestScore u
 		if c.Tip() {
 			continue
 		}
-		score, curCycleTrace, err := dp.scoreEdgesDown(v, vCycleDP, prevK)
+		curScore, curCycleTrace, err := dp.scoreEdgesDown(v, vCycleDP, prevK)
 		if err != nil {
 			continue
 		}
-		cycleLen := dp.cycleLen(curCycleTrace.branch)
-		if score > bestScore || bestCycleTrace == nil || (score == bestScore && cycleLen <= bestCycleLen) {
-			bestScore = score
+		cycleLen := score.CycleLength(curCycleTrace.branch.IDs[gr.Ui], curCycleTrace.branch.IDs[gr.Wi], dp.Tree)
+		if curScore > bestScore || bestCycleTrace == nil || (curScore == bestScore && cycleLen <= bestCycleLen) {
+			bestScore = curScore
 			bestCycleTrace = curCycleTrace
 			bestCycleLen = cycleLen
 		}
 	}
 	SubtreePostOrder(v, func(u, otherSubtree *tree.Node) {
-		score, curCycleTrace, err := dp.scoreEdgesAcross(u, otherSubtree, v, vCycleDP, prevK)
+		curScore, curCycleTrace, err := dp.scoreEdgesAcross(u, otherSubtree, v, vCycleDP, prevK)
 		if err != nil {
 			return
 		}
-		cycleLen := dp.cycleLen(curCycleTrace.branch)
-		if score > bestScore || bestCycleTrace == nil || (score == bestScore && cycleLen <= bestCycleLen) {
-			bestScore = score
+		cycleLen := score.CycleLength(curCycleTrace.branch.IDs[gr.Ui], curCycleTrace.branch.IDs[gr.Wi], dp.Tree)
+		if curScore > bestScore || bestCycleTrace == nil || (curScore == bestScore && cycleLen <= bestCycleLen) {
+			bestScore = curScore
 			bestCycleTrace = curCycleTrace
 			bestCycleLen = cycleLen
 		}
@@ -227,19 +227,6 @@ func (dp *DP) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP) (bestScore u
 		return MaxValue, nil, ErrNoValidSplit
 	}
 	return bestScore, bestCycleTrace, nil
-}
-
-func (dp *DP) cycleLen(br gr.Branch) int {
-	if br.Empty() {
-		panic("branch was empty!")
-	}
-	u, w := br.IDs[gr.Ui], br.IDs[gr.Wi]
-	v := dp.Tree.LCA(u, w)
-	length := (dp.Tree.Depths[u] - dp.Tree.Depths[v]) + (dp.Tree.Depths[w] - dp.Tree.Depths[v]) + 1
-	if v == u { // we have to account for the edge above v that our new edge is anchored to
-		length += 1
-	}
-	return length
 }
 
 // Scores edges for a branch going from v to all ancestors w

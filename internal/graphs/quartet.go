@@ -166,6 +166,16 @@ func (q Quartet) Taxa() iter.Seq2[int, uint16] {
 	}
 }
 
+func (q Quartet) AllQuartets() []Quartet {
+	// Use bit operations: keep taxa bits, replace topology bits.
+	base := uint64(q) & ^(uint64(0xF) << topoShift)
+	return []Quartet{
+		Quartet(base | (uint64(Qtopo1) << topoShift)),
+		Quartet(base | (uint64(Qtopo2) << topoShift)),
+		Quartet(base | (uint64(Qtopo3) << topoShift)),
+	}
+}
+
 // Not efficient, do no use except for testing !!!
 func (q *Quartet) String(tre *tree.Tree) string {
 	names := make(map[uint16]string)
