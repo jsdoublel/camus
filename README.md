@@ -54,7 +54,8 @@ There are two main commands for CAMUS: `infer` and `score`, followed by two posi
 indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
 
 - `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
-- `-q quartet filter mode [0, 2] (default 0)` defines quartet filtering mode
+- `-q mode [0, 2] (default 0)` quartet filtering mode
+- `-n num_threads` defines the number of threads used
 - `-h` prints usage information and exits
 - `-v` prints software version and exits
   
