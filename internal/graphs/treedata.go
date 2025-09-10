@@ -10,21 +10,23 @@ import (
 // Expanded tree struct containing necessary preprocessed data
 type TreeData struct {
 	tree.Tree
-	Children      [][]*tree.Node      // Children for each node
-	IdToNodes     []*tree.Node        // Mapping between id and node pointer
-	quartetSet    [][]Quartet         // Quartets relevant for each subtree
-	quartetCounts *map[Quartet]uint32 // Count of each unique quartet topology
-	Depths        []int               // Distance from all nodes to the root
-	leafsets      []*bitset.BitSet    // Leaves under each node
-	lca           [][]int             // LCA for each pair of node id
-	tipIndexMap   map[uint16]int      // Tip index to node id map
-	NLeaves       int                 // Number of leaves
+	Children       [][]*tree.Node      // Children for each node
+	IdToNodes      []*tree.Node        // Mapping between id and node pointer
+	quartetSet     [][]Quartet         // Quartets relevant for each subtree
+	quartetCounts  *map[Quartet]uint32 // Count of each unique quartet topology
+	Depths         []int               // Distance from all nodes to the root
+	NumLeavesBelow []uint              // number of leaves below node
+	leafsets       []*bitset.BitSet    // Leaves under each node
+	lca            [][]int             // LCA for each pair of node id
+	tipIndexMap    map[uint16]int      // Tip index to node id map
+	NLeaves        int                 // Number of leaves
 }
 
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you
 // don't need quartets.
 func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint32) *TreeData {
 	children := children(tre)
+	below := countLeavesBelow(tre, children)
 	leafsets := calcLeafset(tre, children)
 	lca := calcLCAs(tre, children)
 	depths := calcDepths(tre)
@@ -35,15 +37,16 @@ func MakeTreeData(tre *tree.Tree, qCounts map[Quartet]uint32) *TreeData {
 	}
 	tipIndexMap := makeTipIndexMap(tre)
 	return &TreeData{Tree: *tre,
-		Children:      children,
-		lca:           lca,
-		leafsets:      leafsets,
-		IdToNodes:     idMap,
-		Depths:        depths,
-		quartetSet:    qSets,
-		quartetCounts: &qCounts,
-		tipIndexMap:   tipIndexMap,
-		NLeaves:       len(tre.AllTipNames()),
+		Children:       children,
+		lca:            lca,
+		leafsets:       leafsets,
+		IdToNodes:      idMap,
+		Depths:         depths,
+		NumLeavesBelow: below,
+		quartetSet:     qSets,
+		quartetCounts:  &qCounts,
+		tipIndexMap:    tipIndexMap,
+		NLeaves:        len(tre.AllTipNames()),
 	}
 }
 
@@ -174,6 +177,26 @@ func calcDepths(tre *tree.Tree) []int {
 	return depths
 }
 
+// Count leaves below each node
+func countLeavesBelow(tre *tree.Tree, children [][]*tree.Node) []uint {
+	n, err := tre.NbTips()
+	if err != nil {
+		panic(err)
+	}
+	below := make([]uint, n)
+	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
+		if cur.Tip() {
+			below[cur.Id()] = 1
+		} else {
+			for _, c := range children[cur.Id()] {
+				below[cur.Id()] += below[c.Id()]
+			}
+		}
+		return true
+	})
+	return below
+}
+
 // Maps quartets to vertices where at least 3 taxa from the quartet exist below the vertex
 func mapQuartetsToVertices(tre *tree.Tree, qCounts map[Quartet]uint32, leafsets []*bitset.BitSet) [][]Quartet {
 	qSets := make([][]Quartet, len(tre.Nodes()))
@@ -249,7 +272,7 @@ func (td *TreeData) LeafsetAsString(n *tree.Node) string {
 	return result[:len(result)-1] + "}"
 }
 
-func (td *TreeData) NodeID(idx uint16) int {
+func (td *TreeData) TipToNodeID(idx uint16) int {
 	return td.tipIndexMap[idx]
 }
 

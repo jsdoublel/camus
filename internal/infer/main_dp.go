@@ -96,6 +96,10 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, qopts pr.QuartetF
 	}
 	log.Println("calculating edge scores")
 	n := len(td.Nodes())
+	// edgePenalties, err := score.CalcuateEdgePenalties(td, nprocs)
+	// if err != nil {
+	// 	return nil, nil, err
+	// }
 	edgeScores, err := score.CalculateEdgeScores(td, nprocs)
 	if err != nil {
 		return nil, nil, err
