@@ -179,11 +179,8 @@ func calcDepths(tre *tree.Tree) []int {
 
 // Count leaves below each node
 func countLeavesBelow(tre *tree.Tree, children [][]*tree.Node) []uint {
-	n, err := tre.NbTips()
-	if err != nil {
-		panic(err)
-	}
-	below := make([]uint, n)
+	// We need a slot per node (tips + internal nodes)
+	below := make([]uint, len(tre.Nodes()))
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if cur.Tip() {
 			below[cur.Id()] = 1

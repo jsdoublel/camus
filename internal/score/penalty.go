@@ -43,29 +43,41 @@ func calculatePenalty(u, w int, td *gr.TreeData) uint {
 
 // Gets the number of nodes in each subtree connected to the unrooted cycle
 // formed by the edge. Nodes under w will be at index 0.
-func getNumTaxaUnderNodes(u, w int, td *gr.TreeData) []uint {
+func getNumTaxaUnderNodes(u, w int, td *gr.TreeData) (subsets []uint) {
 	v := td.LCA(u, w)
-	result := append(collectNodesUpPath(w, v, td), collectNodesUpPath(u, v, td)...)
-	return append(result, td.NumLeavesBelow[v])
+	if u == v {
+		parent, err := td.IdToNodes[v].Parent()
+		if err != nil {
+			panic(err)
+		}
+		subsets = append(collectNodesUpPath(w, parent.Id(), td), uint(td.NLeaves)-td.NumLeavesBelow[v])
+		return
+	}
+	subsets = append(collectNodesUpPath(w, v, td), collectNodesUpPath(u, v, td)...)
+	subsets = append(subsets, uint(td.NLeaves)-td.NumLeavesBelow[v])
+	return
 }
 
-func collectNodesUpPath(start, end int, td *gr.TreeData) []uint {
-	result := make([]uint, 1)
-	result[0] = td.NumLeavesBelow[start]
+func collectNodesUpPath(start, end int, td *gr.TreeData) (subsets []uint) {
+	subsets = []uint{td.NumLeavesBelow[start]}
 	cur := start
-	for cur != end {
-		p, err := td.IdToNodes[cur].Parent()
-		if err.Error() == "The node has more than one parent" {
-			panic(err)
-		} else if err != nil {
+	parentID := -1
+	for parentID != end {
+		parent, err := td.IdToNodes[cur].Parent()
+		if err != nil {
+			if err.Error() == "The node has more than one parent" {
+				panic(err)
+			}
 			panic("end is below start while adding up nodes on path")
 		}
-		c := td.Children[p.Id()]
+		parentID = parent.Id()
+		c := td.Children[parentID]
 		if c[0].Id() == cur {
-			result = append(result, td.NumLeavesBelow[c[1].Id()])
+			subsets = append(subsets, td.NumLeavesBelow[c[1].Id()])
 		} else {
-			result = append(result, td.NumLeavesBelow[c[0].Id()])
+			subsets = append(subsets, td.NumLeavesBelow[c[0].Id()])
 		}
+		cur = parentID
 	}
-	return result
+	return
 }
