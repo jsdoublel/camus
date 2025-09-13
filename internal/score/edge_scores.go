@@ -76,7 +76,7 @@ func QuartetScore(q gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
 	cycleNodes := make(map[int]bool)
 	taxaToLCA := make(map[uint16]int) // tip index -> lca
 	for _, t := range q.Taxa() {
-		tID := td.NodeID(t)
+		tID := td.TipToNodeID(t)
 		var lca int
 		switch {
 		case !td.InLeafset(uint16(v.Id()), t):
