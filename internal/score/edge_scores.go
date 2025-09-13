@@ -32,7 +32,7 @@ func CalculateEdgeScores(td *gr.TreeData, nprocs int) ([][]uint, error) {
 }
 
 func shouldCalcEdge(u, w int, td *gr.TreeData) bool {
-	return !td.Under(w, u) && CycleLength(u, w, td) > 3
+	return !td.Under(w, u) && CycleLength(u, w, td) > 3 && u != 0 && w != 0
 }
 
 func CycleLength(u, w int, td *gr.TreeData) int {
