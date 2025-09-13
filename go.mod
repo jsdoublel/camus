@@ -1,6 +1,6 @@
 module github.com/jsdoublel/camus
 
-go 1.24
+go 1.25
 
 require (
 	github.com/bits-and-blooms/bitset v1.22.0

@@ -23,11 +23,12 @@ const MaxValue = ^uint(0)
 
 // Stores main dp algorithm data
 type DP struct {
-	DP         [][]uint     // score for each dp subproblem (DP[v][k])
-	Traceback  [][]trace    // traceback for each dp subproblem (Traceback[v][k])
-	Tree       *gr.TreeData // preprocessed data for our constraint tree
-	NumNodes   int          // number of nodes
-	EdgeScores [][]uint     // caches branch scores so they are not recomputed (INDEXED [u][w] ONLY!!)
+	DP            [][]uint     // score for each dp subproblem (DP[v][k])
+	Traceback     [][]trace    // traceback for each dp subproblem (Traceback[v][k])
+	Tree          *gr.TreeData // preprocessed data for our constraint tree
+	NumNodes      int          // number of nodes
+	EdgeScores    [][]uint     // edge scores (INDEXED [u][w] ONLY!!)
+	EdgePenalties [][]uint     // number of quartets that could be added by edge (INDEXED [u][w] ONLY!!)
 }
 
 // Stores DP info for lookups corresponding to a given vertex v
@@ -96,21 +97,22 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, qopts pr.QuartetF
 	}
 	log.Println("calculating edge scores")
 	n := len(td.Nodes())
-	// edgePenalties, err := score.CalcuateEdgePenalties(td, nprocs)
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
+	edgePenalties, err := score.CalcuateEdgePenalties(td, nprocs)
+	if err != nil {
+		return nil, nil, err
+	}
 	edgeScores, err := score.CalculateEdgeScores(td, nprocs)
 	if err != nil {
 		return nil, nil, err
 	}
 	log.Println("preprocessing finished, beginning dp algorithm")
 	dp := &DP{
-		DP:         make([][]uint, n),
-		Traceback:  make([][]trace, n),
-		Tree:       td,
-		EdgeScores: edgeScores,
-		NumNodes:   n,
+		DP:            make([][]uint, n),
+		Traceback:     make([][]trace, n),
+		Tree:          td,
+		EdgeScores:    edgeScores,
+		EdgePenalties: edgePenalties,
+		NumNodes:      n,
 	}
 	return td, dp.RunDP(), nil
 }
