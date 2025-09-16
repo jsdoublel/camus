@@ -53,7 +53,7 @@ import (
 )
 
 const (
-	Version    = "v0.5.0"
+	Version    = "v0.6.0"
 	ErrMessage = "CAMUS incountered an error ::"
 
 	Infer Command = iota
@@ -68,12 +68,11 @@ var parseCommand = map[string]Command{
 }
 
 type args struct {
-	command      Command                 // infer or score
-	gtFormat     pr.Format               // gene tree file format
-	treeFile     string                  // constraint or network tree file
-	geneTreeFile string                  // gene trees
-	nprocs       int                     // number of parallel processes
-	quartetOpts  pr.QuartetFilterOptions // quartet filter options
+	command      Command            // infer or score
+	gtFormat     pr.Format          // gene tree file format
+	treeFile     string             // constraint or network tree file
+	geneTreeFile string             // gene trees
+	inferOpts    infer.InferOptions // camus options
 }
 
 func setNProcs(nprocs int) int {
@@ -147,8 +146,10 @@ func parseArgs() args {
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
-		nprocs:       setNProcs(*nprocs),
-		quartetOpts:  *qOpts,
+		inferOpts: infer.InferOptions{
+			NProcs:      setNProcs(*nprocs),
+			QuartetOpts: *qOpts,
+		},
 	}
 }
 
@@ -171,7 +172,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees, args.nprocs, args.quartetOpts)
+		td, results, err := infer.Infer(tre, geneTrees.Trees, args.inferOpts)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
@@ -179,7 +180,7 @@ func main() {
 			fmt.Println(gr.MakeNetwork(td, branches).Newick())
 		}
 	case Score:
-		if !args.quartetOpts.QuartetFilterOff() {
+		if !args.inferOpts.QuartetOpts.QuartetFilterOff() {
 			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
 		}
 		log.Println("running score...")
