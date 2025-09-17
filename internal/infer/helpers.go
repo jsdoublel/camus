@@ -44,7 +44,7 @@ func SubtreePreOrder(cur *tree.Node, f func(cur *tree.Node)) {
 
 // returns best split between two lists, i.e., max l[i] + r[j] where i + j = k.
 // returns err if k is too large.
-func BestSplit(l, r []uint, k int) (int, int, error) {
+func BestSplit(l, r []uint64, k int) (int, int, error) {
 	if len(l) == 0 || len(r) == 0 {
 		panic("zero length lists not allowed")
 	}
@@ -66,7 +66,7 @@ func BestSplit(l, r []uint, k int) (int, int, error) {
 // idx = {idx1, idx2, ... } such that the sum of lists[0][idx1] + lists[1][idx2]
 // + ... is maximized, and all indices add up to k.
 // Returns an error if a valid split does not exist.
-func FourWayBestSplit(lists [4][]uint, k int) (indices [4]int, err error) {
+func FourWayBestSplit(lists [4][]uint64, k int) (indices [4]int, err error) {
 	combinedLen := 0
 	for _, l := range lists {
 		combinedLen += len(l)
@@ -89,9 +89,9 @@ func FourWayBestSplit(lists [4][]uint, k int) (indices [4]int, err error) {
 }
 
 // helper for fourWayBestSplit
-func solveAllSplits(list1, list2 []uint, k int) (solutions [][2]int, scores []uint) {
+func solveAllSplits(list1, list2 []uint64, k int) (solutions [][2]int, scores []uint64) {
 	solutions = make([][2]int, 0, k)
-	scores = make([]uint, 0, k)
+	scores = make([]uint64, 0, k)
 	for i := range k + 1 {
 		l, r, err := BestSplit(list1, list2, i)
 		if err != nil {

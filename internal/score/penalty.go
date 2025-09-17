@@ -6,14 +6,14 @@ import (
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
-func CalcuateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint, error) {
+func CalcuateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint64, error) {
 	n := len(td.Nodes())
-	edgePenalties := make([][]uint, n)
+	edgePenalties := make([][]uint64, n)
 	var g errgroup.Group
 	g.SetLimit(nprocs)
 	for u := range n {
 		g.Go(func() error {
-			edgePenalties[u] = make([]uint, n)
+			edgePenalties[u] = make([]uint64, n)
 			for w := range n {
 				if shouldCalcEdge(u, w, td) {
 					edgePenalties[u][w] = calculatePenalty(u, w, td)
@@ -27,12 +27,12 @@ func CalcuateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint, error) {
 
 // Calculates the number of quartets that *could* be added by the addition of
 // this edge (from u to w)..
-func calculatePenalty(u, w int, td *gr.TreeData) uint {
+func calculatePenalty(u, w int, td *gr.TreeData) uint64 {
 	subsets := getNumTaxaUnderNodes(u, w, td)
 	if len(subsets) < 4 {
 		panic("less than four subsets; this should not happen")
 	}
-	coe := [...]uint{1, 0, 0, 0}
+	coe := [...]uint64{1, 0, 0, 0}
 	for i := 1; i < len(subsets); i++ {
 		for j := 3; j > 0; j-- {
 			coe[j] += subsets[i] * coe[j-1]
@@ -43,23 +43,23 @@ func calculatePenalty(u, w int, td *gr.TreeData) uint {
 
 // Gets the number of nodes in each subtree connected to the unrooted cycle
 // formed by the edge. Nodes under w will be at index 0.
-func getNumTaxaUnderNodes(u, w int, td *gr.TreeData) (subsets []uint) {
+func getNumTaxaUnderNodes(u, w int, td *gr.TreeData) (subsets []uint64) {
 	v := td.LCA(u, w)
 	if u == v {
 		parent, err := td.IdToNodes[v].Parent()
 		if err != nil {
 			panic(err)
 		}
-		subsets = append(collectNodesUpPath(w, parent.Id(), td), uint(td.NLeaves)-td.NumLeavesBelow[v])
+		subsets = append(collectNodesUpPath(w, parent.Id(), td), uint64(td.NLeaves)-td.NumLeavesBelow[v])
 		return
 	}
 	subsets = append(collectNodesUpPath(w, v, td), collectNodesUpPath(u, v, td)...)
-	subsets = append(subsets, uint(td.NLeaves)-td.NumLeavesBelow[v])
+	subsets = append(subsets, uint64(td.NLeaves)-td.NumLeavesBelow[v])
 	return
 }
 
-func collectNodesUpPath(start, end int, td *gr.TreeData) (subsets []uint) {
-	subsets = []uint{td.NumLeavesBelow[start]}
+func collectNodesUpPath(start, end int, td *gr.TreeData) (subsets []uint64) {
+	subsets = []uint64{uint64(td.NumLeavesBelow[start])}
 	cur := start
 	parentID := -1
 	for parentID != end {
