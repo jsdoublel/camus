@@ -11,18 +11,73 @@ import (
 
 const Max16Bit = ^uint16(0)
 
+type Score interface{ int64 | uint64 | float64 }
+
+type Scorer[T Score] interface {
+	Init(td *gr.TreeData, nprocs int) error
+	CalcScore(u, w int, td *gr.TreeData) T
+}
+
+type MaximizeScorer struct{}
+
+// No preprocessing needed for Maximize Scorer
+func (s MaximizeScorer) Init(td *gr.TreeData, nprocs int) error {
+	return nil
+}
+
+func (s MaximizeScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
+	return quartetsTotal(u, w, td)
+}
+
+type NormalizedScorer struct {
+	penalties [][]uint64
+}
+
+func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int) error {
+	var err error
+	s.penalties, err = CalcuateEdgePenalties(td, nprocs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
+	return float64(quartetsTotal(u, w, td)) / float64(s.penalties[u][w])
+}
+
+type SymDiffScorer struct {
+	penalties [][]uint64
+}
+
+func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int) error {
+	var err error
+	s.penalties, err = CalcuateEdgePenalties(td, nprocs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
+	return int64(quartetsTotal(u, w, td)) - int64(s.penalties[u][w])
+}
+
 // Calculate scores for all edges
-func CalculateEdgeScores(td *gr.TreeData, nprocs int) ([][]uint, error) {
+func CalculateEdgeScores[T Score](scorer Scorer[T], td *gr.TreeData, nprocs int) ([][]T, error) {
+	if err := scorer.Init(td, nprocs); err != nil {
+		return nil, err
+	}
 	n := len(td.Nodes())
-	edgeScores := make([][]uint, n)
+	edgeScores := make([][]T, n)
 	g, _ := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
 	for u := range n {
 		g.Go(func() error {
-			edgeScores[u] = make([]uint, n)
+			edgeScores[u] = make([]T, n)
 			for w := range n {
 				if shouldCalcEdge(u, w, td) {
-					edgeScores[u][w] = getEdgeScore(u, w, td)
+					edgeScores[u][w] = scorer.CalcScore(u, w, td)
 				}
 			}
 			return nil
@@ -44,17 +99,17 @@ func CycleLength(u, w int, td *gr.TreeData) int {
 	return length
 }
 
-func getEdgeScore(u, w int, td *gr.TreeData) uint {
+func quartetsTotal(u, w int, td *gr.TreeData) uint64 {
 	v := td.LCA(u, w)
 	uNode, wNode, vNode := td.IdToNodes[u], td.IdToNodes[w], td.IdToNodes[v]
-	edgeScore := uint(0)
+	var total uint64
 	wSub := getWSubtree(u, w, v, td)
 	for _, q := range td.Quartets(v) {
 		if QuartetScore(q, uNode, wNode, vNode, wSub, td) == gr.Qeq {
-			edgeScore += uint(td.NumQuartet(q))
+			total += uint64(td.NumQuartet(q))
 		}
 	}
-	return edgeScore
+	return total
 }
 
 func getWSubtree(u, w, v int, td *gr.TreeData) *tree.Node {

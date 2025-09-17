@@ -15,7 +15,7 @@ type TreeData struct {
 	quartetSet     [][]Quartet         // Quartets relevant for each subtree
 	quartetCounts  *map[Quartet]uint32 // Count of each unique quartet topology
 	Depths         []int               // Distance from all nodes to the root
-	NumLeavesBelow []uint              // number of leaves below node
+	NumLeavesBelow []uint64            // number of leaves below node
 	leafsets       []*bitset.BitSet    // Leaves under each node
 	lca            [][]int             // LCA for each pair of node id
 	tipIndexMap    map[uint16]int      // Tip index to node id map
@@ -178,9 +178,8 @@ func calcDepths(tre *tree.Tree) []int {
 }
 
 // Count leaves below each node
-func countLeavesBelow(tre *tree.Tree, children [][]*tree.Node) []uint {
-	// We need a slot per node (tips + internal nodes)
-	below := make([]uint, len(tre.Nodes()))
+func countLeavesBelow(tre *tree.Tree, children [][]*tree.Node) []uint64 {
+	below := make([]uint64, len(tre.Nodes()))
 	tre.PostOrder(func(cur, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if cur.Tip() {
 			below[cur.Id()] = 1
