@@ -8,13 +8,17 @@ import (
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	pr "github.com/jsdoublel/camus/internal/prep"
-	"github.com/jsdoublel/camus/internal/score"
+	sc "github.com/jsdoublel/camus/internal/score"
 )
 
 type InferOptions struct {
 	NProcs      int                     // number of parallel processes
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
-	ScoreType   int                     // type of edge score
+	ScoreMode   sc.ScoreMode            // type of edge score
+}
+
+type dpRunner interface {
+	RunDP() [][]gr.Branch
 }
 
 // Runs Infer algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
@@ -26,37 +30,45 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	log.Println("calculating edge scores")
-	// edgeScores, err := score.CalculateEdgeScores(opts.ScoreType, td, opts.NProcs)
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
-	dp, err := makeDP(td, opts.ScoreType, opts.NProcs)
+	dp, err := makeDP(td, opts.ScoreMode, opts.NProcs)
 	if err != nil {
 		return nil, nil, err
 	}
 	log.Println("preprocessing finished, beginning dp algorithm")
-	// dp := &DP{
-	// 	DP:         make([][]uint, n),
-	// 	Traceback:  make([][]trace, n),
-	// 	Tree:       td,
-	// 	EdgeScores: edgeScores,
-	// 	NumNodes:   n,
-	// }
 	return td, dp.RunDP(), nil
 }
 
-func makeDP(td *gr.TreeData, scoreType, nproces int) (*DP, error) {
-	edgeScores, err := score.CalculateEdgeScores(score.MaximizeScorer{}, td, nproces)
-	if err != nil {
-		return nil, err
-	}
+func makeDP(td *gr.TreeData, scoreMode sc.ScoreMode, nproces int) (dpRunner, error) {
 	n := len(td.Nodes())
-	dp := &DP{
-		DP:         make([][]uint64, n),
-		Traceback:  make([][]trace, n),
-		Tree:       td,
-		EdgeScores: edgeScores,
-		NumNodes:   n,
+	switch scoreMode {
+	case sc.MaxScore:
+		edgeScores, err := sc.CalculateEdgeScores(sc.MaximizeScorer{}, td, nproces)
+		return &DP[uint64]{
+			DP:         make([][]uint64, n),
+			Traceback:  make([][]trace, n),
+			EdgeScores: edgeScores,
+			NumNodes:   n,
+			Tree:       td,
+		}, err
+	case sc.NormScore:
+		edgeScores, err := sc.CalculateEdgeScores(&sc.NormalizedScorer{}, td, nproces)
+		return &DP[float64]{
+			DP:         make([][]float64, n),
+			Traceback:  make([][]trace, n),
+			EdgeScores: edgeScores,
+			NumNodes:   n,
+			Tree:       td,
+		}, err
+	case sc.SymScore:
+		edgeScores, err := sc.CalculateEdgeScores(&sc.SymDiffScorer{}, td, nproces)
+		return &DP[int64]{
+			DP:         make([][]int64, n),
+			Traceback:  make([][]trace, n),
+			EdgeScores: edgeScores,
+			NumNodes:   n,
+			Tree:       td,
+		}, err
+	default:
+		panic(fmt.Sprintf("invalid score mode (%d)", scoreMode))
 	}
-	return dp, nil
 }

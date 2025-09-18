@@ -1,6 +1,10 @@
 package infer
 
-import "github.com/evolbioinfo/gotree/tree"
+import (
+	"github.com/evolbioinfo/gotree/tree"
+
+	sc "github.com/jsdoublel/camus/internal/score"
+)
 
 func SubtreePostOrder(cur *tree.Node, f func(cur, otherSubtree *tree.Node)) {
 	if !cur.Tip() {
@@ -44,19 +48,22 @@ func SubtreePreOrder(cur *tree.Node, f func(cur *tree.Node)) {
 
 // returns best split between two lists, i.e., max l[i] + r[j] where i + j = k.
 // returns err if k is too large.
-func BestSplit(l, r []uint64, k int) (int, int, error) {
+func BestSplit[S sc.Score](l, r []S, k int) (int, int, error) {
 	if len(l) == 0 || len(r) == 0 {
 		panic("zero length lists not allowed")
 	}
 	if len(l)+len(r)-2 < k {
 		return 0, 0, ErrNoValidSplit
 	}
-	bestScore := MaxValue
+	// bestScore := MaxValue
+	var bestScore S
+	found := false
 	bestKL, bestKR := -1, -1
 	for i := max(0, k-(len(r)-1)); i <= min(k, len(l)-1); i++ {
-		if curScore := l[i] + r[k-i]; curScore > bestScore || bestScore == MaxValue {
+		if curScore := l[i] + r[k-i]; curScore > bestScore || !found {
 			bestScore = curScore
 			bestKL, bestKR = i, k-i
+			found = true
 		}
 	}
 	return bestKL, bestKR, nil
@@ -66,7 +73,7 @@ func BestSplit(l, r []uint64, k int) (int, int, error) {
 // idx = {idx1, idx2, ... } such that the sum of lists[0][idx1] + lists[1][idx2]
 // + ... is maximized, and all indices add up to k.
 // Returns an error if a valid split does not exist.
-func FourWayBestSplit(lists [4][]uint64, k int) (indices [4]int, err error) {
+func FourWayBestSplit[S sc.Score](lists [4][]S, k int) (indices [4]int, err error) {
 	combinedLen := 0
 	for _, l := range lists {
 		combinedLen += len(l)
@@ -89,9 +96,9 @@ func FourWayBestSplit(lists [4][]uint64, k int) (indices [4]int, err error) {
 }
 
 // helper for fourWayBestSplit
-func solveAllSplits(list1, list2 []uint64, k int) (solutions [][2]int, scores []uint64) {
+func solveAllSplits[S sc.Score](list1, list2 []S, k int) (solutions [][2]int, scores []S) {
 	solutions = make([][2]int, 0, k)
-	scores = make([]uint64, 0, k)
+	scores = make([]S, 0, k)
 	for i := range k + 1 {
 		l, r, err := BestSplit(list1, list2, i)
 		if err != nil {

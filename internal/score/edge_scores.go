@@ -2,6 +2,7 @@ package score
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -11,11 +12,42 @@ import (
 
 const Max16Bit = ^uint16(0)
 
+type ScoreMode int
+
+const (
+	MaxScore ScoreMode = iota
+	NormScore
+	SymScore
+)
+
+var parseScoreMode = map[string]ScoreMode{
+	"max":  MaxScore,
+	"norm": NormScore,
+	"sym":  SymScore,
+}
+
+func (sm *ScoreMode) Set(s string) error {
+	if scoreMode, ok := parseScoreMode[s]; ok {
+		*sm = scoreMode
+		return nil
+	}
+	return fmt.Errorf("\"%s\" is not a valid gene tree file format", s)
+}
+
+func (sm ScoreMode) String() string {
+	for s, it := range parseScoreMode {
+		if it == sm {
+			return s
+		}
+	}
+	panic(fmt.Sprintf("score mode (%d) does not exist", sm))
+}
+
 type Score interface{ int64 | uint64 | float64 }
 
-type Scorer[T Score] interface {
+type Scorer[S Score] interface {
 	Init(td *gr.TreeData, nprocs int) error
-	CalcScore(u, w int, td *gr.TreeData) T
+	CalcScore(u, w int, td *gr.TreeData) S
 }
 
 type MaximizeScorer struct{}
@@ -64,17 +96,17 @@ func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
 }
 
 // Calculate scores for all edges
-func CalculateEdgeScores[T Score](scorer Scorer[T], td *gr.TreeData, nprocs int) ([][]T, error) {
+func CalculateEdgeScores[S Score](scorer Scorer[S], td *gr.TreeData, nprocs int) ([][]S, error) {
 	if err := scorer.Init(td, nprocs); err != nil {
 		return nil, err
 	}
 	n := len(td.Nodes())
-	edgeScores := make([][]T, n)
+	edgeScores := make([][]S, n)
 	g, _ := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
 	for u := range n {
 		g.Go(func() error {
-			edgeScores[u] = make([]T, n)
+			edgeScores[u] = make([]S, n)
 			for w := range n {
 				if shouldCalcEdge(u, w, td) {
 					edgeScores[u][w] = scorer.CalcScore(u, w, td)

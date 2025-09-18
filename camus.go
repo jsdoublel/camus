@@ -49,7 +49,7 @@ import (
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	"github.com/jsdoublel/camus/internal/infer"
 	pr "github.com/jsdoublel/camus/internal/prep"
-	"github.com/jsdoublel/camus/internal/score"
+	sc "github.com/jsdoublel/camus/internal/score"
 )
 
 const (
@@ -116,6 +116,8 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
+	scoreMode := sc.MaxScore
+	flag.Var(&scoreMode, "s", "score `mode` [max|norm|sym] (default \"max\")")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
@@ -148,6 +150,7 @@ func parseArgs() args {
 		geneTreeFile: flag.Arg(2),
 		inferOpts: infer.InferOptions{
 			NProcs:      setNProcs(*nprocs),
+			ScoreMode:   scoreMode,
 			QuartetOpts: *qOpts,
 		},
 	}
@@ -188,7 +191,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		scores, err := score.ReticulationScore(network, geneTrees.Trees)
+		scores, err := sc.ReticulationScore(network, geneTrees.Trees)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
