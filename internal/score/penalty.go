@@ -6,7 +6,7 @@ import (
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
-func CalcuateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint64, error) {
+func CalculateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint64, error) {
 	n := len(td.Nodes())
 	edgePenalties := make([][]uint64, n)
 	var g errgroup.Group

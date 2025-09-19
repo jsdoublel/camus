@@ -62,37 +62,37 @@ func (s MaximizeScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
 }
 
 type NormalizedScorer struct {
+	NGTree    int // Number of gene trees
 	penalties [][]uint64
 }
 
 func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int) error {
 	var err error
-	s.penalties, err = CalcuateEdgePenalties(td, nprocs)
-	if err != nil {
+	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return float64(quartetsTotal(u, w, td)) / float64(s.penalties[u][w])
+	return float64(quartetsTotal(u, w, td)) / (float64(s.NGTree) * float64(s.penalties[u][w]))
 }
 
 type SymDiffScorer struct {
+	Alpha     float64
 	penalties [][]uint64
 }
 
 func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int) error {
 	var err error
-	s.penalties, err = CalcuateEdgePenalties(td, nprocs)
-	if err != nil {
+	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
-	return int64(quartetsTotal(u, w, td)) - int64(s.penalties[u][w])
+func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
+	return float64(quartetsTotal(u, w, td)) - s.Alpha*float64(s.penalties[u][w])
 }
 
 // Calculate scores for all edges
