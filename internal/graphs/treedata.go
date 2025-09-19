@@ -15,11 +15,11 @@ type TreeData struct {
 	quartetSet     [][]Quartet         // Quartets relevant for each subtree
 	quartetCounts  *map[Quartet]uint32 // Count of each unique quartet topology
 	Depths         []int               // Distance from all nodes to the root
-	NumLeavesBelow []uint64            // number of leaves below node
+	NumLeavesBelow []uint64            // Number of leaves below node
+	NLeaves        int                 // Number of leaves
 	leafsets       []*bitset.BitSet    // Leaves under each node
 	lca            [][]int             // LCA for each pair of node id
 	tipIndexMap    map[uint16]int      // Tip index to node id map
-	NLeaves        int                 // Number of leaves
 }
 
 // Preprocess tree data and makes TreeData struct. Pass nil for qCounts if you

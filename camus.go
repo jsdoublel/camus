@@ -43,7 +43,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
@@ -73,20 +72,6 @@ type args struct {
 	treeFile     string             // constraint or network tree file
 	geneTreeFile string             // gene trees
 	inferOpts    infer.InferOptions // camus options
-}
-
-func setNProcs(nprocs int) int {
-	maxProcs := runtime.GOMAXPROCS(0)
-	switch {
-	case nprocs > maxProcs:
-		log.Printf("%d is greater than available processes (%d); limit set to %d\n", nprocs, maxProcs, maxProcs)
-		return maxProcs
-	case nprocs <= 0:
-		log.Printf("number of processes not set; defaulting to %d processes\n", maxProcs)
-		return maxProcs
-	default:
-		return nprocs
-	}
 }
 
 func parseArgs() args {
@@ -120,6 +105,7 @@ func parseArgs() args {
 	flag.Var(&scoreMode, "s", "score `mode` [max|norm|sym] (default \"max\")")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
+	alpha := flag.Float64("a", 0, "parameter to adjust penalty for \"sym\" score mode (default 0)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	nprocs := flag.Int("n", 0, "number of parallel processes")
@@ -143,16 +129,16 @@ func parseArgs() args {
 	if !ok {
 		parserError(fmt.Sprintf("\"%s\" is not a valid command: either \"infer\" or \"score\" required", flag.Arg(0)))
 	}
+	inferOpts, err := infer.MakeInferOptions(*nprocs, *qOpts, scoreMode, *alpha)
+	if err != nil {
+		parserError(err.Error())
+	}
 	return args{
 		command:      cmd,
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
-		inferOpts: infer.InferOptions{
-			NProcs:      setNProcs(*nprocs),
-			ScoreMode:   scoreMode,
-			QuartetOpts: *qOpts,
-		},
+		inferOpts:    *inferOpts,
 	}
 }
 

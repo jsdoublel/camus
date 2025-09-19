@@ -186,7 +186,7 @@ func TestInfer(t *testing.T) {
 			}
 		}
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore})
+		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore, 0})
 		if err != nil {
 			t.Fatalf("Infer failed with error %s", err)
 		}
@@ -228,7 +228,7 @@ func TestInfer_Large(t *testing.T) {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
 			qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-			td, results, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore})
+			td, results, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore, 0})
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
@@ -261,7 +261,7 @@ func BenchmarkInfer(b *testing.B) {
 	}
 	for b.Loop() {
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore})
+		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, sc.MaxScore, 0})
 		if err != nil {
 			b.Fatalf("Infer failed with error %s", err)
 		}
