@@ -87,8 +87,8 @@ type SymDiffScorer struct {
 
 func WithAlpha(alpha float64) ScoreOptions {
 	return func(options *scorerOpts) error {
-		if alpha > 1 || alpha < 0 {
-			return fmt.Errorf("%w, alpha must be in [0, 1], but is %f", ErrInvalidScorerOption, alpha)
+		if alpha <= 0 {
+			return fmt.Errorf("%w, alpha must be in greater than zero, but is %f", ErrInvalidScorerOption, alpha)
 		}
 		options.alpha = alpha
 		return nil

@@ -62,11 +62,7 @@ func TestNewQuartet(t *testing.T) {
 				t.Errorf("produced err %+v", err)
 			}
 			t.Logf("\nquartet %s\ntest quartet %s", q.String(tre), test.quartet.String())
-			if b, err := testQuartetEqual(q, test.quartet, tre); err != nil {
-				t.Fatal(err)
-			} else if !b {
-				t.Errorf("quartet has wrong topology (%s != %s)", q.String(tre), test.quartet.String())
-			}
+			assertQuartetEqual(t, q, test.quartet, tre)
 		})
 	}
 }
@@ -175,10 +171,7 @@ func TestQuartetsFromTree(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			expectedQSet, err := stringListToQMap(test.qSet, tre)
-			if err != nil {
-				t.Error(err)
-			}
+			expectedQSet := stringListToQMap(t, test.qSet, tre)
 			if !reflect.DeepEqual(qSet, expectedQSet) {
 				t.Errorf("actual %s != expected %s", QSetToString(qSet, tre), QSetToString(expectedQSet, tre))
 			}
@@ -217,31 +210,35 @@ func (tq *TestQuartet) Topology(tre *tree.Tree) (uint8, error) {
 	return topo, nil
 }
 
-func testQuartetEqual(q Quartet, tq *TestQuartet, tre *tree.Tree) (bool, error) {
-	tqTopo, err := tq.Topology(tre)
+func assertQuartetEqual(t *testing.T, q Quartet, tq *TestQuartet, tre *tree.Tree) {
+	t.Helper()
+	topo, err := tq.Topology(tre)
 	if err != nil {
-		return false, err
+		t.Fatalf("failed to compute expected topology: %v", err)
 	}
-	result := q.Topology() ^ tqTopo
-	return result == 0b0000 || result == 0b1111, nil
+	result := q.Topology() ^ topo
+	if result != 0b0000 && result != 0b1111 {
+		t.Fatalf("quartet has wrong topology (%s != %s)", q.String(tre), tq.String())
+	}
 }
 
 func (tq *TestQuartet) String() string {
 	return fmt.Sprintf("%s%s|%s%s", tq.set1[0], tq.set1[1], tq.set2[0], tq.set2[1])
 }
 
-func stringListToQMap(list []string, tre *tree.Tree) (map[Quartet]uint32, error) {
+func stringListToQMap(t *testing.T, list []string, tre *tree.Tree) map[Quartet]uint32 {
+	t.Helper()
 	qSet := make(map[Quartet]uint32)
 	for _, nwk := range list {
 		tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
 		if err != nil {
-			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
+			t.Fatalf("invalid newick tree %s; test is written wrong", nwk)
 		}
 		q, err := NewQuartet(tr, tre)
 		if err != nil {
-			return nil, fmt.Errorf("invalid newick tree %s; test is written wrong", nwk)
+			t.Fatalf("invalid newick tree %s; test is written wrong", nwk)
 		}
 		qSet[q] += 1
 	}
-	return qSet, nil
+	return qSet
 }

@@ -72,29 +72,34 @@ func TestRecticulationScore(t *testing.T) {
 				t.Errorf("test case failed with unexpected error %s", err)
 			case err != nil:
 				t.Logf("%s", err)
-			case !compareScoreMaps(result, test.expected):
-				t.Error("result != expected", result, test.expected)
+			default:
+				compareScoreMaps(t, result, test.expected)
 			}
 		})
 	}
 }
 
 // compares the two maps (specifically allows NaN == NaN to be true)
-func compareScoreMaps(m1, m2 []*map[string]float64) bool {
-	if len(m1) != len(m2) {
-		return false
+func compareScoreMaps(t *testing.T, got, want []*map[string]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("score map length %d != %d", len(got), len(want))
 	}
-	for i := range m1 {
-		if len(*m1[i]) != len(*m2[i]) {
-			return false
+	for i := range got {
+		if len(*got[i]) != len(*want[i]) {
+			t.Fatalf("entry %d map size %d != %d", i, len(*got[i]), len(*want[i]))
 		}
-		for key := range *m1[i] {
-			if (*m1[i])[key] != (*m2[i])[key] && (!math.IsNaN((*m1[i])[key]) || !math.IsNaN((*m2[i])[key])) {
-				return false
+		for key := range *got[i] {
+			wantVal, ok := (*want[i])[key]
+			if !ok {
+				t.Fatalf("missing key %q in expected map index %d", key, i)
+			}
+			gotVal := (*got[i])[key]
+			if gotVal != wantVal && (!math.IsNaN(gotVal) || !math.IsNaN(wantVal)) {
+				t.Fatalf("map[%d][%q] = %v, want %v", i, key, gotVal, wantVal)
 			}
 		}
 	}
-	return true
 }
 
 func TestCalculateRecticulationScore_Large(t *testing.T) {
