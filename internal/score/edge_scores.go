@@ -2,7 +2,6 @@ package score
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -12,94 +11,8 @@ import (
 
 const Max16Bit = ^uint16(0)
 
-type ScoreMode int
-
-const (
-	MaxScore ScoreMode = iota
-	NormScore
-	SymScore
-)
-
-var parseScoreMode = map[string]ScoreMode{
-	"max":  MaxScore,
-	"norm": NormScore,
-	"sym":  SymScore,
-}
-
-func (sm *ScoreMode) Set(s string) error {
-	if scoreMode, ok := parseScoreMode[s]; ok {
-		*sm = scoreMode
-		return nil
-	}
-	return fmt.Errorf("\"%s\" is not a valid gene tree file format", s)
-}
-
-func (sm ScoreMode) String() string {
-	for s, it := range parseScoreMode {
-		if it == sm {
-			return s
-		}
-	}
-	panic(fmt.Sprintf("score mode (%d) does not exist", sm))
-}
-
-type Score interface{ int64 | uint64 | float64 }
-
-type Scorer[S Score] interface {
-	Init(td *gr.TreeData, nprocs int) error
-	CalcScore(u, w int, td *gr.TreeData) S
-}
-
-type MaximizeScorer struct{}
-
-// No preprocessing needed for Maximize Scorer
-func (s MaximizeScorer) Init(td *gr.TreeData, nprocs int) error {
-	return nil
-}
-
-func (s MaximizeScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
-	return quartetsTotal(u, w, td)
-}
-
-type NormalizedScorer struct {
-	NGTree    int // Number of gene trees
-	penalties [][]uint64
-}
-
-func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int) error {
-	var err error
-	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return float64(quartetsTotal(u, w, td)) / (float64(s.NGTree) * float64(s.penalties[u][w]))
-}
-
-type SymDiffScorer struct {
-	Alpha     float64
-	penalties [][]uint64
-}
-
-func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int) error {
-	var err error
-	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return float64(quartetsTotal(u, w, td)) - s.Alpha*float64(s.penalties[u][w])
-}
-
 // Calculate scores for all edges
 func CalculateEdgeScores[S Score](scorer Scorer[S], td *gr.TreeData, nprocs int) ([][]S, error) {
-	if err := scorer.Init(td, nprocs); err != nil {
-		return nil, err
-	}
 	n := len(td.Nodes())
 	edgeScores := make([][]S, n)
 	g, _ := errgroup.WithContext(context.Background())

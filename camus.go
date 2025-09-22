@@ -46,7 +46,7 @@ import (
 	"strings"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
-	"github.com/jsdoublel/camus/internal/infer"
+	in "github.com/jsdoublel/camus/internal/infer"
 	pr "github.com/jsdoublel/camus/internal/prep"
 	sc "github.com/jsdoublel/camus/internal/score"
 )
@@ -67,11 +67,11 @@ var parseCommand = map[string]Command{
 }
 
 type args struct {
-	command      Command            // infer or score
-	gtFormat     pr.Format          // gene tree file format
-	treeFile     string             // constraint or network tree file
-	geneTreeFile string             // gene trees
-	inferOpts    infer.InferOptions // camus options
+	command      Command         // infer or score
+	gtFormat     pr.Format       // gene tree file format
+	treeFile     string          // constraint or network tree file
+	geneTreeFile string          // gene trees
+	inferOpts    in.InferOptions // camus options
 }
 
 func parseArgs() args {
@@ -101,8 +101,7 @@ func parseArgs() args {
 	}
 	format := pr.Newick
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
-	scoreMode := sc.MaxScore
-	flag.Var(&scoreMode, "s", "score `mode` [max|norm|sym] (default \"max\")")
+	scoreMode := flag.String("s", "max", "score `mode` [max|norm|sym] (default \"max\")")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", 0, "threshold for quartet filter [0, 1] (default 0)")
 	alpha := flag.Float64("a", 0, "parameter to adjust penalty for \"sym\" score mode (default 0)")
@@ -110,10 +109,6 @@ func parseArgs() args {
 	ver := flag.Bool("v", false, "prints version number and exits")
 	nprocs := flag.Int("n", 0, "number of parallel processes")
 	flag.Parse()
-	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
-	if err != nil {
-		parserError(err.Error())
-	}
 	if *help {
 		flag.Usage()
 		os.Exit(0)
@@ -129,7 +124,15 @@ func parseArgs() args {
 	if !ok {
 		parserError(fmt.Sprintf("\"%s\" is not a valid command: either \"infer\" or \"score\" required", flag.Arg(0)))
 	}
-	inferOpts, err := infer.MakeInferOptions(*nprocs, *qOpts, scoreMode, *alpha)
+	scorer, ok := sc.ParseScorer[*scoreMode]
+	if !ok {
+		parserError(fmt.Sprintf("\"%s\" is not a valid score mode: valid score modes are \"max\", \"norm\", and \"sym\"", *scoreMode))
+	}
+	qOpts, err := pr.SetQuartetFilterOptions(*mode, *thresh)
+	if err != nil {
+		parserError(err.Error())
+	}
+	inferOpts, err := in.MakeInferOptions(*nprocs, *qOpts, scorer, *alpha)
 	if err != nil {
 		parserError(err.Error())
 	}
@@ -161,7 +164,7 @@ func main() {
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := infer.Infer(tre, geneTrees.Trees, args.inferOpts)
+		td, results, err := in.Infer(tre, geneTrees.Trees, args.inferOpts)
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}

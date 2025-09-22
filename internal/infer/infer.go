@@ -18,7 +18,7 @@ var ErrInvalidOption = errors.New("invalid option combination")
 type InferOptions struct {
 	NProcs      int                     // number of parallel processes
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
-	ScoreMode   sc.ScoreMode            // type of edge score
+	ScoreMode   sc.InitableScorer       // type of edge score
 	Alpha       float64
 }
 
@@ -27,9 +27,9 @@ type dpRunner interface {
 	RunDP() [][]gr.Branch
 }
 
-func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.ScoreMode, alpha float64) (*InferOptions, error) {
-	if quartOpts.QuartetFilterOff() && alpha != 0 {
-		return nil, fmt.Errorf("%w: cannot combine non-zero alpha with -q != 0", ErrInvalidOption)
+func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, alpha float64) (*InferOptions, error) {
+	if _, ok := scoreMode.(*sc.SymDiffScorer); !ok && alpha != 0 {
+		return nil, fmt.Errorf("%w: cannot combine non-zero alpha with ", ErrInvalidOption)
 	}
 	return &InferOptions{
 		NProcs:      setNProcs(nprocs),
@@ -62,15 +62,15 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 		return nil, nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	var dp dpRunner
-	switch opts.ScoreMode {
-	case sc.MaxScore:
-		dp, err = newDP(sc.MaximizeScorer{}, td, opts.NProcs)
-	case sc.NormScore:
-		dp, err = newDP(&sc.NormalizedScorer{NGTree: len(geneTrees)}, td, opts.NProcs)
-	case sc.SymScore:
-		dp, err = newDP(&sc.SymDiffScorer{Alpha: opts.Alpha}, td, opts.NProcs)
+	switch scorer := opts.ScoreMode.(type) {
+	case *sc.MaximizeScorer:
+		dp, err = newDP[uint64](scorer, td, opts.NProcs)
+	case *sc.NormalizedScorer:
+		dp, err = newDP[float64](scorer, td, opts.NProcs, sc.WithNGtrees(len(geneTrees)))
+	case *sc.SymDiffScorer:
+		dp, err = newDP[float64](scorer, td, opts.NProcs, sc.WithAlpha(opts.Alpha))
 	default:
-		panic(fmt.Sprintf("invalid score mode (%d)", opts.ScoreMode))
+		return nil, nil, fmt.Errorf("unsupported scorer type %T", scorer)
 	}
 	if err != nil {
 		return nil, nil, err
@@ -80,10 +80,13 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 }
 
 // Creates DP struct with appropriate score type
-func newDP[S sc.Score](scorer sc.Scorer[S], td *gr.TreeData, nproces int) (*DP[S], error) {
+func newDP[S sc.Score](scorer sc.Scorer[S], td *gr.TreeData, nprocs int, opts ...sc.ScoreOptions) (*DP[S], error) {
+	if err := scorer.Init(td, nprocs, opts...); err != nil {
+		return nil, err
+	}
 	log.Println("calculating edge scores")
 	n := len(td.Nodes())
-	if edgeScores, err := sc.CalculateEdgeScores(scorer, td, nproces); err != nil {
+	if edgeScores, err := sc.CalculateEdgeScores(scorer, td, nprocs); err != nil {
 		return nil, err
 	} else {
 		return &DP[S]{

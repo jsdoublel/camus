@@ -122,6 +122,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
+	log.Printf("processing quartets")
 	qCounts, err := processQuartets(geneTrees, tre, nprocs)
 	if err != nil {
 		return nil, err
@@ -145,7 +146,6 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
-	log.Printf("processing quartets")
 	qCounts := make(map[gr.Quartet]uint32)
 	var mu sync.Mutex
 	g, ctx := errgroup.WithContext(context.Background())
