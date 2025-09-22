@@ -1,7 +1,6 @@
 package graphs
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -75,11 +74,7 @@ func TestMakeTreeData(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			qc, err := makeQCounts(q, tre)
-			if err != nil {
-				t.Error("invalid quartet; test is written wrong")
-			}
-
+			qc := makeQCounts(t, q, tre)
 			treeData := MakeTreeData(tre, qc)
 			lca := treeData.lca
 			leafset := treeData.leafsets
@@ -92,120 +87,95 @@ func TestMakeTreeData(t *testing.T) {
 					}
 				}
 			}
-			if b, err := lcaEqualityTester(lca, test.lca, tre); err != nil {
-				t.Error(err.Error())
-			} else if !b {
-				t.Error("lca != expected")
-			}
-			if b, err := leafsetEqualityTester(leafset, test.leafset, tre); err != nil {
-				t.Error(err.Error())
-			} else if !b {
-				t.Error("leafset != expected")
-			}
-			if b, err := quartetSetEqualityTester(quartetSets, test.quartetSets, tre); err != nil {
-				t.Error(err.Error())
-			} else if !b {
-				t.Error("quartetSets != expected")
-			}
-
+			assertLCAEqual(t, lca, test.lca, tre)
+			assertLeafsetEqual(t, leafset, test.leafset, tre)
+			assertQuartetSetsEqual(t, quartetSets, test.quartetSets, tre)
 		})
 	}
 }
 
-func lcaEqualityTester(lca [][]int, testLCA map[string][][]string, tre *tree.Tree) (bool, error) {
-	for k, v := range testLCA {
-		for _, pair := range v {
+func assertLCAEqual(t *testing.T, lca [][]int, expected map[string][][]string, tre *tree.Tree) {
+	t.Helper()
+	for label, pairs := range expected {
+		for _, pair := range pairs {
 			if len(pair) != 2 {
-				return false, fmt.Errorf("lca is not a pair; test is written wrong")
+				t.Fatalf("expected LCA pair to have size 2, got %d", len(pair))
 			}
-			node1, err := getNode(pair[0], tre)
-			if err != nil {
-				return false, err
-			}
-			node2, err := getNode(pair[1], tre)
-			if err != nil {
-				return false, err
-			}
-			lcaNode, err := getNode(k, tre)
-			if err != nil {
-				return false, err
-			}
+			node1 := getNode(t, pair[0], tre)
+			node2 := getNode(t, pair[1], tre)
+			lcaNode := getNode(t, label, tre)
 			if lca[node1.Id()][node2.Id()] != lcaNode.Id() {
-				return false, nil
+				t.Fatalf("lca(%s,%s)=%d, want %d", node1.Name(), node2.Name(), lca[node1.Id()][node2.Id()], lcaNode.Id())
 			}
 		}
 	}
-	return true, nil
 }
 
-func leafsetEqualityTester(leafset []*bitset.BitSet, testLeafset map[string][]string, tre *tree.Tree) (bool, error) {
-	for k, v := range testLeafset {
-		node, err := getNode(k, tre)
-		if err != nil {
-			return false, err
-		}
+func assertLeafsetEqual(t *testing.T, leafset []*bitset.BitSet, expected map[string][]string, tre *tree.Tree) {
+	t.Helper()
+	for label, leaves := range expected {
+		node := getNode(t, label, tre)
 		leafsetList := leafset[node.Id()]
-		for _, leaf := range v {
+		for _, leaf := range leaves {
 			id, err := tre.TipIndex(leaf)
 			if err != nil {
-				return false, err
+				t.Fatalf("failed to find tip %q: %v", leaf, err)
 			}
 			if !leafsetList.Test(uint(id)) {
-				return false, nil
+				t.Fatalf("leafset for %s missing tip %s", label, leaf)
 			}
 		}
 	}
-	return true, nil
 }
 
-func quartetSetEqualityTester(quartetSets [][]Quartet, testQS map[string][]string, tre *tree.Tree) (bool, error) {
-	for k, v := range testQS {
-		node, err := getNode(k, tre)
-		if err != nil {
-			return false, err
-		}
-		for _, quartetString := range v {
+func assertQuartetSetsEqual(t *testing.T, got [][]Quartet, expected map[string][]string, tre *tree.Tree) {
+	t.Helper()
+	for label, quartets := range expected {
+		node := getNode(t, label, tre)
+		for _, quartetString := range quartets {
 			qTree, err := newick.NewParser(strings.NewReader(quartetString)).Parse()
 			if err != nil {
-				return false, fmt.Errorf("cannot parse %s as newick tree. %w", quartetString, err)
+				t.Fatalf("cannot parse %s as newick tree: %v", quartetString, err)
 			}
 			q1, err := NewQuartet(qTree, tre)
 			if err != nil {
-				return false, err
+				t.Fatalf("invalid quartet %s: %v", quartetString, err)
 			}
 			found := false
-			for _, q2 := range quartetSets[node.Id()] {
+			for _, q2 := range got[node.Id()] {
 				if q1.Compare(q2) == Qeq {
 					found = true
+					break
 				}
 			}
 			if !found {
-				return false, nil
+				t.Fatalf("expected quartet %s not found for node %s", quartetString, label)
 			}
 		}
 	}
-	return true, nil
 }
 
-func getNode(label string, tre *tree.Tree) (*tree.Node, error) {
+func getNode(t *testing.T, label string, tre *tree.Tree) *tree.Node {
+	t.Helper()
 	nodeList, err := tre.SelectNodes(label)
 	if err != nil {
-		panic(err)
+		t.Fatalf("failed to select node %q: %v", label, err)
 	}
 	if len(nodeList) != 1 {
-		return nil, fmt.Errorf("more or less than one internal node with the required label; test is written wrong")
+		t.Fatalf("expected exactly one node labeled %q, got %d", label, len(nodeList))
 	}
-	return nodeList[0], nil
+	return nodeList[0]
 }
 
-func makeQCounts(qList []*tree.Tree, constTree *tree.Tree) (map[Quartet]uint32, error) {
+func makeQCounts(t *testing.T, qList []*tree.Tree, constTree *tree.Tree) map[Quartet]uint32 {
+	t.Helper()
 	result := make(map[Quartet]uint32)
 	for _, qt := range qList {
 		q, err := NewQuartet(qt, constTree)
 		if err != nil {
-			return nil, err
+			t.Fatalf("invalid quartet in test data: %v", err)
 		}
 		result[q] += 1
 	}
-	return result, nil
+	return result
 }
