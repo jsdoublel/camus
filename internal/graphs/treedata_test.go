@@ -94,6 +94,69 @@ func TestMakeTreeData(t *testing.T) {
 	}
 }
 
+func TestCountLeavesBelow(t *testing.T) {
+	testCases := []struct {
+		name     string
+		newick   string
+		expected map[string]uint64
+	}{
+		{
+			name:   "chain",
+			newick: "((((A,B)a,C)b,D)c,E)r;",
+			expected: map[string]uint64{
+				"A": 1,
+				"B": 1,
+				"C": 1,
+				"D": 1,
+				"E": 1,
+				"a": 2,
+				"b": 3,
+				"c": 4,
+				"r": 5,
+			},
+		},
+		{
+			name:   "mixed",
+			newick: "((A,(B,C)b)a,(D,E)c)r;",
+			expected: map[string]uint64{
+				"A": 1,
+				"B": 1,
+				"C": 1,
+				"D": 1,
+				"E": 1,
+				"a": 3,
+				"b": 2,
+				"c": 2,
+				"r": 5,
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			tre, err := newick.NewParser(strings.NewReader(test.newick)).Parse()
+			if err != nil {
+				t.Fatalf("invalid newick tree: %v", err)
+			}
+			if err := tre.UpdateTipIndex(); err != nil {
+				t.Fatalf("failed to update tip index: %v", err)
+			}
+			children := children(tre)
+			counts := countLeavesBelow(tre, children)
+			assertLeavesBelow(t, tre, counts, test.expected)
+		})
+	}
+}
+
+func assertLeavesBelow(t *testing.T, tre *tree.Tree, counts []uint64, expected map[string]uint64) {
+	t.Helper()
+	for label, want := range expected {
+		node := getNode(t, label, tre)
+		if got := counts[node.Id()]; got != want {
+			t.Fatalf("leaves below %s = %d, want %d", label, got, want)
+		}
+	}
+}
+
 func assertLCAEqual(t *testing.T, lca [][]int, expected map[string][][]string, tre *tree.Tree) {
 	t.Helper()
 	for label, pairs := range expected {
