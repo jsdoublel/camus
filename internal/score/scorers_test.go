@@ -98,13 +98,13 @@ func TestWithNGtrees(t *testing.T) {
 func TestWithAlpha(t *testing.T) {
 	testCases := []struct {
 		name    string
-		alpha   float64
+		alpha   int64
 		wantErr bool
 	}{
-		{name: "positive", alpha: 0.25},
-		{name: "large positive", alpha: 1.25},
+		{name: "positive", alpha: 1},
+		{name: "large positive", alpha: 5},
 		{name: "zero", alpha: 0, wantErr: true},
-		{name: "negative", alpha: -0.1, wantErr: true},
+		{name: "negative", alpha: -1, wantErr: true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -112,11 +112,11 @@ func TestWithAlpha(t *testing.T) {
 			err := WithAlpha(tc.alpha)(&opts)
 			switch {
 			case tc.wantErr && err == nil:
-				t.Fatalf("expected error for alpha %f", tc.alpha)
+				t.Fatalf("expected error for alpha %d", tc.alpha)
 			case !tc.wantErr && err != nil:
 				t.Fatalf("unexpected error: %v", err)
 			case !tc.wantErr && opts.alpha != tc.alpha:
-				t.Fatalf("alpha = %f, want %f", opts.alpha, tc.alpha)
+				t.Fatalf("alpha = %d, want %d", opts.alpha, tc.alpha)
 			}
 		})
 	}
@@ -168,10 +168,10 @@ func TestSymDiffScorerInit(t *testing.T) {
 	testCases := []struct {
 		name    string
 		options []ScoreOptions
-		alpha   float64
+		alpha   int64
 		wantErr bool
 	}{
-		{name: "valid", options: []ScoreOptions{WithAlpha(0.2)}, alpha: 0.2},
+		{name: "valid", options: []ScoreOptions{WithAlpha(2)}, alpha: 2},
 		{name: "invalid option", options: []ScoreOptions{WithAlpha(0)}, wantErr: true},
 	}
 	for _, tc := range testCases {
@@ -189,7 +189,7 @@ func TestSymDiffScorerInit(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if scorer.Alpha != tc.alpha {
-				t.Fatalf("Alpha = %f, want %f", scorer.Alpha, tc.alpha)
+				t.Fatalf("Alpha = %d, want %d", scorer.Alpha, tc.alpha)
 			}
 			n := len(td.Nodes())
 			if len(scorer.penalties) != n {
