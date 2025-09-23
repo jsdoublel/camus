@@ -24,7 +24,7 @@ type ScoreOptions func(opts *scorerOpts) error
 
 type scorerOpts struct {
 	nGTrees int
-	alpha   float64
+	alpha   int64
 }
 
 type Score interface{ int64 | uint64 | float64 }
@@ -81,14 +81,14 @@ func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
 }
 
 type SymDiffScorer struct {
-	Alpha     float64
+	Alpha     int64
 	penalties [][]uint64
 }
 
-func WithAlpha(alpha float64) ScoreOptions {
+func WithAlpha(alpha int64) ScoreOptions {
 	return func(options *scorerOpts) error {
 		if alpha <= 0 {
-			return fmt.Errorf("%w, alpha must be in greater than zero, but is %f", ErrInvalidScorerOption, alpha)
+			return fmt.Errorf("%w, alpha must be in greater than zero, but is %d", ErrInvalidScorerOption, alpha)
 		}
 		options.alpha = alpha
 		return nil
@@ -110,6 +110,6 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 	return nil
 }
 
-func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return float64(quartetsTotal(u, w, td)) - s.Alpha*float64(s.penalties[u][w])
+func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
+	return int64(quartetsTotal(u, w, td)) - s.Alpha*int64(s.penalties[u][w])
 }
