@@ -11,27 +11,35 @@ import (
 
 const Max16Bit = ^uint16(0)
 
+type QuartetTotals struct {
+	quartetTotals [][]uint64
+}
+
+func (qt *QuartetTotals) SetQuartetTotal(u, w int, total uint64) {
+	qt.quartetTotals[u][w] = total
+}
+
 // Calculate scores for all edges
-func CalculateEdgeScores[S Score](scorer Scorer[S], td *gr.TreeData, nprocs int) ([][]S, error) {
+func (qt *QuartetTotals) CalculateQuartetTotals(td *gr.TreeData, nprocs int) error {
 	n := len(td.Nodes())
-	edgeScores := make([][]S, n)
+	qt.quartetTotals = make([][]uint64, n)
 	g, _ := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
 	for u := range n {
+		qt.quartetTotals[u] = make([]uint64, n)
 		g.Go(func() error {
-			edgeScores[u] = make([]S, n)
 			for w := range n {
-				if shouldCalcEdge(u, w, td) {
-					edgeScores[u][w] = scorer.CalcScore(u, w, td)
+				if ShouldCalcEdge(u, w, td) {
+					qt.SetQuartetTotal(u, w, quartetsTotal(u, w, td))
 				}
 			}
 			return nil
 		})
 	}
-	return edgeScores, g.Wait()
+	return g.Wait()
 }
 
-func shouldCalcEdge(u, w int, td *gr.TreeData) bool {
+func ShouldCalcEdge(u, w int, td *gr.TreeData) bool {
 	return !td.Under(w, u) && CycleLength(u, w, td) > 3 && u != 0 && w != 0
 }
 

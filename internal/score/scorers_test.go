@@ -2,6 +2,7 @@ package score
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -19,7 +20,28 @@ func makeTreeData(t *testing.T, nwk string) *gr.TreeData {
 	if err := tre.UpdateTipIndex(); err != nil {
 		t.Fatalf("failed to update tip index: %v", err)
 	}
-	return gr.MakeTreeData(tre, nil)
+	tips := tre.AllTipNames()
+	qCounts := make(map[gr.Quartet]uint32)
+	if len(tips) >= 4 {
+		patterns := []string{
+			"((%s,%s),(%s,%s));",
+			"((%s,%s),(%s,%s));",
+		}
+		topo := [][4]int{{0, 1, 2, 3}, {0, 2, 1, 3}}
+		for i, pattern := range patterns {
+			nw := fmt.Sprintf(pattern, tips[topo[i][0]], tips[topo[i][1]], tips[topo[i][2]], tips[topo[i][3]])
+			qTree, err := newick.NewParser(strings.NewReader(nw)).Parse()
+			if err != nil {
+				t.Fatalf("invalid quartet newick in helper: %v", err)
+			}
+			quartet, err := gr.NewQuartet(qTree, tre)
+			if err != nil {
+				t.Fatalf("failed to map quartet: %v", err)
+			}
+			qCounts[quartet] = 1
+		}
+	}
+	return gr.MakeTreeData(tre, qCounts)
 }
 
 func TestParseScorerMap(t *testing.T) {
@@ -122,6 +144,28 @@ func TestWithAlpha(t *testing.T) {
 	}
 }
 
+func TestMaximizeScorerInit(t *testing.T) {
+	testCases := []struct {
+		name   string
+		tree   string
+		nprocs int
+	}{
+		{name: "basic", tree: "((A,B)a,(C,D)b)r;", nprocs: 2},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			td := makeTreeData(t, tc.tree)
+			scorer := &MaximizeScorer{}
+			if err := scorer.Init(td, tc.nprocs); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !verifyQuartetTotals(t, td, scorer.quartetTotals) {
+				t.Fatalf("expected non-zero quartet totals for %s", tc.name)
+			}
+		})
+	}
+}
+
 func TestNormalizedScorerInit(t *testing.T) {
 	td := makeTreeData(t, "((A,B),(C,D));")
 	testCases := []struct {
@@ -150,15 +194,10 @@ func TestNormalizedScorerInit(t *testing.T) {
 			if scorer.NGTree != tc.wantNG {
 				t.Fatalf("NGTree = %d, want %d", scorer.NGTree, tc.wantNG)
 			}
-			n := len(td.Nodes())
-			if len(scorer.penalties) != n {
-				t.Fatalf("penalties length = %d, want %d", len(scorer.penalties), n)
+			if !verifyQuartetTotals(t, td, scorer.quartetTotals) {
+				t.Fatalf("expected non-zero quartet totals for %s", tc.name)
 			}
-			for i := range scorer.penalties {
-				if len(scorer.penalties[i]) != n {
-					t.Fatalf("penalties[%d] length = %d, want %d", i, len(scorer.penalties[i]), n)
-				}
-			}
+			verifyPenalties(t, td, scorer.penalties)
 		})
 	}
 }
@@ -191,15 +230,56 @@ func TestSymDiffScorerInit(t *testing.T) {
 			if scorer.Alpha != tc.alpha {
 				t.Fatalf("Alpha = %d, want %d", scorer.Alpha, tc.alpha)
 			}
-			n := len(td.Nodes())
-			if len(scorer.penalties) != n {
-				t.Fatalf("penalties length = %d, want %d", len(scorer.penalties), n)
+			if !verifyQuartetTotals(t, td, scorer.quartetTotals) {
+				t.Fatalf("expected non-zero quartet totals for %s", tc.name)
 			}
-			for i := range scorer.penalties {
-				if len(scorer.penalties[i]) != n {
-					t.Fatalf("penalties[%d] length = %d, want %d", i, len(scorer.penalties[i]), n)
-				}
-			}
+			verifyPenalties(t, td, scorer.penalties)
 		})
+	}
+}
+
+func verifyQuartetTotals(t *testing.T, td *gr.TreeData, totals [][]uint64) bool {
+	t.Helper()
+	n := len(td.Nodes())
+	if len(totals) != n {
+		t.Fatalf("quartet totals length = %d, want %d", len(totals), n)
+	}
+	nodes := td.Nodes()
+	positive := false
+	for u := range totals {
+		if len(totals[u]) != n {
+			t.Fatalf("quartet totals row %d length = %d, want %d", u, len(totals[u]), n)
+		}
+		for w := range totals[u] {
+			val := totals[u][w]
+			if ShouldCalcEdge(u, w, td) {
+				if val > 0 {
+					positive = true
+				}
+				continue
+			}
+			if val != 0 {
+				t.Fatalf("unexpected quartet total for edge %s->%s", nodes[u].Name(), nodes[w].Name())
+			}
+		}
+	}
+	return positive
+}
+
+func verifyPenalties(t *testing.T, td *gr.TreeData, penalties [][]uint64) {
+	t.Helper()
+	n := len(td.Nodes())
+	if len(penalties) != n {
+		t.Fatalf("penalties length = %d, want %d", len(penalties), n)
+	}
+	for u := range penalties {
+		if len(penalties[u]) != n {
+			t.Fatalf("penalties row %d length = %d, want %d", u, len(penalties[u]), n)
+		}
+		for w := range penalties[u] {
+			if ShouldCalcEdge(u, w, td) && penalties[u][w] == 0 {
+				t.Fatalf("expected penalty for edge %d->%d", u, w)
+			}
+		}
 	}
 }

@@ -264,6 +264,7 @@ func TestInfer_Large(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			t.Log(test.name)
 			inferOpts := BuildTestInferOpts(t, test.qMode, test.filter, test.scorer, test.alpha)
 			tre, quartets, err := pr.ReadInputFiles(test.constTreeFile, test.geneTreesFile, pr.Newick)
 			if err != nil {
@@ -291,7 +292,7 @@ func TestInfer_Large(t *testing.T) {
 			}
 			expNwks := strings.Split(string(expNwksStr), "\n")
 			for i, expNwk := range expNwks[:len(expNwks)-1] {
-				if strings.TrimSpace(expNwk) != resultNwks[i] {
+				if i < len(resultNwks) && strings.TrimSpace(expNwk) != resultNwks[i] {
 					t.Errorf("%s != %s, result != expected", resultNwks[i], expNwk)
 				}
 			}

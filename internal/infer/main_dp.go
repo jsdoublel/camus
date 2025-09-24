@@ -18,15 +18,13 @@ import (
 
 var ErrNoValidSplit = errors.New("no valid split")
 
-// const MaxValue = ^uint64(0)
-
 // Stores main dp algorithm data
 type DP[S sc.Score] struct {
-	DP         [][]S        // score for each dp subproblem (DP[v][k])
-	Traceback  [][]trace    // traceback for each dp subproblem (Traceback[v][k])
-	Tree       *gr.TreeData // preprocessed data for our constraint tree
-	NumNodes   int          // number of nodes
-	EdgeScores [][]S        // edge scores (INDEXED [u][w] ONLY!!)
+	DP        [][]S        // score for each dp subproblem (DP[v][k])
+	Traceback [][]trace    // traceback for each dp subproblem (Traceback[v][k])
+	Tree      *gr.TreeData // preprocessed data for our constraint tree
+	NumNodes  int          // number of nodes
+	Scorer    sc.Scorer[S] // scorer
 }
 
 // Stores DP info for lookups corresponding to a given vertex v
@@ -198,7 +196,7 @@ func (dp *DP[S]) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP[S]) (bestS
 		}
 	})
 	if bestCycleTrace == nil {
-		return 0, nil, ErrNoValidSplit // previously MaxValue
+		return 0, nil, ErrNoValidSplit
 	}
 	return bestScore, bestCycleTrace, nil
 }
@@ -206,10 +204,10 @@ func (dp *DP[S]) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP[S]) (bestS
 // Scores edges for a branch going from v to all ancestors w
 func (dp *DP[S]) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP[S], prevK int) (bestScore S, traceback *cycleTrace, err error) {
 	SubtreePreOrder(v, func(w *tree.Node) {
-		if v == w {
+		if !sc.ShouldCalcEdge(v.Id(), w.Id(), dp.Tree) {
 			return
 		}
-		edgeScore := dp.EdgeScores[v.Id()][w.Id()]
+		edgeScore := dp.Scorer.CalcScore(v.Id(), w.Id(), dp.Tree)
 		wPathK, wDownK, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
 		if err != nil { // no valid split, so we don't consider this edge
 			return
@@ -226,7 +224,7 @@ func (dp *DP[S]) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP[S], prevK int) (
 		}
 	})
 	if traceback == nil {
-		return 0, nil, ErrNoValidSplit // previously MaxValue
+		return 0, nil, ErrNoValidSplit
 	}
 	return bestScore, traceback, nil
 }
@@ -240,7 +238,7 @@ func (dp *DP[S]) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP[S], pr
 		if u == w {
 			panic("u should not equal w")
 		}
-		edgeScore := dp.EdgeScores[u.Id()][w.Id()]
+		edgeScore := dp.Scorer.CalcScore(u.Id(), w.Id(), dp.Tree)
 		indices, err := FourWayBestSplit(
 			[4][]S{
 				vCycleDP.scores[w.Id()],
@@ -269,7 +267,7 @@ func (dp *DP[S]) scoreEdgesAcross(u, sub, v *tree.Node, vCycleDP *cycleDP[S], pr
 		}
 	})
 	if traceback == nil {
-		return 0, nil, ErrNoValidSplit // previously MaxValue
+		return 0, nil, ErrNoValidSplit
 	}
 	return bestScore, traceback, nil
 }

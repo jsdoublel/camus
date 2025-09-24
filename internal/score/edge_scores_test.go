@@ -2,7 +2,6 @@ package score
 
 import (
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/evolbioinfo/gotree/io/newick"
@@ -10,78 +9,57 @@ import (
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
-type stubScorer struct {
-	mu    sync.Mutex
-	calls map[[2]int]bool
-}
-
-func newStubScorer() *stubScorer {
-	return &stubScorer{calls: make(map[[2]int]bool)}
-}
-
-func (s *stubScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error {
-	return nil
-}
-
-func (s *stubScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
-	val := s.expectedValue(u, w)
-	s.mu.Lock()
-	s.calls[[2]int{u, w}] = true
-	s.mu.Unlock()
-	return val
-}
-
-func (s *stubScorer) expectedValue(u, w int) uint64 {
-	return uint64((u+1)*1000 + (w + 1))
-}
-
-func TestCalculateEdgeScores(t *testing.T) {
+func TestCalculateQuartetTotals(t *testing.T) {
 	testCases := []struct {
-		name   string
-		newick string
-		nprocs int
+		name     string
+		tree     string
+		quartets []quartetCount
+		nprocs   int
 	}{
-		{name: "basic", newick: "((A,(B,C)b)a,(D,E)c)r;", nprocs: 3},
+		{
+			name:     "basic",
+			tree:     "((A,B)a,(C,D)b)r;",
+			quartets: []quartetCount{{nwk: "((A,C),(B,D));", count: 5}},
+			nprocs:   3,
+		},
+		{
+			name: "long",
+			tree: "(((A,B)a,(C,D)b)e,(E,(F,G)f)c)r;",
+			quartets: []quartetCount{
+				{nwk: "((A,E),(B,F));", count: 7},
+				{nwk: "((A,F),(B,E));", count: 4},
+			},
+			nprocs: 2,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			td := makeTreeData(t, tc.newick)
-			scorer := newStubScorer()
-			scores, err := CalculateEdgeScores(scorer, td, tc.nprocs)
-			if err != nil {
+			td := makeTreeDataWithQuartets(t, tc.tree, tc.quartets)
+			qt := &QuartetTotals{}
+			if err := qt.CalculateQuartetTotals(td, tc.nprocs); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			n := len(td.Nodes())
-			if len(scores) != n {
-				t.Fatalf("scores length = %d, want %d", len(scores), n)
-			}
-			expectedCalls := make(map[[2]int]bool)
-			for u := range n {
-				if len(scores[u]) != n {
-					t.Fatalf("scores[%d] length = %d, want %d", u, len(scores[u]), n)
-				}
-				for w := range n {
-					wantCall := shouldCalcEdge(u, w, td)
-					if wantCall {
-						expectedCalls[[2]int{u, w}] = true
-						want := scorer.expectedValue(u, w)
-						if scores[u][w] != want {
-							t.Fatalf("score[%d][%d] = %d, want %d", u, w, scores[u][w], want)
+			positive := 0
+			for u := range qt.quartetTotals {
+				for w := range qt.quartetTotals[u] {
+					got := qt.quartetTotals[u][w]
+					if ShouldCalcEdge(u, w, td) {
+						want := quartetsTotal(u, w, td)
+						if got != want {
+							t.Fatalf("quartetTotals[%d][%d] = %d, want %d", u, w, got, want)
 						}
-					} else if scores[u][w] != 0 {
-						t.Fatalf("score[%d][%d] = %d, want 0", u, w, scores[u][w])
+						if want > 0 {
+							positive++
+						}
+					} else if got != 0 {
+						uName := td.Nodes()[u].Name()
+						wName := td.Nodes()[w].Name()
+						t.Fatalf("unexpected non-zero total for edge %d->%d (%s->%s): %d", u, w, uName, wName, got)
 					}
 				}
 			}
-			scorer.mu.Lock()
-			defer scorer.mu.Unlock()
-			if len(scorer.calls) != len(expectedCalls) {
-				t.Fatalf("calls = %d, want %d", len(scorer.calls), len(expectedCalls))
-			}
-			for pair := range expectedCalls {
-				if !scorer.calls[pair] {
-					t.Fatalf("missing call for pair %v", pair)
-				}
+			if positive == 0 {
+				t.Fatalf("expected at least one positive total in test data")
 			}
 		})
 	}
@@ -104,7 +82,7 @@ func TestShouldCalcEdge(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			uID := nodeIDByLabel(t, td, tc.uLabel)
 			wID := nodeIDByLabel(t, td, tc.wLabel)
-			got := shouldCalcEdge(uID, wID, td)
+			got := ShouldCalcEdge(uID, wID, td)
 			if got != tc.expected {
 				t.Fatalf("shouldCalcEdge(%s,%s) = %t, want %t", tc.uLabel, tc.wLabel, got, tc.expected)
 			}
