@@ -32,22 +32,26 @@ type Score interface{ int64 | uint64 | float64 }
 // scorers implement different scorring metrics
 type Scorer[S Score] interface {
 	Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error
+	SetQuartetTotal(u, w int, total uint64)
 	CalcScore(u, w int, td *gr.TreeData) S
 }
 
-type MaximizeScorer struct{}
+type MaximizeScorer struct {
+	QuartetTotals
+}
 
-// No preprocessing needed for Maximize Scorer
-func (s MaximizeScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error {
-	return nil
+func (s *MaximizeScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error {
+	// No opts are needed for MaximizeScorer
+	return s.CalculateQuartetTotals(td, nprocs)
 }
 
 func (s MaximizeScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
-	return quartetsTotal(u, w, td)
+	return s.quartetTotals[u][w]
 }
 
 type NormalizedScorer struct {
-	NGTree    int // Number of gene trees
+	QuartetTotals
+	NGTree    int
 	penalties [][]uint64
 }
 
@@ -69,6 +73,9 @@ func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOption
 		}
 	}
 	s.NGTree = options.nGTrees
+	if err := s.CalculateQuartetTotals(td, nprocs); err != nil {
+		return err
+	}
 	var err error
 	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
 		return err
@@ -77,10 +84,11 @@ func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOption
 }
 
 func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return float64(quartetsTotal(u, w, td)) / (float64(s.NGTree) * float64(s.penalties[u][w]))
+	return float64(s.quartetTotals[u][w]) / (float64(s.NGTree) * float64(s.penalties[u][w]))
 }
 
 type SymDiffScorer struct {
+	QuartetTotals
 	Alpha     int64
 	penalties [][]uint64
 }
@@ -103,6 +111,9 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 		}
 	}
 	s.Alpha = options.alpha
+	if err := s.CalculateQuartetTotals(td, nprocs); err != nil {
+		return err
+	}
 	var err error
 	if s.penalties, err = CalculateEdgePenalties(td, nprocs); err != nil {
 		return err
@@ -111,5 +122,5 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 }
 
 func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
-	return int64(quartetsTotal(u, w, td)) - s.Alpha*int64(s.penalties[u][w])
+	return int64(s.quartetTotals[u][w]) - s.Alpha*int64(s.penalties[u][w])
 }

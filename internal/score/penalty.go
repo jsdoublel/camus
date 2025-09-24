@@ -15,7 +15,7 @@ func CalculateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint64, error) {
 		g.Go(func() error {
 			edgePenalties[u] = make([]uint64, n)
 			for w := range n {
-				if shouldCalcEdge(u, w, td) {
+				if ShouldCalcEdge(u, w, td) {
 					edgePenalties[u][w] = calculatePenalty(u, w, td)
 				}
 			}

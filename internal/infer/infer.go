@@ -86,15 +86,12 @@ func newDP[S sc.Score](scorer sc.Scorer[S], td *gr.TreeData, nprocs int, opts ..
 	}
 	log.Println("calculating edge scores")
 	n := len(td.Nodes())
-	if edgeScores, err := sc.CalculateEdgeScores(scorer, td, nprocs); err != nil {
-		return nil, err
-	} else {
-		return &DP[S]{
-			DP:         make([][]S, n),
-			Traceback:  make([][]trace, n),
-			EdgeScores: edgeScores,
-			NumNodes:   n,
-			Tree:       td,
-		}, nil
-	}
+	return &DP[S]{
+		DP:        make([][]S, n),
+		Traceback: make([][]trace, n),
+		// EdgeScores: edgeScores,
+		Scorer:   scorer,
+		NumNodes: n,
+		Tree:     td,
+	}, nil
 }
