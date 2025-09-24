@@ -132,7 +132,7 @@ func parseArgs() args {
 	if err != nil {
 		parserError(err.Error())
 	}
-	inferOpts, err := in.MakeInferOptions(*nprocs, *qOpts, scorer, *alpha)
+	inferOpts, err := in.MakeInferOptions(*nprocs, qOpts, scorer, *alpha)
 	if err != nil {
 		parserError(err.Error())
 	}
