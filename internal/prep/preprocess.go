@@ -30,16 +30,16 @@ type QuartetFilterOptions struct {
 	threshold Threshold // threshold for filtering [0, 1]
 }
 
-func SetQuartetFilterOptions(mode int, threshold float64) (*QuartetFilterOptions, error) {
+func SetQuartetFilterOptions(mode int, threshold float64) (QuartetFilterOptions, error) {
 	var m QMode
 	if err := m.Set(mode); err != nil {
-		return nil, err
+		return QuartetFilterOptions{}, err
 	}
 	var t Threshold
 	if err := t.Set(threshold); err != nil {
-		return nil, err
+		return QuartetFilterOptions{}, err
 	}
-	return &QuartetFilterOptions{mode: m, threshold: t}, nil
+	return QuartetFilterOptions{mode: m, threshold: t}, nil
 }
 
 func (opts QuartetFilterOptions) QuartetFilterOff() bool {

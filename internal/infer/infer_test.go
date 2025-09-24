@@ -186,7 +186,7 @@ func TestInfer(t *testing.T) {
 			}
 		}
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), *qopts, &sc.MaximizeScorer{}, 0})
+		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, 0})
 		if err != nil {
 			t.Fatalf("Infer failed with error %s", err)
 		}
@@ -207,33 +207,77 @@ func TestInfer(t *testing.T) {
 
 func TestInfer_Large(t *testing.T) {
 	testCases := []struct {
-		name        string
-		constTree   string
-		geneTrees   string
-		expNumEdges int
-		result      string
+		name          string
+		constTreeFile string
+		geneTreesFile string
+		qMode         int
+		filter        float64
+		scorer        sc.InitableScorer
+		alpha         int64
+		expNumEdges   int
+		resultFile    string
 	}{
 		{
-			name:        "pauls data",
-			constTree:   "testdata/constraint.nwk",
-			geneTrees:   "testdata/gene-trees.nwk",
-			expNumEdges: 5,
-			result:      "testdata/network.nwk",
+			name:          "pauls data default",
+			constTreeFile: "testdata/constraint.nwk",
+			geneTreesFile: "testdata/gene-trees.nwk",
+			qMode:         0,
+			filter:        0,
+			scorer:        &sc.MaximizeScorer{},
+			alpha:         0,
+			expNumEdges:   5,
+			resultFile:    "testdata/network.nwk",
+		},
+		{
+			name:          "pauls data quartet filter",
+			constTreeFile: "testdata/constraint.nwk",
+			geneTreesFile: "testdata/gene-trees.nwk",
+			qMode:         2,
+			filter:        0.5,
+			scorer:        &sc.MaximizeScorer{},
+			alpha:         0,
+			expNumEdges:   4,
+			resultFile:    "testdata/net_q2_t05_max.nwk",
+		},
+		{
+			name:          "pauls data norm",
+			constTreeFile: "testdata/constraint.nwk",
+			geneTreesFile: "testdata/gene-trees.nwk",
+			qMode:         2,
+			filter:        0.5,
+			scorer:        &sc.NormalizedScorer{},
+			alpha:         0,
+			expNumEdges:   4,
+			resultFile:    "testdata/net_q2_t05_norm.nwk",
+		},
+		{
+			name:          "pauls data sym",
+			constTreeFile: "testdata/constraint.nwk",
+			geneTreesFile: "testdata/gene-trees.nwk",
+			qMode:         2,
+			filter:        0.5,
+			scorer:        &sc.SymDiffScorer{},
+			alpha:         10,
+			expNumEdges:   3,
+			resultFile:    "testdata/net_q2_t05_sym_a10.nwk",
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, quartets, err := pr.ReadInputFiles(test.constTree, test.geneTrees, pr.Newick)
+			inferOpts := BuildTestInferOpts(t, test.qMode, test.filter, test.scorer, test.alpha)
+			tre, quartets, err := pr.ReadInputFiles(test.constTreeFile, test.geneTreesFile, pr.Newick)
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
-			qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-			td, results, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, &sc.MaximizeScorer{}, 0})
+			td, results, err := Infer(tre, quartets.Trees, inferOpts)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
-			ntw := gr.MakeNetwork(td, results[len(results)-1])
-			bts, err := os.ReadFile(test.result)
+			resultNwks := make([]string, len(results))
+			for i, branches := range results {
+				resultNwks[i] = gr.MakeNetwork(td, branches).Newick()
+			}
+			expNwksStr, err := os.ReadFile(test.resultFile)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
@@ -245,10 +289,27 @@ func TestInfer_Large(t *testing.T) {
 					t.Errorf("unexpected number of branches %d, expected %d", len(res), i+1)
 				}
 			}
-			if strings.TrimSpace(string(bts)) != ntw.Newick() {
-				t.Errorf("%s != %s, result != expected", ntw.Newick(), string(bts))
+			expNwks := strings.Split(string(expNwksStr), "\n")
+			for i, expNwk := range expNwks[:len(expNwks)-1] {
+				if strings.TrimSpace(expNwk) != resultNwks[i] {
+					t.Errorf("%s != %s, result != expected", resultNwks[i], expNwk)
+				}
 			}
 		})
+	}
+}
+
+func BuildTestInferOpts(t *testing.T, qmode int, filter float64, scorer sc.InitableScorer, alpha int64) InferOptions {
+	t.Helper()
+	qopts, err := pr.SetQuartetFilterOptions(qmode, filter)
+	if err != nil {
+		t.Fatalf("unexpected error while setting quartet filter options")
+	}
+	return InferOptions{
+		NProcs:      runtime.GOMAXPROCS(0),
+		QuartetOpts: qopts,
+		ScoreMode:   scorer,
+		Alpha:       alpha,
 	}
 }
 
@@ -261,7 +322,7 @@ func BenchmarkInfer(b *testing.B) {
 	}
 	for b.Loop() {
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), *qopts, &sc.MaximizeScorer{}, 0})
+		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, 0})
 		if err != nil {
 			b.Fatalf("Infer failed with error %s", err)
 		}
