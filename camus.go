@@ -3,7 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [-f <format>|-q <mode>|-f <threshold>|-h|-v] <command> <tree> <gene_trees>
+usage: camus [-f <format>|-q <mode>|-f <threshold>|-n <num_processes>|-h|-v] <command> <tree> <gene_trees>
 
 commands:
 
@@ -17,6 +17,8 @@ positional arguments:
 
 flags:
 
+	-a int
+	  	parameter to adjust penalty for "sym" score mode
 	-f format
 	  	gene tree format [newick|nexus] (default "newick")
 	-h	prints this message and exits
@@ -24,8 +26,10 @@ flags:
 	  	number of parallel processes
 	-q int
 	  	quartet filter mode number [0, 2] (default 0)
+	-s mode
+	  	score mode [max|norm|sym] (default "max")
 	-t float
-	  	threshold for quartet filter [0, 1] (default 0)
+	  	threshold for quartet filter [0, 1] (default 0.5) (default 0.5)
 	-v	prints version number and exits
 
 examples:

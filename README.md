@@ -47,14 +47,17 @@ binaries compiled on my personal computer (i.e., Linux x64).
 ## Usage
 
 ```
-camus [ -f <format> | -q <mode> | -f <threshold> | -h | -v ] <command> <tree> <gene_trees>
+camus [ -f <format> | -q <mode> | -t <threshold> | -n <threads> | -h | -v | ... ] <command> <tree> <gene_trees>
 ```
 
 There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments 
-indicating the inputs. Addtionally, there are the following flags that preceed the positional arguments.
+indicating the inputs. Additionally, there are the following flags that precedes the positional arguments.
 
 - `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
+- `-s mode [ max | norm | sym ] (default "max")` sets the score mode
 - `-q mode [0, 2] (default 0)` quartet filtering mode
+- `-t threshold [0, 1] (default 0.5)` quartet filtering threshold
+- `-a alpha` parameter that adjusts penalty in ``sym" score mode
 - `-n num_threads` defines the number of threads used
 - `-h` prints usage information and exits
 - `-v` prints software version and exits
@@ -63,7 +66,7 @@ indicating the inputs. Addtionally, there are the following flags that preceed t
 
 Quartet filtering mode filters out less frequent quartet topologies. Mode `-q
 0` disables quartet filtering; `-q 1` applies a less restrictive quartet
-filtering, and `-q 2` is the most restrictive quartetfiltering.
+filtering, and `-q 2` is the most restrictive quartet filtering.
 
 > Quartet filter mode currently only works with the `infer` command.
 
