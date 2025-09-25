@@ -32,8 +32,8 @@ type Score interface{ int64 | uint64 | float64 }
 // scorers implement different scorring metrics
 type Scorer[S Score] interface {
 	Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error
-	SetQuartetTotal(u, w int, total uint64)
 	CalcScore(u, w int, td *gr.TreeData) S
+	TotalSatQuartets(branches []gr.Branch) (uint64, error)
 }
 
 type MaximizeScorer struct {
