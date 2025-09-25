@@ -2,6 +2,8 @@ package score
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -11,15 +13,28 @@ import (
 
 const Max16Bit = ^uint16(0)
 
+var ErrQuartetsNotInit = errors.New("quartets totals have not be initialized")
+
 type QuartetTotals struct {
 	quartetTotals [][]uint64
 }
 
-func (qt *QuartetTotals) SetQuartetTotal(u, w int, total uint64) {
-	qt.quartetTotals[u][w] = total
+// Returns the total number of quartets added by a specific set of branches
+func (qt QuartetTotals) TotalSatQuartets(branches []gr.Branch) (uint64, error) {
+	if qt.quartetTotals == nil {
+		return 0, ErrQuartetsNotInit
+	}
+	var sum uint64
+	for _, br := range branches {
+		if br.IDs[0] >= len(qt.quartetTotals) || br.IDs[1] >= len(qt.quartetTotals) {
+			return 0, fmt.Errorf("node ids [%d, %d] out of range %d", br.IDs[0], br.IDs[1], len(qt.quartetTotals))
+		}
+		sum += qt.quartetTotals[br.IDs[0]][br.IDs[1]]
+	}
+	return sum, nil
 }
 
-// Calculate scores for all edges
+// Calculate the total number of quartets for all edges
 func (qt *QuartetTotals) CalculateQuartetTotals(td *gr.TreeData, nprocs int) error {
 	n := len(td.Nodes())
 	qt.quartetTotals = make([][]uint64, n)
@@ -30,7 +45,7 @@ func (qt *QuartetTotals) CalculateQuartetTotals(td *gr.TreeData, nprocs int) err
 		g.Go(func() error {
 			for w := range n {
 				if ShouldCalcEdge(u, w, td) {
-					qt.SetQuartetTotal(u, w, quartetsTotal(u, w, td))
+					qt.quartetTotals[u][w] = quartetsTotal(u, w, td)
 				}
 			}
 			return nil
@@ -52,6 +67,8 @@ func CycleLength(u, w int, td *gr.TreeData) int {
 	return length
 }
 
+// calculates the total number of quartets from the input trees that align with
+// a specific edge
 func quartetsTotal(u, w int, td *gr.TreeData) uint64 {
 	v := td.LCA(u, w)
 	uNode, wNode, vNode := td.IdToNodes[u], td.IdToNodes[w], td.IdToNodes[v]
@@ -76,6 +93,7 @@ func getWSubtree(u, w, v int, td *gr.TreeData) *tree.Node {
 	}
 }
 
+// Calculates whether a specific quartet is added by a specific edge.
 func QuartetScore(q gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
 	bottom, bi, unique := uniqueTaxaBelowNodeFromQ(w, q, td)
 	if !unique || bottom == Max16Bit {

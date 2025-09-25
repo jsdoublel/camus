@@ -55,7 +55,6 @@ func BestSplit[S sc.Score](l, r []S, k int) (int, int, error) {
 	if len(l)+len(r)-2 < k {
 		return 0, 0, ErrNoValidSplit
 	}
-	// bestScore := MaxValue
 	var bestScore S
 	found := false
 	bestKL, bestKR := -1, -1
