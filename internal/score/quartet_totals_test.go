@@ -14,12 +14,14 @@ func TestCalculateQuartetTotals(t *testing.T) {
 		name     string
 		tree     string
 		quartets []quartetCount
+		asSet    bool
 		nprocs   int
 	}{
 		{
 			name:     "basic",
 			tree:     "((A,B)a,(C,D)b)r;",
 			quartets: []quartetCount{{nwk: "((A,C),(B,D));", count: 5}},
+			asSet:    false,
 			nprocs:   3,
 		},
 		{
@@ -29,6 +31,7 @@ func TestCalculateQuartetTotals(t *testing.T) {
 				{nwk: "((A,E),(B,F));", count: 7},
 				{nwk: "((A,F),(B,E));", count: 4},
 			},
+			asSet:  false,
 			nprocs: 2,
 		},
 	}
@@ -36,7 +39,7 @@ func TestCalculateQuartetTotals(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			td := makeTreeDataWithQuartets(t, tc.tree, tc.quartets)
 			qt := &QuartetTotals{}
-			if err := qt.CalculateQuartetTotals(td, tc.nprocs); err != nil {
+			if err := qt.CalculateQuartetTotals(td, tc.asSet, tc.nprocs); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			positive := 0
@@ -44,7 +47,7 @@ func TestCalculateQuartetTotals(t *testing.T) {
 				for w := range qt.quartetTotals[u] {
 					got := qt.quartetTotals[u][w]
 					if ShouldCalcEdge(u, w, td) {
-						want := quartetsTotal(u, w, td)
+						want := quartetsTotal(u, w, td, tc.asSet)
 						if got != want {
 							t.Fatalf("quartetTotals[%d][%d] = %d, want %d", u, w, got, want)
 						}
@@ -124,23 +127,24 @@ func TestQuartetsTotal(t *testing.T) {
 	testCases := []struct {
 		name   string
 		td     *gr.TreeData
+		asSet  bool
 		uLabel string
 		wLabel string
 		want   uint64
 	}{
-		{name: "match", td: td, uLabel: "A", wLabel: "C", want: 5},
-		{name: "reverse", td: td, uLabel: "C", wLabel: "A", want: 5},
-		{name: "mismatch", td: td, uLabel: "A", wLabel: "B", want: 0},
-		{name: "long cycle match", td: tdLong, uLabel: "A", wLabel: "E", want: 7},
-		{name: "long cycle reverse", td: tdLong, uLabel: "E", wLabel: "A", want: 7},
-		{name: "long cycle alt", td: tdLong, uLabel: "A", wLabel: "F", want: 4},
-		{name: "long cycle mismatch", td: tdLong, uLabel: "B", wLabel: "C", want: 0},
+		{name: "match", td: td, asSet: false, uLabel: "A", wLabel: "C", want: 5},
+		{name: "reverse", td: td, asSet: false, uLabel: "C", wLabel: "A", want: 5},
+		{name: "mismatch", td: td, asSet: false, uLabel: "A", wLabel: "B", want: 0},
+		{name: "long cycle match", td: tdLong, asSet: false, uLabel: "A", wLabel: "E", want: 7},
+		{name: "long cycle reverse", td: tdLong, asSet: false, uLabel: "E", wLabel: "A", want: 7},
+		{name: "long cycle alt", td: tdLong, asSet: false, uLabel: "A", wLabel: "F", want: 4},
+		{name: "long cycle mismatch", td: tdLong, asSet: false, uLabel: "B", wLabel: "C", want: 0},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			uID := nodeIDByLabel(t, tc.td, tc.uLabel)
 			wID := nodeIDByLabel(t, tc.td, tc.wLabel)
-			got := quartetsTotal(uID, wID, tc.td)
+			got := quartetsTotal(uID, wID, tc.td, tc.asSet)
 			if got != tc.want {
 				t.Fatalf("quartetsTotal(%s,%s) = %d, want %d", tc.uLabel, tc.wLabel, got, tc.want)
 			}

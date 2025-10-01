@@ -19,6 +19,7 @@ type InferOptions struct {
 	NProcs      int                     // number of parallel processes
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
 	ScoreMode   sc.InitableScorer       // type of edge score
+	AsSet       bool
 	Alpha       int64
 }
 
@@ -27,14 +28,18 @@ type dpRunner interface {
 	RunDP() [][]gr.Branch
 }
 
-func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, alpha int64) (*InferOptions, error) {
+func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha int64) (*InferOptions, error) {
 	if _, ok := scoreMode.(*sc.SymDiffScorer); !ok && alpha != 0 {
 		return nil, fmt.Errorf("%w: cannot combine non-zero alpha with ", ErrInvalidOption)
+	}
+	if quartOpts.QuartetFilterOff() && asSet {
+		log.Println("WARNING: using -asSet without quartet filtering is not recommended")
 	}
 	return &InferOptions{
 		NProcs:      setNProcs(nprocs),
 		QuartetOpts: quartOpts,
 		ScoreMode:   scoreMode,
+		AsSet:       asSet,
 		Alpha:       alpha,
 	}, nil
 }
@@ -64,11 +69,11 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 	var dp dpRunner
 	switch scorer := opts.ScoreMode.(type) {
 	case *sc.MaximizeScorer:
-		dp, err = newDP(scorer, td, opts.NProcs)
+		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet))
 	case *sc.NormalizedScorer:
-		dp, err = newDP(scorer, td, opts.NProcs, sc.WithNGtrees(len(geneTrees)))
+		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet), sc.WithNGtrees(len(geneTrees)))
 	case *sc.SymDiffScorer:
-		dp, err = newDP(scorer, td, opts.NProcs, sc.WithAlpha(opts.Alpha))
+		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet), sc.WithAlpha(opts.Alpha))
 	default:
 		panic(fmt.Sprintf("unsupported scorer type %T", scorer))
 	}
