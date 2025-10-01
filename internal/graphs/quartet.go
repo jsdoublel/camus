@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"log"
 
 	"github.com/evolbioinfo/gotree/tree"
 )
@@ -109,25 +108,8 @@ func sortTaxa(arr *[4]int16) uint8 {
 	return topo
 }
 
-func missmatchTaxaSets(tre1, tre2 *tree.Tree) (bool, error) {
-	n1, err := tre1.NbTips()
-	if err != nil {
-		return false, err
-	}
-	n2, err := tre2.NbTips()
-	if err != nil {
-		return false, err
-	}
-	return n1 != n2, nil
-}
-
 // Returns hashmap containing quartets from tree
 func QuartetsFromTree(tre, constTree *tree.Tree) (map[Quartet]uint32, error) {
-	if b, err := missmatchTaxaSets(tre, constTree); err != nil {
-		return nil, err
-	} else if b {
-		log.Println("WARNING: missing taxa detected in one or more gene trees; this may cause issues with some scoring metrics")
-	}
 	tre.UnRoot() // some quartets are missed if tree is rooted
 	treeQuartets := make(map[Quartet]uint32)
 	taxaIDsMap, err := MapIDsFromConstTree(tre, constTree)

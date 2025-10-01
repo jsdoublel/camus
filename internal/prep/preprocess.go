@@ -146,6 +146,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
+	missingData := false
 	qCounts := make(map[gr.Quartet]uint32)
 	var mu sync.Mutex
 	g, ctx := errgroup.WithContext(context.Background())
@@ -158,6 +159,15 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 			if err := gt.UpdateTipIndex(); err != nil {
 				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)
 			}
+			mu.Lock()
+			if b, err := missmatchTaxaSets(gt, tre); err != nil {
+				return err
+			} else if !missingData && b {
+				log.Println("WARNING: missing taxa detected in one or more gene trees;",
+					" this may cause issues with some scoring metrics")
+				missingData = true
+			}
+			mu.Unlock()
 			newQuartets, err := gr.QuartetsFromTree(gt, tre)
 			if err != nil {
 				return err
@@ -178,6 +188,18 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 		return nil, err
 	}
 	return qCounts, nil
+}
+
+func missmatchTaxaSets(tre1, tre2 *tree.Tree) (bool, error) {
+	n1, err := tre1.NbTips()
+	if err != nil {
+		return false, err
+	}
+	n2, err := tre2.NbTips()
+	if err != nil {
+		return false, err
+	}
+	return n1 != n2, nil
 }
 
 func NetworkIsBinary(ntw *tree.Tree) bool {
