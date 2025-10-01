@@ -120,11 +120,11 @@ func TestWithNGtrees(t *testing.T) {
 func TestWithAlpha(t *testing.T) {
 	testCases := []struct {
 		name    string
-		alpha   int64
+		alpha   float64
 		wantErr bool
 	}{
-		{name: "positive", alpha: 1},
-		{name: "large positive", alpha: 5},
+		{name: "positive", alpha: 0.1},
+		{name: "large positive", alpha: 0.5},
 		{name: "zero", alpha: 0, wantErr: true},
 		{name: "negative", alpha: -1, wantErr: true},
 	}
@@ -134,11 +134,11 @@ func TestWithAlpha(t *testing.T) {
 			err := WithAlpha(tc.alpha)(&opts)
 			switch {
 			case tc.wantErr && err == nil:
-				t.Fatalf("expected error for alpha %d", tc.alpha)
+				t.Fatalf("expected error for alpha %f", tc.alpha)
 			case !tc.wantErr && err != nil:
 				t.Fatalf("unexpected error: %v", err)
 			case !tc.wantErr && opts.alpha != tc.alpha:
-				t.Fatalf("alpha = %d, want %d", opts.alpha, tc.alpha)
+				t.Fatalf("alpha = %f, want %f", opts.alpha, tc.alpha)
 			}
 		})
 	}
@@ -207,7 +207,7 @@ func TestSymDiffScorerInit(t *testing.T) {
 	testCases := []struct {
 		name    string
 		options []ScoreOptions
-		alpha   int64
+		alpha   float64
 		wantErr bool
 	}{
 		{name: "valid", options: []ScoreOptions{WithAlpha(2)}, alpha: 2},
@@ -228,7 +228,7 @@ func TestSymDiffScorerInit(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if scorer.Alpha != tc.alpha {
-				t.Fatalf("Alpha = %d, want %d", scorer.Alpha, tc.alpha)
+				t.Fatalf("Alpha = %f, want %f", scorer.Alpha, tc.alpha)
 			}
 			if !verifyQuartetTotals(t, td, scorer.quartetTotals) {
 				t.Fatalf("expected non-zero quartet totals for %s", tc.name)

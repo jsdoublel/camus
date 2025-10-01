@@ -20,7 +20,7 @@ type InferOptions struct {
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
 	ScoreMode   sc.InitableScorer       // type of edge score
 	AsSet       bool                    // calculate quartet counts as set
-	Alpha       int64                   // sym score parameter
+	Alpha       float64                 // sym score parameter
 }
 
 // Interface to make DP struct agnostic to generic type when returned
@@ -28,7 +28,7 @@ type dpRunner interface {
 	RunDP() [][]gr.Branch
 }
 
-func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha int64) (*InferOptions, error) {
+func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha float64) (*InferOptions, error) {
 	if _, ok := scoreMode.(*sc.SymDiffScorer); !ok && alpha != 0 {
 		return nil, fmt.Errorf("%w: cannot combine non-zero alpha with ", ErrInvalidOption)
 	}
@@ -69,11 +69,11 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 	var dp dpRunner
 	switch scorer := opts.ScoreMode.(type) {
 	case *sc.MaximizeScorer:
-		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet))
+		dp, err = newDP(scorer, td, opts.NProcs, sc.AsSet(opts.AsSet))
 	case *sc.NormalizedScorer:
-		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet), sc.WithNGtrees(len(geneTrees)))
+		dp, err = newDP(scorer, td, opts.NProcs, sc.AsSet(opts.AsSet), sc.WithNGtrees(len(geneTrees)))
 	case *sc.SymDiffScorer:
-		dp, err = newDP(scorer, td, opts.NProcs, sc.WithCount(opts.AsSet), sc.WithAlpha(opts.Alpha))
+		dp, err = newDP(scorer, td, opts.NProcs, sc.AsSet(true), sc.WithAlpha(opts.Alpha))
 	default:
 		panic(fmt.Sprintf("unsupported scorer type %T", scorer))
 	}

@@ -213,7 +213,7 @@ func TestInfer_Large(t *testing.T) {
 		qMode         int
 		filter        float64
 		scorer        sc.InitableScorer
-		alpha         int64
+		alpha         float64
 		expNumEdges   int
 		resultFile    string
 	}{
@@ -257,9 +257,9 @@ func TestInfer_Large(t *testing.T) {
 			qMode:         2,
 			filter:        0.5,
 			scorer:        &sc.SymDiffScorer{},
-			alpha:         10,
-			expNumEdges:   3,
-			resultFile:    "testdata/net_q2_t05_sym_a10.nwk",
+			alpha:         0.1,
+			expNumEdges:   4,
+			resultFile:    "testdata/net_q2_t05_sym_a01.nwk",
 		},
 	}
 	for _, test := range testCases {
@@ -300,7 +300,7 @@ func TestInfer_Large(t *testing.T) {
 	}
 }
 
-func BuildTestInferOpts(t *testing.T, qmode int, filter float64, scorer sc.InitableScorer, alpha int64) InferOptions {
+func BuildTestInferOpts(t *testing.T, qmode int, filter float64, scorer sc.InitableScorer, alpha float64) InferOptions {
 	t.Helper()
 	qopts, err := pr.SetQuartetFilterOptions(qmode, filter)
 	if err != nil {
