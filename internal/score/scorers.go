@@ -25,9 +25,17 @@ type ScoreOptions func(opts *scorerOpts) error
 type scorerOpts struct {
 	nGTrees int
 	alpha   int64
+	asSet   bool
 }
 
 type Score interface{ int64 | uint64 | float64 }
+
+func WithCount(asSet bool) ScoreOptions {
+	return func(options *scorerOpts) error {
+		options.asSet = asSet
+		return nil
+	}
+}
 
 // scorers implement different scorring metrics
 type Scorer[S Score] interface {
@@ -41,8 +49,13 @@ type MaximizeScorer struct {
 }
 
 func (s *MaximizeScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error {
-	// No opts are needed for MaximizeScorer
-	return s.CalculateQuartetTotals(td, nprocs)
+	var options scorerOpts
+	for _, opt := range opts {
+		if err := opt(&options); err != nil {
+			return err
+		}
+	}
+	return s.CalculateQuartetTotals(td, options.asSet, nprocs)
 }
 
 func (s MaximizeScorer) CalcScore(u, w int, td *gr.TreeData) uint64 {
@@ -73,7 +86,7 @@ func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOption
 		}
 	}
 	s.NGTree = options.nGTrees
-	if err := s.CalculateQuartetTotals(td, nprocs); err != nil {
+	if err := s.CalculateQuartetTotals(td, options.asSet, nprocs); err != nil {
 		return err
 	}
 	var err error
@@ -111,7 +124,7 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 		}
 	}
 	s.Alpha = options.alpha
-	if err := s.CalculateQuartetTotals(td, nprocs); err != nil {
+	if err := s.CalculateQuartetTotals(td, options.asSet, nprocs); err != nil {
 		return err
 	}
 	var err error

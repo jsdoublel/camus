@@ -107,8 +107,9 @@ func parseArgs() args {
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
 	scoreMode := flag.String("s", "max", "score `mode` [max|norm|sym]")
 	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
-	thresh := flag.Float64("t", 0.5, "threshold for quartet filter [0, 1] (default 0.5)")
+	thresh := flag.Float64("t", 0.5, "threshold for quartet filter [0, 1]")
 	alpha := flag.Int64("a", 0, "parameter to adjust penalty for \"sym\" score mode")
+	asSet := flag.Bool("asSet", false, "quartet count is calculated as a set (one point per unique topology)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	nprocs := flag.Int("n", 0, "number of parallel processes")
@@ -136,7 +137,7 @@ func parseArgs() args {
 	if err != nil {
 		parserError(err.Error())
 	}
-	inferOpts, err := in.MakeInferOptions(*nprocs, qOpts, scorer, *alpha)
+	inferOpts, err := in.MakeInferOptions(*nprocs, qOpts, scorer, *asSet, *alpha)
 	if err != nil {
 		parserError(err.Error())
 	}

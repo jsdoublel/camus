@@ -186,7 +186,7 @@ func TestInfer(t *testing.T) {
 			}
 		}
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, 0})
+		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
 		if err != nil {
 			t.Fatalf("Infer failed with error %s", err)
 		}
@@ -323,7 +323,7 @@ func BenchmarkInfer(b *testing.B) {
 	}
 	for b.Loop() {
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, 0})
+		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
 		if err != nil {
 			b.Fatalf("Infer failed with error %s", err)
 		}
