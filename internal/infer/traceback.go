@@ -12,7 +12,7 @@ type noCycleTrace struct {
 	prevs [2]*trace // previous subproblems
 }
 
-func (tr noCycleTrace) traceback() []gr.Branch {
+func (tr *noCycleTrace) traceback() []gr.Branch {
 	if tr.prevs[0] == nil {
 		return []gr.Branch{}
 	}
@@ -25,7 +25,7 @@ type cycleTraceNode struct {
 	p   *cycleTraceNode // parent node trace
 }
 
-func (tr cycleTraceNode) traceUp() []gr.Branch {
+func (tr *cycleTraceNode) traceUp() []gr.Branch {
 	result := (*tr.sib).traceback()
 	if tr.p != nil {
 		result = append(result, tr.p.traceUp()...)
@@ -42,7 +42,7 @@ type cycleTrace struct {
 	branch     gr.Branch       // branch forming cycle
 }
 
-func (tr cycleTrace) traceback() []gr.Branch {
+func (tr *cycleTrace) traceback() []gr.Branch {
 	result := append((*tr.wDownTrace).traceback(), tr.branch)
 	if tr.uDownTrace != nil {
 		result = append(result, (*tr.uDownTrace).traceback()...)

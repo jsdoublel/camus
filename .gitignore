@@ -1,8 +1,18 @@
+# binaries / debug binaries
 camus
-scratch/
-.vscode
-*.pdf
-*.prof
 *.test
 debug.*
+
+# profiler files
+*.prof
+*.pprof
+
+# work dir
+scratch/
+
+# compiled markdowns / other docs
+*.pdf
+
+# if anyone asks, it wasn't me
+.vscode
 AGENTS.md

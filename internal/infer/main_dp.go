@@ -92,7 +92,7 @@ func (dp *DP[S]) RunDP() [][]gr.Branch {
 		} else {
 			dp.DP[v.Id()] = make([]S, 1)
 			dp.Traceback[v.Id()] = make([]trace, 1, dp.NumNodes)
-			dp.Traceback[v.Id()][0] = noCycleTrace{}
+			dp.Traceback[v.Id()][0] = &noCycleTrace{}
 		}
 		return true
 	})
@@ -122,7 +122,7 @@ func (dp *DP[S]) solve(v *tree.Node) ([]S, []trace) {
 	scores := make([]S, 1, dp.NumNodes) // choice of capacity is a bit arbitrary
 	traces := make([]trace, 1, dp.NumNodes)
 	scores[0] = dp.DP[lID][0] + dp.DP[rID][0]
-	traces[0] = noCycleTrace{[2]*trace{&dp.Traceback[lID][0], &dp.Traceback[rID][0]}}
+	traces[0] = &noCycleTrace{[2]*trace{&dp.Traceback[lID][0], &dp.Traceback[rID][0]}}
 	vCycleDP := cycleDP[S]{
 		v:          v,
 		scores:     make([][]S, dp.NumNodes),
