@@ -19,8 +19,8 @@ type InferOptions struct {
 	NProcs      int                     // number of parallel processes
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
 	ScoreMode   sc.InitableScorer       // type of edge score
-	AsSet       bool
-	Alpha       int64
+	AsSet       bool                    // calculate quartet counts as set
+	Alpha       int64                   // sym score parameter
 }
 
 // Interface to make DP struct agnostic to generic type when returned
