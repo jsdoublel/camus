@@ -30,13 +30,13 @@ const (
 	Nexus
 )
 
-var parseFormat = map[string]Format{
+var ParseFormat = map[string]Format{
 	"newick": Newick,
 	"nexus":  Nexus,
 }
 
 func (f *Format) Set(s string) error {
-	if format, ok := parseFormat[s]; ok {
+	if format, ok := ParseFormat[s]; ok {
 		*f = format
 		return nil
 	}
@@ -44,7 +44,7 @@ func (f *Format) Set(s string) error {
 }
 
 func (f Format) String() string {
-	for s, fr := range parseFormat {
+	for s, fr := range ParseFormat {
 		if fr == f {
 			return s
 		}

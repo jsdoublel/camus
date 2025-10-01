@@ -93,7 +93,7 @@ func TestReadInputFiles(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile, parseFormat[test.format])
+			tre, quartets, err := ReadInputFiles(test.treeFile, test.quartetFile, ParseFormat[test.format])
 			switch {
 			case !errors.Is(err, test.expectedErr):
 				t.Errorf("Failed with unexpected error %+v", err)

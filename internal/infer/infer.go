@@ -29,9 +29,6 @@ type dpRunner interface {
 }
 
 func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha float64) (*InferOptions, error) {
-	if _, ok := scoreMode.(*sc.SymDiffScorer); !ok && alpha != 0 {
-		return nil, fmt.Errorf("%w: cannot combine non-zero alpha with ", ErrInvalidOption)
-	}
 	if quartOpts.QuartetFilterOff() && asSet {
 		log.Println("WARNING: using -asSet without quartet filtering is not recommended")
 	}

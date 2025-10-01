@@ -3,22 +3,24 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [-f <format>|-q <mode>|-f <threshold>|-n <num_processes>|-h|-v] <command> <tree> <gene_trees>
+usage: camus [flags]... [command] <tree_file> <gene_tree_file>
 
 commands:
 
-	infer		finds level-1 networks given constraint tree and gene trees
-	score		score each reticulation branch with respects to gene trees
+	infer			finds level-1 networks given constraint tree and gene trees
+	score			score each reticulation branch with respects to gene trees
 
 positional arguments:
 
-	<tree>	constraint newick tree (infer) or network (score)
-	<gene_trees>	gene tree newick file
+	<tree_file>		constraint newick tree (infer) or network (score)
+	<gene_tree_file>	gene tree newick file
 
 flags:
 
-	-a int
-	  	parameter to adjust penalty for "sym" score mode
+	-a float
+	  	parameter to adjust penalty for "sym" score mode (default 0.1)
+	-asSet
+	  	quartet count is calculated as a set (one point per unique topology)
 	-f format
 	  	gene tree format [newick|nexus] (default "newick")
 	-h	prints this message and exits
@@ -29,7 +31,7 @@ flags:
 	-s mode
 	  	score mode [max|norm|sym] (default "max")
 	-t float
-	  	threshold for quartet filter [0, 1] (default 0.5) (default 0.5)
+	  	threshold for quartet filter [0, 1] (default 0.5)
 	-v	prints version number and exits
 
 examples:
@@ -56,11 +58,17 @@ import (
 )
 
 const (
-	Version    = "v0.6.0"
-	ErrMessage = "CAMUS incountered an error ::"
+	Version    = "v0.6.1"
+	ErrMessage = "camus incountered an error ::"
 
 	Infer Command = iota
 	Score
+
+	DefaultFormat    = "newick"
+	DefaultScoreMode = "max"
+	DefaultQMode     = 0
+	DefaultThreshold = 0.5
+	DefaultAlpha     = 0.1
 )
 
 type Command int
@@ -81,15 +89,15 @@ type args struct {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [-f <format>|-q <mode>|-f <threshold>|-n <num_processes>|-h|-v] <command> <tree> <gene_trees>\n",
+			"usage: camus [flags]... [command] <tree_file> <gene_tree_file>\n",
 			"\n",
 			"commands:\n\n",
-			"  infer\t\tfinds level-1 networks given constraint tree and gene trees\n",
-			"  score\t\tscore each reticulation branch with respects to gene trees\n",
+			"  infer\t\t\tfinds level-1 networks given constraint tree and gene trees\n",
+			"  score\t\t\tscore each reticulation branch with respects to gene trees\n",
 			"\n",
 			"positional arguments:\n\n",
-			"  <tree>\tconstraint newick tree (infer) or network (score)\n",
-			"  <gene_trees>\tgene tree newick file\n",
+			"  <tree_file>\t\tconstraint newick tree (infer) or network (score)\n",
+			"  <gene_tree_file>\tgene tree newick file\n",
 			"\n",
 			"flags:\n\n",
 		)
@@ -103,12 +111,15 @@ func parseArgs() args {
 			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
 		)
 	}
-	format := pr.Newick
+	format, ok := pr.ParseFormat[DefaultFormat]
+	if !ok {
+		panic(fmt.Sprintf("bad default format %s", DefaultFormat))
+	}
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
-	scoreMode := flag.String("s", "max", "score `mode` [max|norm|sym]")
-	mode := flag.Int("q", 0, "quartet filter mode number [0, 2] (default 0)")
-	thresh := flag.Float64("t", 0.5, "threshold for quartet filter [0, 1]")
-	alpha := flag.Float64("a", 0.1, "parameter to adjust penalty for \"sym\" score mode")
+	scoreMode := flag.String("s", DefaultScoreMode, "score `mode` [max|norm|sym]")
+	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2] (default 0)")
+	thresh := flag.Float64("t", DefaultThreshold, "threshold for quartet filter [0, 1]")
+	alpha := flag.Float64("a", DefaultAlpha, "parameter to adjust penalty for \"sym\" score mode")
 	asSet := flag.Bool("asSet", false, "quartet count is calculated as a set (one point per unique topology)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
@@ -119,7 +130,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if *ver {
-		fmt.Printf("CAMUS version %s\n", Version)
+		fmt.Printf("camus %s\n", Version)
 		os.Exit(0)
 	}
 	if flag.NArg() != 3 {
@@ -157,11 +168,16 @@ func parserError(message string) {
 	os.Exit(1)
 }
 
+func parsePath(binPath string) string {
+	parts := strings.Split(binPath, string(os.PathSeparator))
+	return parts[len(parts)-1]
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
-	log.Printf("CAMUS %s", Version)
-	log.Printf("invoked as: %s", strings.Join(os.Args, " "))
+	log.Printf("camus %s", Version)
+	log.Printf("invoked as: %s", strings.Join(append([]string{parsePath(os.Args[0])}, os.Args[1:]...), " "))
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		log.Fatalf("%s %s\n", ErrMessage, err)
