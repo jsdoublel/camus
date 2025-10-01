@@ -24,13 +24,13 @@ type ScoreOptions func(opts *scorerOpts) error
 
 type scorerOpts struct {
 	nGTrees int
-	alpha   int64
+	alpha   float64
 	asSet   bool
 }
 
 type Score interface{ int64 | uint64 | float64 }
 
-func WithCount(asSet bool) ScoreOptions {
+func AsSet(asSet bool) ScoreOptions {
 	return func(options *scorerOpts) error {
 		options.asSet = asSet
 		return nil
@@ -102,14 +102,15 @@ func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
 
 type SymDiffScorer struct {
 	QuartetTotals
-	Alpha     int64
+	NGTree    int
+	Alpha     float64
 	penalties [][]uint64
 }
 
-func WithAlpha(alpha int64) ScoreOptions {
+func WithAlpha(alpha float64) ScoreOptions {
 	return func(options *scorerOpts) error {
 		if alpha <= 0 {
-			return fmt.Errorf("%w, alpha must be in greater than zero, but is %d", ErrInvalidScorerOption, alpha)
+			return fmt.Errorf("%w, alpha must be in greater than zero, but is %f", ErrInvalidScorerOption, alpha)
 		}
 		options.alpha = alpha
 		return nil
@@ -134,6 +135,6 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 	return nil
 }
 
-func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) int64 {
-	return int64(s.quartetTotals[u][w]) - s.Alpha*int64(s.penalties[u][w])
+func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
+	return 2*float64(s.quartetTotals[u][w]) - s.Alpha*float64(s.penalties[u][w])*float64(s.NGTree)
 }
