@@ -58,7 +58,7 @@ import (
 )
 
 const (
-	Version    = "v0.7.0"
+	Version    = "v0.7.1"
 	ErrMessage = "camus incountered an error ::"
 
 	Infer Command = iota
@@ -119,7 +119,7 @@ func parseArgs() args {
 	scoreMode := flag.String("s", DefaultScoreMode, "score `mode` [max|norm|sym]")
 	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", DefaultThreshold, "threshold for quartet filter [0, 1]")
-	alpha := flag.Float64("a", DefaultAlpha, "parameter to adjust penalty for \"sym\" score mode")
+	alpha := flag.Float64("a", DefaultAlpha, "parameter to adjust penalty for \"sym\" score mode, from (0, 1]")
 	asSet := flag.Bool("asSet", false, "quartet count is calculated as a set (one point per unique topology)")
 	help := flag.Bool("h", false, "prints this message and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")

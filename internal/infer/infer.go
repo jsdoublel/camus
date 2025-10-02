@@ -83,18 +83,15 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 
 // Creates DP struct with appropriate score type
 func newDP[S sc.Score](scorer sc.Scorer[S], td *gr.TreeData, nprocs int, opts ...sc.ScoreOptions) (*DP[S], error) {
-	log.Println("calculating penalties")
 	if err := scorer.Init(td, nprocs, opts...); err != nil {
 		return nil, err
 	}
-	log.Println("calculating edge scores")
 	n := len(td.Nodes())
 	return &DP[S]{
 		DP:        make([][]S, n),
 		Traceback: make([][]trace, n),
-		// EdgeScores: edgeScores,
-		Scorer:   scorer,
-		NumNodes: n,
-		Tree:     td,
+		Scorer:    scorer,
+		NumNodes:  n,
+		Tree:      td,
 	}, nil
 }

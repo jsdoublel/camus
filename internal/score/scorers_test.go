@@ -124,7 +124,8 @@ func TestWithAlpha(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "positive", alpha: 0.1},
-		{name: "large positive", alpha: 0.5},
+		{name: "one", alpha: 1},
+		{name: "large positive", alpha: 1.1, wantErr: true},
 		{name: "zero", alpha: 0, wantErr: true},
 		{name: "negative", alpha: -1, wantErr: true},
 	}
@@ -210,7 +211,7 @@ func TestSymDiffScorerInit(t *testing.T) {
 		alpha   float64
 		wantErr bool
 	}{
-		{name: "valid", options: []ScoreOptions{WithAlpha(2)}, alpha: 2},
+		{name: "valid", options: []ScoreOptions{WithAlpha(0.2)}, alpha: 0.2},
 		{name: "invalid option", options: []ScoreOptions{WithAlpha(0)}, wantErr: true},
 	}
 	for _, tc := range testCases {
