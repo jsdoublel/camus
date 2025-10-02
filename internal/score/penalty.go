@@ -1,12 +1,15 @@
 package score
 
 import (
+	"log"
+
 	"golang.org/x/sync/errgroup"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 )
 
 func CalculateEdgePenalties(td *gr.TreeData, nprocs int) ([][]uint64, error) {
+	log.Println("calculating penalties")
 	n := len(td.Nodes())
 	edgePenalties := make([][]uint64, n)
 	var g errgroup.Group

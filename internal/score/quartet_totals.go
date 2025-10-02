@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/evolbioinfo/gotree/tree"
 	"golang.org/x/sync/errgroup"
@@ -36,6 +37,7 @@ func (qt QuartetTotals) TotalSatQuartets(branches []gr.Branch) (uint64, error) {
 
 // Calculate the total number of quartets for all edges
 func (qt *QuartetTotals) CalculateQuartetTotals(td *gr.TreeData, asSet bool, nprocs int) error {
+	log.Println("calculating edge scores")
 	n := len(td.Nodes())
 	qt.quartetTotals = make([][]uint64, n)
 	g, _ := errgroup.WithContext(context.Background())

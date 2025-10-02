@@ -122,7 +122,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
-	log.Printf("processing quartets")
+	log.Printf("reading quartets from gene trees")
 	qCounts, err := processQuartets(geneTrees, tre, nprocs)
 	if err != nil {
 		return nil, err
@@ -145,10 +145,20 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 
 // Returns map containing counts of quartets in input trees (after filtering out
 // quartets from constraint tree).
+type quartetShard struct {
+	mu     sync.Mutex
+	counts map[gr.Quartet]uint32
+}
+
 func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
-	missingData := false
-	qCounts := make(map[gr.Quartet]uint32)
-	var mu sync.Mutex
+	var missingOnce sync.Once
+	const shardBits = 6
+	shardCount := 1 << shardBits
+	shards := make([]quartetShard, shardCount)
+	for i := range shards {
+		shards[i].counts = make(map[gr.Quartet]uint32)
+	}
+	mask := uint64(shardCount - 1)
 	g, ctx := errgroup.WithContext(context.Background())
 	g.SetLimit(nprocs)
 	for i, gt := range geneTrees {
@@ -159,33 +169,35 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 			if err := gt.UpdateTipIndex(); err != nil {
 				return fmt.Errorf("gene tree on line %d : %w", i+1, ErrMulTree)
 			}
-			mu.Lock()
 			if b, err := missmatchTaxaSets(gt, tre); err != nil {
 				return err
-			} else if !missingData && b {
-				log.Println("WARNING: missing taxa detected in one or more gene trees;",
-					" this may cause issues with some scoring metrics")
-				missingData = true
+			} else if b {
+				missingOnce.Do(func() {
+					log.Println("WARNING: missing taxa detected in one or more gene trees;",
+						" this may cause issues with some scoring metrics")
+				})
 			}
-			mu.Unlock()
 			newQuartets, err := gr.QuartetsFromTree(gt, tre)
 			if err != nil {
 				return err
 			}
-			localCounts := make(map[gr.Quartet]uint32)
-			for quartet, count := range newQuartets {
-				localCounts[quartet] += count
+			for q, c := range newQuartets {
+				shard := &shards[uint64(q)&mask]
+				shard.mu.Lock()
+				shard.counts[q] += c
+				shard.mu.Unlock()
 			}
-			mu.Lock()
-			for q, c := range localCounts {
-				qCounts[q] += c
-			}
-			mu.Unlock()
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+	qCounts := make(map[gr.Quartet]uint32)
+	for i := range shards {
+		for q, c := range shards[i].counts {
+			qCounts[q] += c
+		}
 	}
 	return qCounts, nil
 }
