@@ -136,7 +136,9 @@ func TestCalculateRecticulationScore_Large(t *testing.T) {
 			}
 			oldStdout := os.Stdout
 			os.Stdout = w
-			pr.WriteRetScoresToCSV(scores, genes.Names)
+			if err := pr.WriteRetScoresToCSV(scores, genes.Names); err != nil {
+				t.Errorf("failed to write csv %s", err)
+			}
 			err = w.Close()
 			if err != nil {
 				t.Fatalf("could not close pipe: %s", err)
