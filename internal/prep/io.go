@@ -2,6 +2,7 @@ package prep
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -78,13 +79,15 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading tree file: %w", err)
 	}
-	treStr := strings.TrimSpace(string(treBytes))
-	if strings.Count(treStr, "\n") != 0 || treStr == "" {
-		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in tree file %s", ErrInvalidFile, treeFile)
+	treBytes = bytes.TrimSpace(treBytes)
+	if bytes.Count(treBytes, []byte{byte('\n')}) != 0 || len(treBytes) == 0 {
+		return nil, fmt.Errorf("%w, there should only be exactly one newick tree in tree file %s",
+			ErrInvalidFile, treeFile)
 	}
-	tre, err := newick.NewParser(strings.NewReader(treStr)).Parse()
+	tre, err := newick.NewParser(bytes.NewReader(treBytes)).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s", ErrInvalidFormat, treeFile, err.Error())
+		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s",
+			ErrInvalidFormat, treeFile, err.Error())
 	}
 	return tre, nil
 }
@@ -106,11 +109,12 @@ func readGeneTreesFile(genetreesFile string, format Format) (*GeneTrees, error) 
 	case Newick:
 		scanner := bufio.NewScanner(file)
 		for i := 0; scanner.Scan(); i++ {
-			line := strings.TrimSpace(scanner.Text())
-			if line != "" {
-				genetree, err := newick.NewParser(strings.NewReader(line)).Parse()
+			line := bytes.TrimSpace(scanner.Bytes())
+			if line != nil {
+				genetree, err := newick.NewParser(bytes.NewReader(line)).Parse()
 				if err != nil {
-					return nil, fmt.Errorf("%w, error reading gene tree on line %d in %s: %s", ErrInvalidFormat, i, genetreesFile, err.Error())
+					return nil, fmt.Errorf("%w, error reading gene tree on line %d in %s: %s",
+						ErrInvalidFormat, i, genetreesFile, err.Error())
 				}
 				geneTreeList = append(geneTreeList, genetree)
 			}
@@ -125,7 +129,8 @@ func readGeneTreesFile(genetreesFile string, format Format) (*GeneTrees, error) 
 	case Nexus:
 		nex, err := nexus.NewParser(file).Parse()
 		if err != nil {
-			return nil, fmt.Errorf("%w, error reading gene tree nexus file %s: %s", ErrInvalidFormat, genetreesFile, err.Error())
+			return nil, fmt.Errorf("%w, error reading gene tree nexus file %s: %s",
+				ErrInvalidFormat, genetreesFile, err.Error())
 		}
 		nex.IterateTrees(func(s string, t *tree.Tree) {
 			geneTreeList = append(geneTreeList, t)
@@ -186,7 +191,8 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 		return true
 	})
 	if errNode != nil {
-		return nil, fmt.Errorf("%w, too many or invalid matching reticulation label %s", ErrInvalidFormat, errNode.Name())
+		return nil, fmt.Errorf("%w, too many or invalid matching reticulation label %s",
+			ErrInvalidFormat, errNode.Name())
 	}
 	if len(ret) == 0 {
 		return nil, fmt.Errorf("%w - not a network", ErrNoReticulations)
@@ -203,7 +209,7 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 }
 
 // Write csv file containing reticulation branch scores to stdout
-func WriteRetScoresToCSV(scores []*map[string]float64, names []string) {
+func WriteRetScoresToCSV(scores []*map[string]float64, names []string) error {
 	branchNames := make([]string, 0)
 	for k := range *scores[0] {
 		branchNames = append(branchNames, k)
@@ -225,6 +231,7 @@ func WriteRetScoresToCSV(scores []*map[string]float64, names []string) {
 	writer := csv.NewWriter(os.Stdout)
 	defer writer.Flush()
 	if err := writer.WriteAll(data); err != nil {
-		panic(fmt.Sprintf("error writing csv file: %s", err))
+		return fmt.Errorf("error writing csv file: %s", err)
 	}
+	return nil
 }

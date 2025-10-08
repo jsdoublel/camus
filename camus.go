@@ -205,7 +205,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("%s %s\n", ErrMessage, err)
 		}
-		pr.WriteRetScoresToCSV(scores, geneTrees.Names)
+		if err := pr.WriteRetScoresToCSV(scores, geneTrees.Names); err != nil {
+			log.Fatalf("%s %s\n", ErrMessage, err)
+		}
 	default:
 		panic(fmt.Sprintf("invalid command (%d)", args.command))
 	}
