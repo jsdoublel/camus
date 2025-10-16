@@ -302,6 +302,10 @@ func (td *TreeData) TotalNumQuartets() uint32 {
 	return result
 }
 
+func (td *TreeData) TotalNumUniqueQuartets() uint32 {
+	return uint32(len(*td.quartetCounts))
+}
+
 func (td *TreeData) Clone() *TreeData {
 	tre := td.Tree.Clone()
 	return &TreeData{
