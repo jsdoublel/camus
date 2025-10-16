@@ -105,8 +105,8 @@ func (dp *DP[S]) RunDP() [][]gr.Branch {
 			finalScore := dp.DP[dp.Tree.Root().Id()][k]
 			log.Printf("dp scored %v at root with %d edges\n", finalScore, k)
 			result[k-1] = dp.traceback(k)
-			if total, err := dp.Scorer.TotalSatQuartets(result[k-1]); err == nil {
-				log.Printf("%f percent of quartets satisfied", 100*(float64(total)/float64(dp.Tree.TotalNumQuartets())))
+			if percent, err := dp.Scorer.PercentQuartetSat(result[k-1], dp.Tree); err == nil {
+				log.Printf("%f percent of quartets satisfied", percent)
 			} else {
 				log.Printf("error calculating percent quartets satisfied %s", err.Error())
 			}

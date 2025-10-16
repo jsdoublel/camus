@@ -18,10 +18,11 @@ var ErrQuartetsNotInit = errors.New("quartets totals have not be initialized")
 
 type QuartetTotals struct {
 	quartetTotals [][]uint64
+	asSet         bool
 }
 
-// Returns the total number of quartets added by a specific set of branches
-func (qt QuartetTotals) TotalSatQuartets(branches []gr.Branch) (uint64, error) {
+// returns the percent of quartet satisfied by a set of branches on a tree
+func (qt QuartetTotals) PercentQuartetSat(branches []gr.Branch, td *gr.TreeData) (float64, error) {
 	if qt.quartetTotals == nil {
 		return 0, ErrQuartetsNotInit
 	}
@@ -32,7 +33,10 @@ func (qt QuartetTotals) TotalSatQuartets(branches []gr.Branch) (uint64, error) {
 		}
 		sum += qt.quartetTotals[br.IDs[0]][br.IDs[1]]
 	}
-	return sum, nil
+	if qt.asSet {
+		return 100 * float64(sum) / float64(td.TotalNumUniqueQuartets()), nil
+	}
+	return 100 * float64(sum) / float64(td.TotalNumQuartets()), nil
 }
 
 // Calculate the total number of quartets for all edges

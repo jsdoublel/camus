@@ -41,7 +41,7 @@ func AsSet(asSet bool) ScoreOptions {
 type Scorer[S Score] interface {
 	Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) error
 	CalcScore(u, w int, td *gr.TreeData) S
-	TotalSatQuartets(branches []gr.Branch) (uint64, error)
+	PercentQuartetSat(branches []gr.Branch, td *gr.TreeData) (float64, error)
 }
 
 type MaximizeScorer struct {
@@ -55,6 +55,7 @@ func (s *MaximizeScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions)
 			return err
 		}
 	}
+	s.asSet = options.asSet
 	return s.CalculateQuartetTotals(td, options.asSet, nprocs)
 }
 
@@ -85,6 +86,7 @@ func (s *NormalizedScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOption
 			return err
 		}
 	}
+	s.asSet = options.asSet
 	s.NGTree = options.nGTrees
 	if err := s.CalculateQuartetTotals(td, options.asSet, nprocs); err != nil {
 		return err
@@ -125,6 +127,7 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 			return err
 		}
 	}
+	s.asSet = options.asSet
 	s.Alpha = options.alpha
 	if err := s.CalculateQuartetTotals(td, options.asSet, nprocs); err != nil {
 		return err
