@@ -109,9 +109,9 @@ func QuartetScore(q gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
 	if !unique || bottom == Max16Bit {
 		return gr.Qdiff
 	}
-	cycleNodes := make(map[int]bool)
-	taxaToLCA := make(map[uint16]int) // tip index -> lca
-	for _, t := range q.Taxa() {
+	cycleNodes := [4]int{}
+	var taxaToLCA stackMap // tip index -> lca
+	for i, t := range q.Taxa() {
 		tID := td.TipToNodeID(t)
 		var lca int
 		switch {
@@ -122,25 +122,24 @@ func QuartetScore(q gr.Quartet, u, w, v, wSub *tree.Node, td *gr.TreeData) int {
 		default:
 			lca = td.LCA(u.Id(), tID)
 		}
-		cycleNodes[lca] = true
-		taxaToLCA[t] = lca
+		cycleNodes[i] = lca
+		taxaToLCA.add(i, int(t), lca)
 	}
-	if len(cycleNodes) != 4 {
+	if dups(cycleNodes) {
 		return gr.Qdiff
 	}
 	neighbor := neighborTaxaQ(q, bi)
-	lcaDepths := make(map[int]int) // node ID -> depth
-	for k, v := range cycleNodes {
-		if v {
-			lcaDepths[k] = td.Depths[k]
-		}
+	// lcaDepths := make(map[int]int) // node ID -> depth
+	var lcaDepths stackMap // node ID -> depth
+	for i, id := range cycleNodes {
+		lcaDepths.add(i, id, td.Depths[id])
 	}
 	nLeaves := td.NLeaves
 	minW, maxU := nLeaves, -1
 	var bestTaxa uint16
 	taxaInU := false
 	for _, t := range q.Taxa() {
-		d := lcaDepths[taxaToLCA[t]]
+		d := lcaDepths.get(taxaToLCA.get(int(t)))
 		if !taxaInU && (td.InLeafset(uint16(wSub.Id()), t) && d < minW) {
 			minW = d
 			bestTaxa = t
@@ -180,4 +179,31 @@ func neighborTaxaQ(q gr.Quartet, i int) uint16 {
 		}
 	}
 	panic("invalid quartet or bad i")
+}
+
+// returns true if there's a duplicate in a 4 len array
+func dups(arr [4]int) bool {
+	for i := range 4 {
+		for j := i + 1; j < 4; j++ {
+			if arr[i] == arr[j] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+type stackMap [4][2]int
+
+func (mp *stackMap) add(index, k, v int) {
+	mp[index] = [2]int{k, v}
+}
+
+func (mp stackMap) get(k int) int {
+	for _, pair := range mp {
+		if pair[0] == int(k) {
+			return pair[1]
+		}
+	}
+	panic("not in LCA taxa map")
 }

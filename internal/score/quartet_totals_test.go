@@ -152,6 +152,83 @@ func TestQuartetsTotal(t *testing.T) {
 	}
 }
 
+func BenchmarkQuartetScore(b *testing.B) {
+	testCases := []struct {
+		name    string
+		tree    string
+		quartet string
+		uLabel  string
+		wLabel  string
+		want    int
+	}{
+		{
+			name:    "eq",
+			tree:    "((A,B)a,(C,D)b)r;",
+			quartet: "((A,C),(B,D));",
+			uLabel:  "A",
+			wLabel:  "C",
+			want:    gr.Qeq,
+		},
+		{
+			name:    "neq",
+			tree:    "((A,B)a,(C,D)b)r;",
+			quartet: "((A,D),(B,C));",
+			uLabel:  "A",
+			wLabel:  "C",
+			want:    gr.Qneq,
+		},
+		{
+			name:    "diff",
+			tree:    "((A,B)a,(C,D)b)r;",
+			quartet: "((A,C),(B,D));",
+			uLabel:  "A",
+			wLabel:  "B",
+			want:    gr.Qdiff,
+		},
+	}
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			tre, err := newick.NewParser(strings.NewReader(tc.tree)).Parse()
+			if err != nil {
+				b.Fatalf("invalid tree newick: %v", err)
+			}
+			if err := tre.UpdateTipIndex(); err != nil {
+				b.Fatalf("failed to update tip index: %v", err)
+			}
+			td := gr.MakeTreeData(tre, nil)
+			qTree, err := newick.NewParser(strings.NewReader(tc.quartet)).Parse()
+			if err != nil {
+				b.Fatalf("invalid quartet newick %s: %v", tc.quartet, err)
+			}
+			q, err := gr.NewQuartet(qTree, tre)
+			if err != nil {
+				b.Fatalf("failed to build quartet %s: %v", tc.quartet, err)
+			}
+			uID := nodeIDByLabel(b, td, tc.uLabel)
+			wID := nodeIDByLabel(b, td, tc.wLabel)
+			vID := td.LCA(uID, wID)
+			uNode := td.IdToNodes[uID]
+			wNode := td.IdToNodes[wID]
+			vNode := td.IdToNodes[vID]
+			wSub := getWSubtree(uID, wID, vID, td)
+			pre := QuartetScore(q, uNode, wNode, vNode, wSub, td)
+			if pre != tc.want {
+				b.Fatalf("QuartetScore(%s,%s) = %d, want %d", tc.uLabel, tc.wLabel, pre, tc.want)
+			}
+			var got int
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				got = QuartetScore(q, uNode, wNode, vNode, wSub, td)
+			}
+			b.StopTimer()
+			if got != tc.want {
+				b.Fatalf("QuartetScore(%s,%s) = %d, want %d", tc.uLabel, tc.wLabel, got, tc.want)
+			}
+		})
+	}
+}
+
 type quartetCount struct {
 	nwk   string
 	count uint32
