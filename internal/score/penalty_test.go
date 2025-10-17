@@ -10,14 +10,14 @@ import (
 )
 
 // helper to fetch a node id by label
-func nodeIDByLabel(t *testing.T, td *gr.TreeData, label string) int {
-	t.Helper()
+func nodeIDByLabel(tb testing.TB, td *gr.TreeData, label string) int {
+	tb.Helper()
 	nodes, err := td.SelectNodes(label)
 	if err != nil {
-		t.Fatalf("failed to select node %q: %v", label, err)
+		tb.Fatalf("failed to select node %q: %v", label, err)
 	}
 	if len(nodes) != 1 {
-		t.Fatalf("expected exactly one node for label %q, got %d", label, len(nodes))
+		tb.Fatalf("expected exactly one node for label %q, got %d", label, len(nodes))
 	}
 	return nodes[0].Id()
 }
