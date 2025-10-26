@@ -58,7 +58,7 @@ import (
 )
 
 const (
-	Version    = "v0.7.1"
+	Version    = "v0.7.2"
 	ErrMessage = "camus incountered an error ::"
 
 	Infer Command = iota
