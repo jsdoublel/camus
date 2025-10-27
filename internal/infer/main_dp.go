@@ -34,6 +34,8 @@ type cycleDP[S sc.Score] struct {
 	traceNodes [][]*cycleTraceNode // backtrace for each path (traceNodes[w][k])
 }
 
+// ----- Internal Cycle DP Code
+
 // Updates the cycle lookup DP struct for values of k up to prevK
 func (cdp *cycleDP[S]) update(prevK int, dp *DP[S]) {
 	SubtreePreOrder(cdp.v, func(cur *tree.Node) {
@@ -83,7 +85,9 @@ func (cdp *cycleDP[S]) get(i, k int) (S, *cycleTraceNode) {
 	return cdp.scores[i][k], cdp.traceNodes[i][k]
 }
 
-func (dp *DP[S]) RunDP() [][]gr.Branch {
+// ----- Main DP Code
+
+func (dp *DP[S]) RunDP() *DPResults {
 	dp.Tree.PostOrder(func(v, prev *tree.Node, e *tree.Edge) (keep bool) {
 		if !v.Tip() {
 			scores, edgeTrace := dp.solve(v)
@@ -96,24 +100,31 @@ func (dp *DP[S]) RunDP() [][]gr.Branch {
 		}
 		return true
 	})
+	return dp.collateResults()
+}
+
+func (dp *DP[S]) collateResults() *DPResults {
 	numOptimal := len(dp.DP[dp.Tree.Root().Id()]) - 1
 	log.Printf("%d edges identified\n", numOptimal)
 	log.Println("beginning traceback")
-	result := make([][]gr.Branch, numOptimal)
+	branches := make([][]gr.Branch, numOptimal)
+	qStat := make([]float64, 0, numOptimal)
 	for k := range numOptimal + 1 {
 		if k != 0 {
 			finalScore := dp.DP[dp.Tree.Root().Id()][k]
 			log.Printf("dp scored %v at root with %d edges\n", finalScore, k)
-			result[k-1] = dp.traceback(k)
-			if percent, err := dp.Scorer.PercentQuartetSat(result[k-1], dp.Tree); err == nil {
+			branches[k-1] = dp.traceback(k)
+			if percent, err := dp.Scorer.PercentQuartetSat(branches[k-1], dp.Tree); err == nil {
 				log.Printf("%f percent of quartets satisfied", percent)
+				qStat = append(qStat, percent)
 			} else {
-				log.Printf("error calculating percent quartets satisfied %s", err.Error())
+				log.Printf("error calculating percent quartets satisfied %s, this is a bug! please report!", err.Error())
+				qStat = append(qStat, -1)
 			}
 		}
 	}
 	log.Println("done.")
-	return result
+	return &DPResults{Tree: dp.Tree, Branches: branches, QSatScore: qStat}
 }
 
 // Solve DP problem for vertex v for all k until it stops improving
