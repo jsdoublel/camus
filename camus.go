@@ -50,6 +50,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	gr "github.com/jsdoublel/camus/internal/graphs"
 	in "github.com/jsdoublel/camus/internal/infer"
@@ -60,6 +61,7 @@ import (
 const (
 	Version    = "v0.7.2"
 	ErrMessage = "camus incountered an error ::"
+	TimeFormat = "2006-01-02_15-04-05"
 
 	Infer Command = iota
 	Score
@@ -80,6 +82,7 @@ var parseCommand = map[string]Command{
 
 type args struct {
 	command      Command         // infer or score
+	prefix       string          // outptu prefix
 	gtFormat     pr.Format       // gene tree file format
 	treeFile     string          // constraint or network tree file
 	geneTreeFile string          // gene trees
@@ -116,6 +119,7 @@ func parseArgs() args {
 		panic(fmt.Sprintf("bad default format %s", DefaultFormat))
 	}
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
+	prefix := flag.String("o", "", "output prefix")
 	scoreMode := flag.String("s", DefaultScoreMode, "score `mode` [max|norm|sym]")
 	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2] (default 0)")
 	thresh := flag.Float64("t", DefaultThreshold, "threshold for quartet filter [0, 1]")
@@ -154,6 +158,7 @@ func parseArgs() args {
 	}
 	return args{
 		command:      cmd,
+		prefix:       *prefix,
 		gtFormat:     format,
 		treeFile:     flag.Arg(1),
 		geneTreeFile: flag.Arg(2),
@@ -174,23 +179,50 @@ func parsePath(binPath string) string {
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("%s %s", ErrMessage, err)
+	}
+}
+
+func run() error {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("camus %s", Version)
 	log.Printf("invoked as: %s", strings.Join(append([]string{parsePath(os.Args[0])}, os.Args[1:]...), " "))
+	if args.prefix == "" {
+		args.prefix = fmt.Sprintf("camus_%s", time.Now().Local().Format(TimeFormat))
+		log.Printf("output prefix was not set, using %s", args.prefix)
+	}
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
-		log.Fatalf("%s %s\n", ErrMessage, err)
+		return err
 	}
 	switch args.command {
 	case Infer:
 		log.Println("running infer...")
-		td, results, err := in.Infer(tre, geneTrees.Trees, args.inferOpts)
+		results, err := in.Infer(tre, geneTrees.Trees, args.inferOpts)
 		if err != nil {
-			log.Fatalf("%s %s\n", ErrMessage, err)
+			return err
 		}
-		for _, branches := range results {
-			fmt.Println(gr.MakeNetwork(td, branches).Newick())
+		newicks := make([]string, len(results.Branches))
+		for i, branches := range results.Branches {
+			newicks[i] = gr.MakeNetwork(results.Tree, branches).Newick()
+		}
+		if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, os.Stdout); err != nil {
+			return err
+		}
+		if args.prefix != "" {
+			f, err := os.Create(fmt.Sprintf("%s.csv", args.prefix))
+			if err != nil {
+				return err
+			}
+			defer func() { _ = f.Close() }()
+			if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, f); err != nil {
+				return err
+			}
+			if err = pr.WriteResultsLineplot(results.QSatScore, args.prefix); err != nil {
+				return err
+			}
 		}
 	case Score:
 		if !args.inferOpts.QuartetOpts.QuartetFilterOff() {
@@ -199,16 +231,17 @@ func main() {
 		log.Println("running score...")
 		network, err := pr.ConvertToNetwork(tre)
 		if err != nil {
-			log.Fatalf("%s %s\n", ErrMessage, err)
+			return err
 		}
 		scores, err := sc.ReticulationScore(network, geneTrees.Trees)
 		if err != nil {
-			log.Fatalf("%s %s\n", ErrMessage, err)
+			return err
 		}
 		if err := pr.WriteRetScoresToCSV(scores, geneTrees.Names); err != nil {
-			log.Fatalf("%s %s\n", ErrMessage, err)
+			return err
 		}
 	default:
 		panic(fmt.Sprintf("invalid command (%d)", args.command))
 	}
+	return nil
 }

@@ -6,6 +6,9 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"image/color"
+	"io"
+	"log"
 	"os"
 	"slices"
 	"strconv"
@@ -16,12 +19,20 @@ import (
 	"github.com/evolbioinfo/gotree/io/newick"
 	"github.com/evolbioinfo/gotree/io/nexus"
 	"github.com/evolbioinfo/gotree/tree"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 )
 
 var (
 	ErrInvalidFile     = errors.New("invalid file")
 	ErrInvalidFormat   = errors.New("invalid format")
 	ErrNoReticulations = errors.New("no reticulations")
+	ErrWritingFile     = errors.New("error writing file")
+
+	plotLineColor  = color.RGBA{R: 37, G: 150, B: 190, A: 255}
+	plotMarkerShap = draw.SquareGlyph{}
 )
 
 type Format int
@@ -29,6 +40,9 @@ type Format int
 const (
 	Newick Format = iota
 	Nexus
+
+	plotH = 4 // in inches
+	plotW = 6
 )
 
 var ParseFormat = map[string]Format{
@@ -206,6 +220,62 @@ func ConvertToNetwork(ntw *tree.Tree) (network *gr.Network, err error) {
 		return nil, fmt.Errorf("network %w", ErrMulTree)
 	}
 	return &gr.Network{NetTree: ntw, Reticulations: ret}, nil
+}
+
+// Write DP results csv file to writer.
+//
+// There are three columns: "Number of Branches", "Quartet Satisfied Percent", "Extended Newick"
+func WriteDPResultsToCSV(td *gr.TreeData, newicks []string, qsat []float64, w io.Writer) (err error) {
+	if len(newicks) != len(qsat) {
+		panic(fmt.Sprintf("there should be a set of branches for every optimal score, %+v %+v", newicks, qsat))
+	}
+	data := make([][]string, len(newicks)+1)
+	data[0] = []string{"Number of Branches", "Quartet Satisfied Percent", "Extended Newick"}
+	for i := range len(newicks) {
+		data[i+1] = []string{
+			strconv.FormatInt(int64(i+1), 10),
+			strconv.FormatFloat(qsat[i], 'f', -1, 64),
+			newicks[i],
+		}
+	}
+	writer := csv.NewWriter(w)
+	defer func() {
+		writer.Flush()
+		if err == nil {
+			err = writer.Error()
+		} else if writer.Error() != nil {
+			log.Printf("error when flushing output csv, %s", writer.Error())
+		}
+	}()
+	if err = writer.WriteAll(data); err != nil {
+		err = fmt.Errorf("%w, %s", ErrWritingFile, err)
+		return
+	}
+	return
+}
+
+func WriteResultsLineplot(qstat []float64, prefix string) error {
+	p := plot.New()
+	p.Title.Text = "CAMUS results"
+	p.X.Label.Text = "Number of Reticulations"
+	p.Y.Label.Text = "Percent of Quartets Satisfied"
+	p.Y.Scale = plot.InvertedScale{Normalizer: plot.LinearScale{}}
+	pts := make(plotter.XYs, len(qstat))
+	for i, qscore := range qstat {
+		pts[i].X = float64(i + 1)
+		pts[i].Y = qscore
+	}
+	line, points, err := plotter.NewLinePoints(pts)
+	if err != nil {
+		return err
+	}
+	line.Color = plotLineColor
+	line.Dashes = []vg.Length{vg.Points(6), vg.Points(3)}
+	points.Color = plotLineColor
+	points.Shape = plotMarkerShap
+	points.Radius = vg.Points(4)
+	p.Add(line, points)
+	return p.Save(plotW*vg.Inch, plotH*vg.Inch, fmt.Sprintf("%s.png", prefix))
 }
 
 // Write csv file containing reticulation branch scores to stdout

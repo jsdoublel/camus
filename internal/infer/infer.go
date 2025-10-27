@@ -23,9 +23,16 @@ type InferOptions struct {
 	Alpha       float64                 // sym score parameter
 }
 
+// Results from running the DP algorithm
+type DPResults struct {
+	Tree      *gr.TreeData  // constraint tree with preprocessed data
+	QSatScore []float64     // percent of quartets satisfied (out of total considered)
+	Branches  [][]gr.Branch // branches for optimal results
+}
+
 // Interface to make DP struct agnostic to generic type when returned
 type dpRunner interface {
-	RunDP() [][]gr.Branch
+	RunDP() *DPResults
 }
 
 func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha float64) (*InferOptions, error) {
@@ -57,11 +64,11 @@ func setNProcs(nprocs int) int {
 
 // Runs Infer algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
-func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeData, [][]gr.Branch, error) {
+func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*DPResults, error) {
 	log.Println("beginning data preprocessing")
 	td, err := pr.Preprocess(tre, geneTrees, opts.NProcs, opts.QuartetOpts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("preprocess error: %w", err)
+		return nil, fmt.Errorf("preprocess error: %w", err)
 	}
 	var dp dpRunner
 	switch scorer := opts.ScoreMode.(type) {
@@ -75,10 +82,10 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*gr.TreeD
 		panic(fmt.Sprintf("unsupported scorer type %T", scorer))
 	}
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	log.Println("preprocessing finished, beginning dp algorithm")
-	return td, dp.RunDP(), nil
+	return dp.RunDP(), nil
 }
 
 // Creates DP struct with appropriate score type

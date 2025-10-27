@@ -186,19 +186,19 @@ func TestInfer(t *testing.T) {
 			}
 		}
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		td, results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
+		results, err := Infer(constTree, geneTrees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
 		if err != nil {
 			t.Fatalf("Infer failed with error %s", err)
 		}
-		if len(results) != test.expNumEdges {
-			t.Errorf("inferred number of edges %d not equal to expected %d", len(results), test.expNumEdges)
+		if len(results.Branches) != test.expNumEdges {
+			t.Errorf("inferred number of edges %d not equal to expected %d", len(results.Branches), test.expNumEdges)
 		}
-		for i, res := range results {
+		for i, res := range results.Branches {
 			if len(res) != i+1 {
 				t.Errorf("unexpected number of branches %d, expected %d", len(res), i+1)
 			}
 		}
-		result := gr.MakeNetwork(td, results[len(results)-1]).Newick()
+		result := gr.MakeNetwork(results.Tree, results.Branches[len(results.Branches)-1]).Newick()
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}
@@ -270,22 +270,22 @@ func TestInfer_Large(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Could not read input files for benchmark (error %s)", err)
 			}
-			td, results, err := Infer(tre, quartets.Trees, inferOpts)
+			results, err := Infer(tre, quartets.Trees, inferOpts)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
-			resultNwks := make([]string, len(results))
-			for i, branches := range results {
-				resultNwks[i] = gr.MakeNetwork(td, branches).Newick()
+			resultNwks := make([]string, len(results.Branches))
+			for i, branches := range results.Branches {
+				resultNwks[i] = gr.MakeNetwork(results.Tree, branches).Newick()
 			}
 			expNwksStr, err := os.ReadFile(test.resultFile)
 			if err != nil {
 				t.Fatalf("failed with unexpected err %s", err)
 			}
-			if len(results) != test.expNumEdges {
-				t.Errorf("inferred number of edges %d not equal to expected %d", len(results), test.expNumEdges)
+			if len(results.Branches) != test.expNumEdges {
+				t.Errorf("inferred number of edges %d not equal to expected %d", len(results.Branches), test.expNumEdges)
 			}
-			for i, res := range results {
+			for i, res := range results.Branches {
 				if len(res) != i+1 {
 					t.Errorf("unexpected number of branches %d, expected %d", len(res), i+1)
 				}
@@ -323,7 +323,7 @@ func BenchmarkInfer(b *testing.B) {
 	}
 	for b.Loop() {
 		qopts, _ := pr.SetQuartetFilterOptions(0, 0)
-		_, _, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
+		_, err := Infer(tre, quartets.Trees, InferOptions{runtime.GOMAXPROCS(0), qopts, &sc.MaximizeScorer{}, false, 0})
 		if err != nil {
 			b.Fatalf("Infer failed with error %s", err)
 		}
