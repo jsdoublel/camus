@@ -103,6 +103,9 @@ func readTreeFile(treeFile string) (*tree.Tree, error) {
 		return nil, fmt.Errorf("%w, error parsing tree newick string from %s: %s",
 			ErrInvalidFormat, treeFile, err.Error())
 	}
+	tre.ClearLengths(true, true)
+	tre.ClearComments()
+	tre.ClearSupports()
 	return tre, nil
 }
 
@@ -229,10 +232,11 @@ func WriteDPResultsToCSV(td *gr.TreeData, newicks []string, qsat []float64, w io
 	if len(newicks) != len(qsat) {
 		panic(fmt.Sprintf("there should be a set of branches for every optimal score, %+v %+v", newicks, qsat))
 	}
-	data := make([][]string, len(newicks)+1)
+	data := make([][]string, len(newicks)+2)
 	data[0] = []string{"Number of Branches", "Quartet Satisfied Percent", "Extended Newick"}
+	data[1] = []string{strconv.FormatInt(0, 10), strconv.FormatFloat(0, 'f', -1, 64), td.Newick()}
 	for i := range len(newicks) {
-		data[i+1] = []string{
+		data[i+2] = []string{
 			strconv.FormatInt(int64(i+1), 10),
 			strconv.FormatFloat(qsat[i], 'f', -1, 64),
 			newicks[i],
@@ -256,14 +260,17 @@ func WriteDPResultsToCSV(td *gr.TreeData, newicks []string, qsat []float64, w io
 
 func WriteResultsLineplot(qstat []float64, prefix string) error {
 	p := plot.New()
-	p.Title.Text = "CAMUS results"
 	p.X.Label.Text = "Number of Reticulations"
 	p.Y.Label.Text = "Percent of Quartets Satisfied"
 	p.Y.Scale = plot.InvertedScale{Normalizer: plot.LinearScale{}}
-	pts := make(plotter.XYs, len(qstat))
+	p.Y.Min = 0
+	p.Y.Max = 100
+	pts := make(plotter.XYs, len(qstat)+1)
+	pts[0].X = 0
+	pts[0].Y = 0
 	for i, qscore := range qstat {
-		pts[i].X = float64(i + 1)
-		pts[i].Y = qscore
+		pts[i+1].X = float64(i + 1)
+		pts[i+1].Y = qscore
 	}
 	line, points, err := plotter.NewLinePoints(pts)
 	if err != nil {
