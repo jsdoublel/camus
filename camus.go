@@ -59,7 +59,7 @@ import (
 )
 
 const (
-	Version    = "v0.7.2"
+	Version    = "v0.8.0"
 	ErrMessage = "camus incountered an error ::"
 	TimeFormat = "2006-01-02_15-04-05"
 
@@ -166,16 +166,21 @@ func parseArgs() args {
 	}
 }
 
-// prints message, usage, and exits (statis code 1)
+// prints message, usage, and exits (status code 1)
 func parserError(message string) {
 	fmt.Fprintln(os.Stderr, message+"\n")
 	flag.Usage()
 	os.Exit(1)
 }
 
-func parsePath(binPath string) string {
-	parts := strings.Split(binPath, string(os.PathSeparator))
-	return parts[len(parts)-1]
+func defaultPrefix() string {
+	parseName := func(s string) string {
+		parts := strings.Split(s, string(os.PathSeparator))
+		parts = strings.Split(parts[len(parts)-1], ".")
+		return strings.Join(parts[:len(parts)-1], ".")
+	}
+	inputs := fmt.Sprintf("%s_%s", parseName(flag.Arg(1)), parseName(flag.Arg(2)))
+	return fmt.Sprintf("camus_%s_%s", inputs, time.Now().Local().Format(TimeFormat))
 }
 
 func main() {
@@ -188,10 +193,10 @@ func run() error {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := parseArgs()
 	log.Printf("camus %s", Version)
-	log.Printf("invoked as: %s", strings.Join(append([]string{parsePath(os.Args[0])}, os.Args[1:]...), " "))
+	log.Printf("invoked as: camus %s", strings.Join(os.Args[1:], " "))
 	if args.prefix == "" {
-		args.prefix = fmt.Sprintf("camus_%s", time.Now().Local().Format(TimeFormat))
-		log.Printf("output prefix was not set, using %s", args.prefix)
+		args.prefix = defaultPrefix()
+		log.Printf("output prefix was not set, using \"%s\"", args.prefix)
 	}
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
@@ -211,18 +216,16 @@ func run() error {
 		if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, os.Stdout); err != nil {
 			return err
 		}
-		if args.prefix != "" {
-			f, err := os.Create(fmt.Sprintf("%s.csv", args.prefix))
-			if err != nil {
-				return err
-			}
-			defer func() { _ = f.Close() }()
-			if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, f); err != nil {
-				return err
-			}
-			if err = pr.WriteResultsLineplot(results.QSatScore, args.prefix); err != nil {
-				return err
-			}
+		f, err := os.Create(fmt.Sprintf("%s.csv", args.prefix))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+		if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, f); err != nil {
+			return err
+		}
+		if err = pr.WriteResultsLineplot(results.QSatScore, args.prefix); err != nil {
+			return err
 		}
 	case Score:
 		if !args.inferOpts.QuartetOpts.QuartetFilterOff() {
