@@ -123,7 +123,6 @@ func (dp *DP[S]) collateResults() *DPResults {
 			}
 		}
 	}
-	log.Println("done.")
 	return &DPResults{Tree: dp.Tree, Branches: branches, QSatScore: qStat}
 }
 
