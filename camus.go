@@ -63,9 +63,6 @@ const (
 	ErrMessage = "camus incountered an error ::"
 	TimeFormat = "2006-01-02_15-04-05"
 
-	Infer Command = iota
-	Score
-
 	DefaultFormat    = "newick"
 	DefaultScoreMode = "max"
 	DefaultQMode     = 0
@@ -73,15 +70,7 @@ const (
 	DefaultAlpha     = 0.1
 )
 
-type Command int
-
-var parseCommand = map[string]Command{
-	"infer": Infer,
-	"score": Score,
-}
-
 type args struct {
-	command      Command         // infer or score
 	prefix       string          // outptu prefix
 	gtFormat     pr.Format       // gene tree file format
 	treeFile     string          // constraint or network tree file
@@ -92,11 +81,7 @@ type args struct {
 func parseArgs() args {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"usage: camus [flags]... [command] <tree_file> <gene_tree_file>\n",
-			"\n",
-			"commands:\n\n",
-			"  infer\t\t\tfinds level-1 networks given constraint tree and gene trees\n",
-			"  score\t\t\tscore each reticulation branch with respects to gene trees\n",
+			"usage: camus [flags]... <tree_file> <gene_tree_file>\n",
 			"\n",
 			"positional arguments:\n\n",
 			"  <tree_file>\t\tconstraint newick tree (infer) or network (score)\n",
@@ -108,10 +93,7 @@ func parseArgs() args {
 		fmt.Fprint(os.Stderr,
 			"\n",
 			"examples:\n\n",
-			"  infer command example:\n",
-			"\tcamus infer constraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
-			"  score command example:\n",
-			"\tcamus score network.nwk gene-trees.nwk > scores.csv 2> log.txt\n",
+			"\tcamus constraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
 		)
 	}
 	format, ok := pr.ParseFormat[DefaultFormat]
@@ -137,12 +119,8 @@ func parseArgs() args {
 		fmt.Printf("camus %s\n", Version)
 		os.Exit(0)
 	}
-	if flag.NArg() != 3 {
-		parserError("three positional arguments required: <command> <tree> <gene_tree_file>")
-	}
-	cmd, ok := parseCommand[flag.Arg(0)]
-	if !ok {
-		parserError(fmt.Sprintf("\"%s\" is not a valid command: either \"infer\" or \"score\" required", flag.Arg(0)))
+	if flag.NArg() != 2 {
+		parserError("three positional arguments required: <tree> <gene_tree_file>")
 	}
 	scorer, ok := sc.ParseScorer[*scoreMode]
 	if !ok {
@@ -157,11 +135,10 @@ func parseArgs() args {
 		parserError(err.Error())
 	}
 	return args{
-		command:      cmd,
 		prefix:       *prefix,
 		gtFormat:     format,
-		treeFile:     flag.Arg(1),
-		geneTreeFile: flag.Arg(2),
+		treeFile:     flag.Arg(0),
+		geneTreeFile: flag.Arg(1),
 		inferOpts:    *inferOpts,
 	}
 }
@@ -179,7 +156,7 @@ func defaultPrefix() string {
 		parts = strings.Split(parts[len(parts)-1], ".")
 		return strings.Join(parts[:len(parts)-1], ".")
 	}
-	inputs := fmt.Sprintf("%s_%s", parseName(flag.Arg(1)), parseName(flag.Arg(2)))
+	inputs := fmt.Sprintf("%s_%s", parseName(flag.Arg(0)), parseName(flag.Arg(1)))
 	return fmt.Sprintf("camus_%s_%s", inputs, time.Now().Local().Format(TimeFormat))
 }
 
@@ -202,49 +179,32 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	switch args.command {
-	case Infer:
-		log.Println("running infer...")
-		results, err := in.Infer(tre, geneTrees.Trees, args.inferOpts)
-		if err != nil {
-			return err
+	results, err := in.Infer(tre, geneTrees.Trees, args.inferOpts)
+	if err != nil {
+		return err
+	}
+	newicks := make([]string, len(results.Branches))
+	for i, branches := range results.Branches {
+		newicks[i] = gr.MakeNetwork(results.Tree, branches).Newick()
+	}
+	if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, os.Stdout); err != nil {
+		return err
+	}
+	f, err := os.Create(fmt.Sprintf("%s.csv", args.prefix))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		closeErr := f.Close()
+		if closeErr != nil {
+			log.Printf("error closing %s.csv, %s", args.prefix, closeErr)
 		}
-		newicks := make([]string, len(results.Branches))
-		for i, branches := range results.Branches {
-			newicks[i] = gr.MakeNetwork(results.Tree, branches).Newick()
-		}
-		if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, os.Stdout); err != nil {
-			return err
-		}
-		f, err := os.Create(fmt.Sprintf("%s.csv", args.prefix))
-		if err != nil {
-			return err
-		}
-		defer func() { _ = f.Close() }()
-		if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, f); err != nil {
-			return err
-		}
-		if err = pr.WriteResultsLineplot(results.QSatScore, args.prefix); err != nil {
-			return err
-		}
-	case Score:
-		if !args.inferOpts.QuartetOpts.QuartetFilterOff() {
-			log.Println("WARNING: quartet mode != 0 is not supported for score command at this time. Defaulting to 0.")
-		}
-		log.Println("running score...")
-		network, err := pr.ConvertToNetwork(tre)
-		if err != nil {
-			return err
-		}
-		scores, err := sc.ReticulationScore(network, geneTrees.Trees)
-		if err != nil {
-			return err
-		}
-		if err := pr.WriteRetScoresToCSV(scores, geneTrees.Names); err != nil {
-			return err
-		}
-	default:
-		panic(fmt.Sprintf("invalid command (%d)", args.command))
+	}()
+	if err = pr.WriteDPResultsToCSV(results.Tree, newicks, results.QSatScore, f); err != nil {
+		return err
+	}
+	if err = pr.WriteResultsLineplot(results.QSatScore, args.prefix); err != nil {
+		return err
 	}
 	return nil
 }

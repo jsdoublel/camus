@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"time"
 
 	"github.com/evolbioinfo/gotree/tree"
 
@@ -65,6 +66,8 @@ func setNProcs(nprocs int) int {
 // Runs Infer algorithm -- returns preprocessed tree data struct, quartet count stats, list of branches.
 // Errors returned come from preprocessing (invalid inputs, etc.).
 func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*DPResults, error) {
+	log.Println("running infer...")
+	startTime := time.Now()
 	log.Println("beginning data preprocessing")
 	td, err := pr.Preprocess(tre, geneTrees, opts.NProcs, opts.QuartetOpts)
 	if err != nil {
@@ -85,7 +88,9 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*DPResult
 		return nil, err
 	}
 	log.Println("preprocessing finished, beginning dp algorithm")
-	return dp.RunDP(), nil
+	results := dp.RunDP()
+	log.Printf("done. took %f seconds.", time.Since(startTime).Seconds())
+	return results, nil
 }
 
 // Creates DP struct with appropriate score type

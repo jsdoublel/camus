@@ -41,8 +41,8 @@ const (
 	Newick Format = iota
 	Nexus
 
-	plotH = 4 // in inches
-	plotW = 6
+	plotH = 4 * vg.Inch
+	plotW = 6 * vg.Inch
 )
 
 var ParseFormat = map[string]Format{
@@ -76,6 +76,12 @@ type GeneTrees struct {
 // Returns an error if the newick format is invalid, or the file is invalid for
 // some other reason (e.g., more than one constraint tree)
 func ReadInputFiles(treeFile, genetreesFile string, format Format) (*tree.Tree, *GeneTrees, error) {
+	flags := log.Flags()
+	log.SetOutput(io.Discard) // don't log this bit as gotree can be noisy and lead to thousands of log messages
+	defer func() {
+		log.SetOutput(os.Stderr)
+		log.SetFlags(flags)
+	}()
 	tre, err := readTreeFile(treeFile)
 	if err != nil {
 		return nil, nil, err
@@ -261,16 +267,15 @@ func WriteDPResultsToCSV(td *gr.TreeData, newicks []string, qsat []float64, w io
 func WriteResultsLineplot(qstat []float64, prefix string) error {
 	p := plot.New()
 	p.X.Label.Text = "Number of Reticulations"
-	p.Y.Label.Text = "Percent of Quartets Satisfied"
-	p.Y.Scale = plot.InvertedScale{Normalizer: plot.LinearScale{}}
+	p.Y.Label.Text = "Percent of Quartets Not Satisfied"
 	p.Y.Min = 0
 	p.Y.Max = 100
 	pts := make(plotter.XYs, len(qstat)+1)
 	pts[0].X = 0
-	pts[0].Y = 0
+	pts[0].Y = 100
 	for i, qscore := range qstat {
 		pts[i+1].X = float64(i + 1)
-		pts[i+1].Y = qscore
+		pts[i+1].Y = 100 - qscore
 	}
 	line, points, err := plotter.NewLinePoints(pts)
 	if err != nil {
@@ -282,7 +287,7 @@ func WriteResultsLineplot(qstat []float64, prefix string) error {
 	points.Shape = plotMarkerShap
 	points.Radius = vg.Points(4)
 	p.Add(line, points)
-	return p.Save(plotW*vg.Inch, plotH*vg.Inch, fmt.Sprintf("%s.png", prefix))
+	return p.Save(plotW, plotH, fmt.Sprintf("%s.png", prefix))
 }
 
 // Write csv file containing reticulation branch scores to stdout
