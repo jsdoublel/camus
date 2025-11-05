@@ -111,7 +111,7 @@ func TestPreprocess_Errors(t *testing.T) {
 				}
 				gtrees[i] = tmp
 			}
-			_, err = Preprocess(tre, gtrees, runtime.GOMAXPROCS(0), QuartetFilterOptions{mode: 0, threshold: 0})
+			_, err = Preprocess(tre, gtrees, runtime.GOMAXPROCS(0), QuartetFilterOptions{mode: 0, threshold: 0}, 0)
 			if err != nil && !errors.Is(err, test.expectedErr) {
 				t.Errorf("unexpected error %v", err)
 			} else if err != nil {
@@ -212,21 +212,21 @@ func TestProcessQuartets(t *testing.T) {
 				}
 				rqList = append(rqList, tr)
 			}
-        result, err := processQuartets(rqList, tre, runtime.GOMAXPROCS(0))
-        if err != nil {
-            t.Errorf("produced error %+v", err)
-        }
-        if test.opts.mode != 0 {
-            filterQuartets(result, test.opts)
-        }
-        // remove quartets present in the constraint tree after filtering
-        treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
-        if err != nil {
-            t.Errorf("error getting constraint quartets: %+v", err)
-        }
-        for q := range treeQuartets {
-            delete(result, q)
-        }
+			result, err := processQuartets(rqList, tre, 0, runtime.GOMAXPROCS(0))
+			if err != nil {
+				t.Errorf("produced error %+v", err)
+			}
+			if test.opts.mode != 0 {
+				filterQuartets(result, test.opts)
+			}
+			// remove quartets present in the constraint tree after filtering
+			treeQuartets, err := gr.QuartetsFromTree(tre.Clone(), tre)
+			if err != nil {
+				t.Errorf("error getting constraint quartets: %+v", err)
+			}
+			for q := range treeQuartets {
+				delete(result, q)
+			}
 			expectedList := []gr.Quartet{}
 			for _, nwk := range test.expected {
 				tr, err := newick.NewParser(strings.NewReader(nwk)).Parse()
@@ -281,7 +281,7 @@ func BenchmarkProcessQuartets(b *testing.B) {
 			cloned[j] = gt.Clone()
 		}
 		b.StartTimer()
-		if _, err := processQuartets(cloned, treClone, nprocs); err != nil {
+		if _, err := processQuartets(cloned, treClone, 0, nprocs); err != nil {
 			b.Fatal(err)
 		}
 	}

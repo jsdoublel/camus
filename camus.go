@@ -3,12 +3,7 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
-usage: camus [flags]... [command] <tree_file> <gene_tree_file>
-
-commands:
-
-	infer			finds level-1 networks given constraint tree and gene trees
-	score			score each reticulation branch with respects to gene trees
+usage: camus [flags]... <tree_file> <gene_tree_file>
 
 positional arguments:
 
@@ -18,7 +13,7 @@ positional arguments:
 flags:
 
 	-a float
-	  	parameter to adjust penalty for "sym" score mode (default 0.1)
+	  	parameter to adjust penalty for "sym" score mode, from (0, 1] (default 0.1)
 	-asSet
 	  	quartet count is calculated as a set (one point per unique topology)
 	-f format
@@ -26,6 +21,8 @@ flags:
 	-h	prints this message and exits
 	-n int
 	  	number of parallel processes
+	-o string
+	  	output prefix
 	-q int
 	  	quartet filter mode number [0, 2] (default 0)
 	-s mode
@@ -36,11 +33,7 @@ flags:
 
 examples:
 
-	  infer command example:
-		camus infer constraint.nwk gene-trees.nwk > network.nwk 2> log.txt
-
-	  score command example:
-		camus score network.nwk gene-trees.nwk > scores.csv 2> log.txt
+	camus constraint.nwk gene-trees.nwk > network.nwk 2> log.txt
 */
 package main
 
@@ -63,11 +56,12 @@ const (
 	ErrMessage = "camus incountered an error ::"
 	TimeFormat = "2006-01-02_15-04-05"
 
-	DefaultFormat    = "newick"
-	DefaultScoreMode = "max"
-	DefaultQMode     = 0
-	DefaultThreshold = 0.5
-	DefaultAlpha     = 0.1
+	DefaultFormat     = "newick"
+	DefaultScoreMode  = "max"
+	DefaultQMode      = 0
+	DefaultMinSupport = 0
+	DefaultThreshold  = 0.5
+	DefaultAlpha      = 0.1
 )
 
 type args struct {
@@ -102,8 +96,9 @@ func parseArgs() args {
 	}
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
 	prefix := flag.String("o", "", "output prefix")
-	scoreMode := flag.String("s", DefaultScoreMode, "score `mode` [max|norm|sym]")
+	scoreMode := flag.String("sm", DefaultScoreMode, "score `mode` [max|norm|sym]")
 	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2] (default 0)")
+	supp := flag.Float64("s", DefaultMinSupport, "collapse edges in gene trees with support less than value (default 0)")
 	thresh := flag.Float64("t", DefaultThreshold, "threshold for quartet filter [0, 1]")
 	alpha := flag.Float64("a", DefaultAlpha, "parameter to adjust penalty for \"sym\" score mode, from (0, 1]")
 	asSet := flag.Bool("asSet", false, "quartet count is calculated as a set (one point per unique topology)")
@@ -130,7 +125,7 @@ func parseArgs() args {
 	if err != nil {
 		parserError(err.Error())
 	}
-	inferOpts, err := in.MakeInferOptions(*nprocs, qOpts, scorer, *asSet, *alpha)
+	inferOpts, err := in.MakeInferOptions(*nprocs, qOpts, *supp, scorer, *asSet, *alpha)
 	if err != nil {
 		parserError(err.Error())
 	}
