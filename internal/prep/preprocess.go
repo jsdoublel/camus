@@ -23,7 +23,7 @@ var (
 
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
-func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts QuartetFilterOptions) (*gr.TreeData, error) {
+func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts QuartetFilterOptions, minSupp float64) (*gr.TreeData, error) {
 	if err := tre.UpdateTipIndex(); err != nil {
 		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
@@ -34,7 +34,7 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
 	log.Printf("reading quartets from gene trees")
-	qCounts, err := processQuartets(geneTrees, tre, nprocs)
+	qCounts, err := processQuartets(geneTrees, tre, minSupp, nprocs)
 	if err != nil {
 		return nil, err
 	}
@@ -54,14 +54,14 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 	return treeData, nil
 }
 
-// Returns map containing counts of quartets in input trees (after filtering out
-// quartets from constraint tree).
 type quartetShard struct {
 	mu     sync.Mutex
 	counts map[gr.Quartet]uint32
 }
 
-func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr.Quartet]uint32, error) {
+// Returns map containing counts of quartets in input trees (after filtering out
+// quartets from constraint tree).
+func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, minSupp float64, nprocs int) (map[gr.Quartet]uint32, error) {
 	var missingOnce sync.Once
 	const shardBits = 6
 	shardCount := 1 << shardBits
@@ -87,6 +87,9 @@ func processQuartets(geneTrees []*tree.Tree, tre *tree.Tree, nprocs int) (map[gr
 					log.Println("WARNING: missing taxa detected in one or more gene trees;",
 						"this may cause issues with some scoring metrics")
 				})
+			}
+			if minSupp != 0 {
+				gt.CollapseLowSupport(minSupp, true)
 			}
 			newQuartets, err := gr.QuartetsFromTree(gt, tre)
 			if err != nil {

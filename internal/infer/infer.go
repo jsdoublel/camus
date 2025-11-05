@@ -19,6 +19,7 @@ var ErrInvalidOption = errors.New("invalid option combination")
 type InferOptions struct {
 	NProcs      int                     // number of parallel processes
 	QuartetOpts pr.QuartetFilterOptions // quartet filter options
+	MinSupport  float64                 // edges with support below this will be filtered
 	ScoreMode   sc.InitableScorer       // type of edge score
 	AsSet       bool                    // calculate quartet counts as set
 	Alpha       float64                 // sym score parameter
@@ -36,13 +37,14 @@ type dpRunner interface {
 	RunDP() *DPResults
 }
 
-func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, scoreMode sc.InitableScorer, asSet bool, alpha float64) (*InferOptions, error) {
+func MakeInferOptions(nprocs int, quartOpts pr.QuartetFilterOptions, minSupport float64, scoreMode sc.InitableScorer, asSet bool, alpha float64) (*InferOptions, error) {
 	if quartOpts.QuartetFilterOff() && asSet {
 		log.Println("WARNING: using -asSet without quartet filtering is not recommended")
 	}
 	return &InferOptions{
 		NProcs:      setNProcs(nprocs),
 		QuartetOpts: quartOpts,
+		MinSupport:  minSupport,
 		ScoreMode:   scoreMode,
 		AsSet:       asSet,
 		Alpha:       alpha,
@@ -69,7 +71,7 @@ func Infer(tre *tree.Tree, geneTrees []*tree.Tree, opts InferOptions) (*DPResult
 	log.Println("running infer...")
 	startTime := time.Now()
 	log.Println("beginning data preprocessing")
-	td, err := pr.Preprocess(tre, geneTrees, opts.NProcs, opts.QuartetOpts)
+	td, err := pr.Preprocess(tre, geneTrees, opts.NProcs, opts.QuartetOpts, opts.MinSupport)
 	if err != nil {
 		return nil, fmt.Errorf("preprocess error: %w", err)
 	}
