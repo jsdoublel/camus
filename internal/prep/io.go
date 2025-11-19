@@ -77,9 +77,10 @@ type GeneTrees struct {
 // some other reason (e.g., more than one constraint tree)
 func ReadInputFiles(treeFile, genetreesFile string, format Format) (*tree.Tree, *GeneTrees, error) {
 	flags := log.Flags()
+	lout := log.Writer()
 	log.SetOutput(io.Discard) // don't log this bit as gotree can be noisy and lead to thousands of log messages
 	defer func() {
-		log.SetOutput(os.Stderr)
+		log.SetOutput(lout)
 		log.SetFlags(flags)
 	}()
 	tre, err := readTreeFile(treeFile)

@@ -3,6 +3,12 @@ camus
 *.test
 debug.*
 
+# camus results
+*.nwk
+*.png
+*.csv
+*.log
+
 # profiler files
 *.prof
 *.pprof
