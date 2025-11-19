@@ -33,6 +33,9 @@ func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts Quartet
 	if !TreeIsBinary(tre) {
 		return nil, fmt.Errorf("constraint tree is %w", ErrNonBinary)
 	}
+	if percent := percentNoSupport(geneTrees); percent != 0 && minSupp != 0 {
+		log.Printf("WARNING: %.2f%% of gene tree edges do not have support values", percent)
+	}
 	log.Printf("reading quartets from gene trees")
 	qCounts, err := processQuartets(geneTrees, tre, minSupp, nprocs)
 	if err != nil {
@@ -162,4 +165,21 @@ func isBinary(node *tree.Node, allowUnifurcations bool) bool {
 		return false
 	}
 	return isBinary(children[0], allowUnifurcations) && isBinary(children[1], allowUnifurcations)
+}
+
+// returns percent of edges without support
+func percentNoSupport(trees []*tree.Tree) float64 {
+	var total, count int
+	for _, t := range trees {
+		for _, e := range t.Edges() {
+			if e.Right().Tip() {
+				continue
+			}
+			if e.Support() != tree.NIL_SUPPORT {
+				count++
+			}
+			total++
+		}
+	}
+	return float64(total-count) / float64(total) * 100
 }
