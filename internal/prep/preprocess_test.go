@@ -193,6 +193,28 @@ func TestProcessQuartets(t *testing.T) {
 				"((c,d),(f,b));",
 			},
 		},
+		{
+			name: "unresolved gene tree simple",
+			tre:  "((((a,b),c),d),f);",
+			opts: QuartetFilterOptions{mode: 0, threshold: 0},
+			rqList: []string{
+				"((a,c,d),(b,f));",
+			},
+			expected: []string{
+				"((a,c),(b,f));",
+				"((a,d),(b,f));",
+				"((c,d),(b,f));",
+			},
+		},
+		{
+			name: "unresolved gene tree",
+			tre:  "((((a,b),c),d),f);",
+			opts: QuartetFilterOptions{mode: 0, threshold: 0},
+			rqList: []string{
+				"(a,c,d,b,f);",
+			},
+			expected: []string{},
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -216,6 +238,7 @@ func TestProcessQuartets(t *testing.T) {
 			if err != nil {
 				t.Errorf("produced error %+v", err)
 			}
+			beforeFilter := len(result)
 			if test.opts.mode != 0 {
 				filterQuartets(result, test.opts)
 			}
@@ -226,6 +249,9 @@ func TestProcessQuartets(t *testing.T) {
 			}
 			for q := range treeQuartets {
 				delete(result, q)
+			}
+			if test.name == "unresolved gene tree" {
+				t.Logf("before removing constraint quartets: %d, after: %d", beforeFilter, len(result))
 			}
 			expectedList := []gr.Quartet{}
 			for _, nwk := range test.expected {

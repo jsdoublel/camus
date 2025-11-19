@@ -198,6 +198,9 @@ func (q *Quartet) String(tre *tree.Tree) string {
 }
 
 func QSetToString(qSet map[Quartet]uint32, tre *tree.Tree) string {
+	if len(qSet) == 0 {
+		return "{}"
+	}
 	str := "{"
 	for q, c := range qSet {
 		str += fmt.Sprintf("%s:%d, ", q.String(tre), c)

@@ -3,6 +3,28 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
+# MIT License
+
+# Copyright (c) 2024 James Willson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 usage: camus [flags]... <tree_file> <gene_tree_file>
 
 positional arguments:
@@ -38,8 +60,10 @@ examples:
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -52,9 +76,9 @@ import (
 )
 
 const (
-	Version    = "v0.8.0"
-	ErrMessage = "camus incountered an error ::"
-	TimeFormat = "2006-01-02_15-04-05"
+	Version      = "v0.8.0"
+	ErrorMessage = "camus incountered an error ::"
+	TimeFormat   = "2006-01-02_15-04-05"
 
 	DefaultFormat     = "newick"
 	DefaultScoreMode  = "max"
@@ -64,7 +88,7 @@ const (
 	DefaultAlpha      = 0.1
 )
 
-type args struct {
+type Args struct {
 	prefix       string          // outptu prefix
 	gtFormat     pr.Format       // gene tree file format
 	treeFile     string          // constraint or network tree file
@@ -72,9 +96,9 @@ type args struct {
 	inferOpts    in.InferOptions // camus options
 }
 
-func parseArgs() args {
+func parseArgs() Args {
 	flag.Usage = func() {
-		fmt.Fprint(os.Stderr,
+		fmt.Fprint(flag.CommandLine.Output(), // nolint
 			"usage: camus [flags]... <tree_file> <gene_tree_file>\n",
 			"\n",
 			"positional arguments:\n\n",
@@ -84,7 +108,7 @@ func parseArgs() args {
 			"flags:\n\n",
 		)
 		flag.PrintDefaults()
-		fmt.Fprint(os.Stderr,
+		fmt.Fprint(flag.CommandLine.Output(), // nolint
 			"\n",
 			"examples:\n\n",
 			"\tcamus constraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
@@ -115,7 +139,7 @@ func parseArgs() args {
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
-		parserError("three positional arguments required: <tree> <gene_tree_file>")
+		parserError("two positional arguments required: <tree> <gene_tree_file>")
 	}
 	scorer, ok := sc.ParseScorer[*scoreMode]
 	if !ok {
@@ -129,7 +153,7 @@ func parseArgs() args {
 	if err != nil {
 		parserError(err.Error())
 	}
-	return args{
+	return Args{
 		prefix:       *prefix,
 		gtFormat:     format,
 		treeFile:     flag.Arg(0),
@@ -156,20 +180,37 @@ func defaultPrefix() string {
 }
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatalf("%s %s", ErrMessage, err)
-	}
-}
-
-func run() error {
+	var exit int
+	defer func() {
+		os.Exit(exit)
+	}()
+	buf := &bytes.Buffer{} // capture pre logfile setup logging
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	log.SetOutput(io.MultiWriter(os.Stderr, buf))
 	args := parseArgs()
-	log.Printf("camus %s", Version)
-	log.Printf("invoked as: camus %s", strings.Join(os.Args[1:], " "))
 	if args.prefix == "" {
 		args.prefix = defaultPrefix()
 		log.Printf("output prefix was not set, using \"%s\"", args.prefix)
 	}
+	if logf, err := os.Create(fmt.Sprintf("%s.log", args.prefix)); err == nil {
+		logf.Write(buf.Bytes()) // nolint
+		log.SetOutput(io.MultiWriter(os.Stderr, logf))
+		defer func() {
+			log.SetOutput(os.Stderr)
+			_ = logf.Close()
+		}()
+	} else {
+		log.Printf("failed to create log file %s.log, %s", args.prefix, err) // should continue to log to stderr
+	}
+	log.Printf("camus %s", Version)
+	log.Printf("invoked as: camus %s", strings.Join(os.Args[1:], " "))
+	if err := run(args); err != nil {
+		log.Printf("%s %s", ErrorMessage, err)
+		exit = 1
+	}
+}
+
+func run(args Args) error {
 	tre, geneTrees, err := pr.ReadInputFiles(args.treeFile, args.geneTreeFile, args.gtFormat)
 	if err != nil {
 		return err
