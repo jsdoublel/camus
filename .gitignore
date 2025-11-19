@@ -4,7 +4,6 @@ camus
 debug.*
 
 # camus results
-*.nwk
 *.png
 *.csv
 *.log
