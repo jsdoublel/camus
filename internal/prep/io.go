@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"io"
 	"log"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -43,6 +44,8 @@ const (
 
 	plotH = 4 * vg.Inch
 	plotW = 6 * vg.Inch
+
+	maxTicks = 10
 )
 
 var ParseFormat = map[string]Format{
@@ -269,6 +272,23 @@ func WriteResultsLineplot(qstat []float64, prefix string) error {
 	p := plot.New()
 	p.X.Label.Text = "Number of Reticulations"
 	p.Y.Label.Text = "Percent of Quartets Not Satisfied"
+	p.X.Min = 0
+	p.X.Max = float64(len(qstat))
+	p.X.Tick.Marker = plot.TickerFunc(func(_, max float64) []plot.Tick {
+		step := 1
+		if int(max) > maxTicks {
+			step = int(math.Ceil(max / maxTicks))
+		}
+		ticks := make([]plot.Tick, 0, int(max)/step+2)
+		for i := range int(max) + 1 {
+			if i%step == 0 {
+				ticks = append(ticks, plot.Tick{Value: float64(i), Label: fmt.Sprintf("%d", i)})
+			} else {
+				ticks = append(ticks, plot.Tick{Value: float64(i)})
+			}
+		}
+		return ticks
+	})
 	p.Y.Min = 0
 	p.Y.Max = 100
 	pts := make(plotter.XYs, len(qstat)+1)
