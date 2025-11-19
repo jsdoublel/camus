@@ -312,3 +312,16 @@ func BenchmarkProcessQuartets(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkPercentNoSupport(b *testing.B) {
+	gtrees, err := readGeneTreesFile("testdata/g100.nwk", Newick)
+	if err != nil {
+		b.Fatalf("failed to read gene trees: %v", err)
+	}
+	b.ResetTimer()
+	for b.Loop() {
+		if percentNoSupport(gtrees.Trees) < 0 {
+			b.Fatal("percent cannot be negative")
+		}
+	}
+}
