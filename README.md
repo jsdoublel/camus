@@ -10,6 +10,37 @@ CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
 
+## Algorithm
+
+Given a rooted, binary, constraint tree $T$ and a list of input trees
+$\mathcal{G}$, the CAMUS algorithm finds the level-1 networks inducing the
+maximum number of quartets from $\mathcal{G}$ that contains the constraint tree
+$T$
+
+CAMUS finds networks for different values of $k$, where $k$ is the number of
+edges added to the network. For example, if the best possible network that
+contains $T$ has $m$ edges, then CAMUS will output $m$ networks $N_1, N_2,
+\cdots, N_m$, where $N_i$ is optimal under the constraint that it contains
+exactly $i$ edges.
+
+CAMUS has the following inputs and outputs:
+
+**Input**
+
+- *Constraint Tree:* Rooted, binary, tree in newick format without duplicate
+  labels.
+- *Gene Trees:* List of trees in newick format, containing only labels from the
+  constraint tree.
+
+**Output**
+
+- *Output Network:* Level-1 networks written in extended newick format.
+
+CAMUS  should be invoked with the constraint tree file path and gene trees file 
+path as positional arguments in that order; the output network and logging 
+information is written to files with a prefix that can optionally be set 
+with the `-o` flag.
+
 ## Installation
 
 CAMUS should be able to build on any operating system, though it has only been
@@ -32,7 +63,8 @@ directory make sure you add `$GOPATH/bin` to your `PATH` environmental variable.
 
 ### Build from source
 
-Once Go is installed, clone the repository and build the project with the following commands:
+Once Go is installed, clone the repository and build the project with the 
+following commands:
 
 ```
 git clone https://github.com/jsdoublel/camus.git
@@ -43,132 +75,46 @@ go build
 ### Download the binaries
 
 The GitHub [releases](https://github.com/jsdoublel/camus/releases) contain
-binaries compiled on my personal computer (i.e., Linux x64). 
+binaries compiled for Windows, macOS, and Linux (for both arm64 and amd64).
 
 ## Usage
 
 ```
-camus [ -f <format> | -q <mode> | -t <threshold> | -n <threads> | -h | -v | ... ] <command> <tree> <gene_trees>
+camus [ -f <format> | -o <output> | -t <threshold> | -n <threads> | -h | -v | ... ] <const_tree> <gene_trees>
 ```
 
-There are two main commands for CAMUS: `infer` and `score`, followed by two positional arguments 
-indicating the inputs. Additionally, there are the following flags that precedes the positional arguments.
+There are two positional arguments indicating the inputs. Additionally, there
+are the following flags that precedes the positional arguments.
+
+**Basic Flags**
 
 - `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
-- `-s mode [ max | norm | sym ] (default "max")` sets the score mode
-- `-q mode [0, 2] (default 0)` quartet filtering mode
 - `-t threshold [0, 1] (default 0.5)` quartet filtering threshold
-- `-a alpha` parameter that adjusts penalty in ``sym" score mode
-- `-n num_threads` defines the number of threads used
+- `-n num_procs` number of parallel processes
+- `-o prefix` output prefix
 - `-h` prints usage information and exits
+- `-hh` prints extended usage information and exits
 - `-v` prints software version and exits
+
+**Experimental Flags**
+ 
+- `-sm mode [ max | norm | sym ] (default "max")` sets the score mode
+- `-a alpha` parameter that adjusts penalty in ``sym" score mode
+- `-asSet` quartet count is calculated as a set (counts total unique quartet topologies)
+- `-s threshold` collapse edges in gene trees with support less than threshold value
+- `-q mode [0, 2] (default 0)` quartet filtering mode
   
-#### Quartet filter mode
+### Quartet Filter Mode
 
 Quartet filtering mode filters out less frequent quartet topologies. Mode `-q
 0` disables quartet filtering; `-q 1` applies a less restrictive quartet
-filtering, and `-q 2` is the most restrictive quartet filtering.
+filtering, and `-q 2` is the most restrictive and recommended quartet
+filtering.
 
-> Quartet filter mode currently only works with the `infer` command.
+### Score Modes
 
-### Infer
+Score Modes are various modifications to the optimization score beyond 
+simple maximization. These are experimental and maximization is recommended.
 
-```
-camus infer <constraint_tree> <gene_trees>
-```
 
-Given a rooted, binary, constraint tree $T$ and a list of input trees
-$\mathcal{G}$, the CAMUS algorithm finds the level-1 networks inducing the
-maximum number of quartets from $\mathcal{G}$ that contains the constraint tree
-$T$
 
-CAMUS finds networks for different values of $k$, where $k$ is the number of
-edges added to the network. For example, if the best possible network that
-contains $T$ has $m$ edges, then CAMUS will output $m$ networks $N_1, N_2,
-\cdots, N_m$, where $N_i$ is optimal under the constraint that it contains
-exactly $i$ edges.
-
-Since these added edges are directed edges, it is a requirement that any
-quartet that contributes to the maximum contain exactly one taxon from the clade
-below by $w$—where $w$ is the vertex that the new edge points towards.
-
-CAMUS has the following inputs and outputs:
-
-**Input**
-
-- *Constraint Tree:* Rooted, binary, tree in newick format without duplicate
-  labels.
-- *Gene Trees:* List of trees in newick format, containing only labels from the
-  constraint tree.
-
-**Output**
-
-- *Output Network:* Level-1 networks written in extended newick format.
-
-CAMUS, when run with the `infer` command, should be invoked with the constraint
-tree file path and gene trees file path as positional arguments in that order;
-the output network  and logging information is written to `stdout` and `stderr`
-respectively.
-
-Here is an example of how one might run CAMUS using example data from this
-repository:
-
-```
-camus infer testdata/large/constraint.nwk testdata/large/gene-trees.nwk > out.nwk 2> log.txt
-```
-
-### Score
-
-```
-camus score <network> <gene_trees>
-```
-
-When using the `score` command, CAMUS returns a CSV file indicating the support
-for each branch for each gene. Support is calculated as the ratio of the
-relevant quartets from the gene that support the branch.
-
-Specifically, for each new reticulation edge $r$ creating a cycle $\gamma_r$,
-we have $\mathcal{Q}\_{\gamma_r}$—the set of quartets "in" the cycle. By this
-we mean the set of quartets where each taxon $t$ in the quartet corresponds to a
-unique node in $\gamma_r$ that can be reached by a path from $t$ to that unique
-node, without passing through any other vertices in $\gamma_r$. 
-
-We also define $\mathcal{Q}_{\gamma_r}'$ where $\forall q' \in \mathcal{Q}\_{\gamma_r}', 
-\exists q \in \mathcal{Q}\_{\gamma_r}$ where $\mathcal{L}(q') = \mathcal{L}(q)$, where 
-$\mathcal{L}(q)$ is the set of taxa in $q$ (in short, $\mathcal{Q}\_{\gamma_r}'$ is 
-the set of all possible quartets on the same sets of taxa as the quartets in 
-$\mathcal{Q}\_{\gamma_r}$).
-
-Thus, given a quartet set $\mathcal{Q}\_g$ from a gene tree $g$, we can
-calculate the support of $g$ for $r$ as 
-
-$$S_{g,r} = \frac{|(\mathcal{Q}\_{\gamma_r} \cap
-\mathcal{Q}\_g) \setminus \mathcal{Q}\_T|}{|\mathcal{Q}\_{\gamma_r}' \cap \mathcal{Q}\_g|}$$
-
-where $\mathcal{Q}\_T$ is the set of quartets in the constraint tree.
-As can be seen, if the inputted gene trees were simply quartets (four leaf
-newick trees), the only valid results would be 0, 1, or NaN.
-
-The `score` command for CAMUS has the following inputs and outputs:
-
-**Input**
-
-- *Network:* Rooted, fully-resolved, network in extended newick format.
-- *Gene Trees:* List of trees in newick format, containing only labels from the
-  constraint tree.
-
-**Output**
-
-- *Scores:* CSV file where the columns are the reticulation branch labels and
-  the rows correspond to different genes (labeled by the line number they
-  appear on in the input).
-
-As with `infer`, `score` uses positional arguments for the inputs and outputs 
-the result and logging information to `stdout` and `stderr` respectively. 
-
-Here is an example of how one might run CAMUS using example data from this
-repository:
-
-```
-camus score testdata/large/network.nwk testdata/large/gene-trees.nwk > out.csv 2> log.txt
-```
