@@ -5,7 +5,7 @@ constraint tree.
 
 # MIT License
 
-# Copyright (c) 2024 James Willson
+# Copyright (c) 2026 James Willson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,37 +25,31 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-usage: camus [flags]... <tree_file> <gene_tree_file>
+usage: camus [flags]... <const_tree_file> <gene_tree_file>
 
 positional arguments:
 
-	<tree_file>		constraint newick tree (infer) or network (score)
+	<tree_file>			constraint newick tree
 	<gene_tree_file>	gene tree newick file
 
 flags:
 
-	-a float
-	  	parameter to adjust penalty for "sym" score mode, from (0, 1] (default 0.1)
-	-asSet
-	  	quartet count is calculated as a set (one point per unique topology)
 	-f format
 	  	gene tree format [newick|nexus] (default "newick")
-	-h	prints this message and exits
+	-h	prints short help and exits
+	-hh
+	  	prints help with experimental features and exits
 	-n int
 	  	number of parallel processes
 	-o string
 	  	output prefix
-	-q int
-	  	quartet filter mode number [0, 2] (default 0)
-	-s mode
-	  	score mode [max|norm|sym] (default "max")
 	-t float
 	  	threshold for quartet filter [0, 1] (default 0.5)
 	-v	prints version number and exits
 
 examples:
 
-	camus constraint.nwk gene-trees.nwk > network.nwk 2> log.txt
+	camus -o output-name constraint.nwk gene-trees.nwk
 */
 package main
 
@@ -66,6 +60,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -76,43 +71,60 @@ import (
 )
 
 const (
-	Version      = "v0.8.0"
-	ErrorMessage = "camus incountered an error ::"
+	Version      = "v1.0.0"
+	ErrorMessage = "camus encountered an error ::"
 	TimeFormat   = "2006-01-02_15-04-05"
 
 	DefaultFormat     = "newick"
 	DefaultScoreMode  = "max"
-	DefaultQMode      = 0
+	DefaultQMode      = 2
 	DefaultMinSupport = 0
 	DefaultThreshold  = 0.5
 	DefaultAlpha      = 0.1
 )
 
+var experimentalFlags = []string{"a", "asSet", "q", "s", "sm"}
+
 type Args struct {
-	prefix       string          // outptu prefix
+	prefix       string          // output prefix
 	gtFormat     pr.Format       // gene tree file format
 	treeFile     string          // constraint or network tree file
 	geneTreeFile string          // gene trees
 	inferOpts    in.InferOptions // camus options
 }
 
+func Usage(extended bool) {
+	fmt.Fprint(flag.CommandLine.Output(), // nolint
+		"usage: camus [flags]... <const_tree_file> <gene_tree_file>\n",
+		"\n",
+		"positional arguments:\n\n",
+		"  <tree_file>\t\tconstraint newick tree\n",
+		"  <gene_tree_file>\tgene tree newick file\n",
+		"\n",
+		"flags:\n\n",
+	)
+	if extended {
+		flag.PrintDefaults()
+	} else {
+		shortFlags := flag.NewFlagSet("short", flag.ContinueOnError)
+		flag.VisitAll(func(f *flag.Flag) {
+			if !slices.Contains(experimentalFlags, f.Name) {
+				shortFlags.Var(f.Value, f.Name, f.Usage)
+				shortFlags.Lookup(f.Name).DefValue = f.DefValue
+			}
+		})
+		shortFlags.PrintDefaults()
+	}
+	fmt.Fprint(flag.CommandLine.Output(), // nolint
+		"\n",
+		"examples:\n\n",
+		"\tcamus -o output-name constraint.nwk gene-trees.nwk\n\n",
+	)
+}
+
 func parseArgs() Args {
 	flag.Usage = func() {
-		fmt.Fprint(flag.CommandLine.Output(), // nolint
-			"usage: camus [flags]... <tree_file> <gene_tree_file>\n",
-			"\n",
-			"positional arguments:\n\n",
-			"  <tree_file>\t\tconstraint newick tree (infer) or network (score)\n",
-			"  <gene_tree_file>\tgene tree newick file\n",
-			"\n",
-			"flags:\n\n",
-		)
-		flag.PrintDefaults()
-		fmt.Fprint(flag.CommandLine.Output(), // nolint
-			"\n",
-			"examples:\n\n",
-			"\tcamus constraint.nwk gene-trees.nwk > network.nwk 2> log.txt\n\n",
-		)
+		Usage(false)
 	}
 	format, ok := pr.ParseFormat[DefaultFormat]
 	if !ok {
@@ -121,17 +133,22 @@ func parseArgs() Args {
 	flag.Var(&format, "f", "gene tree `format` [newick|nexus] (default \"newick\")")
 	prefix := flag.String("o", "", "output prefix")
 	scoreMode := flag.String("sm", DefaultScoreMode, "score `mode` [max|norm|sym]")
-	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2] (default 0)")
+	mode := flag.Int("q", DefaultQMode, "quartet filter mode number [0, 2]")
 	supp := flag.Float64("s", DefaultMinSupport, "collapse edges in gene trees with support less than value (default 0)")
 	thresh := flag.Float64("t", DefaultThreshold, "threshold for quartet filter [0, 1]")
 	alpha := flag.Float64("a", DefaultAlpha, "parameter to adjust penalty for \"sym\" score mode, from (0, 1]")
 	asSet := flag.Bool("asSet", false, "quartet count is calculated as a set (one point per unique topology)")
-	help := flag.Bool("h", false, "prints this message and exits")
+	help := flag.Bool("h", false, "prints short help and exits")
+	hhelp := flag.Bool("hh", false, "prints help with experimental features and exits")
 	ver := flag.Bool("v", false, "prints version number and exits")
 	nprocs := flag.Int("n", 0, "number of parallel processes")
 	flag.Parse()
 	if *help {
-		flag.Usage()
+		Usage(false)
+		os.Exit(0)
+	}
+	if *hhelp {
+		Usage(true)
 		os.Exit(0)
 	}
 	if *ver {
@@ -139,7 +156,7 @@ func parseArgs() Args {
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
-		parserError("two positional arguments required: <tree> <gene_tree_file>")
+		parserError("two positional arguments required: <const_tree> <gene_tree_file>")
 	}
 	scorer, ok := sc.ParseScorer[*scoreMode]
 	if !ok {
@@ -165,7 +182,7 @@ func parseArgs() Args {
 // prints message, usage, and exits (status code 1)
 func parserError(message string) {
 	fmt.Fprintln(os.Stderr, message+"\n")
-	flag.Usage()
+	Usage(false)
 	os.Exit(1)
 }
 
@@ -173,7 +190,10 @@ func defaultPrefix() string {
 	parseName := func(s string) string {
 		parts := strings.Split(s, string(os.PathSeparator))
 		parts = strings.Split(parts[len(parts)-1], ".")
-		return strings.Join(parts[:len(parts)-1], ".")
+		if len(parts) > 1 {
+			return strings.Join(parts[:len(parts)-1], ".")
+		}
+		return parts[0]
 	}
 	inputs := fmt.Sprintf("%s_%s", parseName(flag.Arg(0)), parseName(flag.Arg(1)))
 	return fmt.Sprintf("camus_%s_%s", inputs, time.Now().Local().Format(TimeFormat))
