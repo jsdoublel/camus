@@ -20,8 +20,8 @@ $T$
 CAMUS finds networks for different values of $k$, where $k$ is the number of
 edges added to the network. For example, if the best possible network that
 contains $T$ has $m$ edges, then CAMUS will output $m$ networks $N_1, N_2,
-\cdots, N_m$, where $N_i$ is optimal under the constraint that it contains
-exactly $i$ edges.
+\cdots, N_k, \cdots, N_m$, where $N_k$ is optimal under the constraint that it 
+contains exactly $k$ edges.
 
 CAMUS has the following inputs and outputs:
 
