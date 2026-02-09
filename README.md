@@ -5,10 +5,16 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/jsdoublel/camus)](https://goreportcard.com/report/github.com/jsdoublel/camus)
 [![build](https://github.com/jsdoublel/camus/actions/workflows/go.yml/badge.svg)](https://github.com/jsdoublel/camus/actions)
 [![GitHub License](https://img.shields.io/github/license/jsdoublel/camus)](https://github.com/jsdoublel/camus/blob/main/LICENSE.txt)
+[![DOI:10.64898/2026.02.01.703143](https://zenodo.org/badge/DOI/10.64898/2026.02.01.703143.svg)](https://doi.org/10.64898/2026.02.01.703143)
 
 CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
 constraint tree.
+
+If you use CAMUS, please cite
+
+> Willson, James, and Tandy Warnow. "CAMUS: Scalable Phylogenetic Network
+> Estimation." *bioRxiv* (2026): 2026-02.
 
 ## Algorithm
 
