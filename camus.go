@@ -43,6 +43,8 @@ flags:
 	  	number of parallel processes
 	-o string
 	  	output prefix
+	-s float
+	  	collapse edges in gene trees with support less than value (default 0)
 	-t float
 	  	threshold for quartet filter [0, 1] (default 0.5)
 	-v	prints version number and exits
@@ -71,7 +73,7 @@ import (
 )
 
 const (
-	Version      = "v1.0.0"
+	Version      = "v1.0.1"
 	ErrorMessage = "camus encountered an error ::"
 	TimeFormat   = "2006-01-02_15-04-05"
 
@@ -83,7 +85,7 @@ const (
 	DefaultAlpha      = 0.1
 )
 
-var experimentalFlags = []string{"a", "asSet", "q", "s", "sm"}
+var experimentalFlags = []string{"a", "asSet", "q", "sm"}
 
 type Args struct {
 	prefix       string          // output prefix

@@ -98,6 +98,7 @@ are the following flags that precedes the positional arguments.
 - `-t threshold [0, 1] (default 0.5)` quartet filtering threshold
 - `-n num_procs` number of parallel processes
 - `-o prefix` output prefix
+- `-s threshold` collapse edges in gene trees with support less than threshold value
 - `-h` prints usage information and exits
 - `-hh` prints extended usage information and exits
 - `-v` prints software version and exits
@@ -107,7 +108,6 @@ are the following flags that precedes the positional arguments.
 - `-sm mode [ max | norm | sym ] (default "max")` sets the score mode
 - `-a alpha` parameter that adjusts penalty in ``sym" score mode
 - `-asSet` quartet count is calculated as a set (counts total unique quartet topologies)
-- `-s threshold` collapse edges in gene trees with support less than threshold value
 - `-q mode [0, 2] (default 0)` quartet filtering mode
   
 ### Quartet Filter Mode
