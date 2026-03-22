@@ -89,11 +89,17 @@ func TestPreprocess_Errors(t *testing.T) {
 			expectedErr: gr.ErrTipNameMismatch,
 		},
 		{
-			name: "non-binary input trees",
-			tre:  "((a,b),(c,d));",
-			gtrees: []string{
+			name:        "non-binary input trees",
+			tre:         "((a,b),(c,d));",
+			gtrees:      []string{
 				"(a,b,c,d);",
 			},
+			expectedErr: nil,
+		},
+		{
+			name:        "unifurcation success",
+			tre:         "(((a,b)),(c,d));",
+			gtrees:      []string{},
 			expectedErr: nil,
 		},
 	}

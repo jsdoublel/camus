@@ -24,6 +24,10 @@ var (
 // Preprocess necessary data. Returns an error if the constraint tree is not valid
 // (e.g., not rooted/binary) or if the gene trees are not valid (bad leaf labels).
 func Preprocess(tre *tree.Tree, geneTrees []*tree.Tree, nprocs int, opts QuartetFilterOptions, minSupp float64) (*gr.TreeData, error) {
+	tre.RemoveSingleNodes()         // remove internal degree two nodes
+	for i, n := range tre.Nodes() { // node ids must be continuous
+		n.SetId(i)
+	}
 	if err := tre.UpdateTipIndex(); err != nil {
 		return nil, fmt.Errorf("constraint tree %w", ErrMulTree)
 	}
