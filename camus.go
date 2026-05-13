@@ -62,6 +62,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -72,8 +73,9 @@ import (
 	sc "github.com/jsdoublel/camus/internal/score"
 )
 
+var Version = "dev" // set with ldflags at build time
+
 const (
-	Version      = "v1.0.1"
 	ErrorMessage = "camus encountered an error ::"
 	TimeFormat   = "2006-01-02_15-04-05"
 
@@ -93,6 +95,19 @@ type Args struct {
 	treeFile     string          // constraint or network tree file
 	geneTreeFile string          // gene trees
 	inferOpts    in.InferOptions // camus options
+}
+
+// Gets CAMUS version. If Version variable is not set (i.e., it is still "dev"),
+// then try to get build info (this would be helpful in the case that `go install`
+// was used).
+func GetVersion() string {
+	if Version != "dev" {
+		return Version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return "dev"
 }
 
 func Usage(extended bool) {
@@ -154,7 +169,7 @@ func parseArgs() Args {
 		os.Exit(0)
 	}
 	if *ver {
-		fmt.Printf("camus %s\n", Version)
+		fmt.Println(GetVersion())
 		os.Exit(0)
 	}
 	if flag.NArg() != 2 {
@@ -224,7 +239,7 @@ func main() {
 	} else {
 		log.Printf("failed to create log file %s.log, %s", args.prefix, err) // should continue to log to stderr
 	}
-	log.Printf("camus %s", Version)
+	log.Printf("camus %s", GetVersion())
 	log.Printf("invoked as: camus %s", strings.Join(os.Args[1:], " "))
 	if err := run(args); err != nil {
 		log.Printf("%s %s", ErrorMessage, err)
