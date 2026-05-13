@@ -26,40 +26,40 @@ $T$
 CAMUS finds networks for different values of $k$, where $k$ is the number of
 edges added to the network. For example, if the best possible network that
 contains $T$ has $m$ edges, then CAMUS will output $m$ networks $N_1, N_2,
-\cdots, N_k, \cdots, N_m$, where $N_k$ is optimal under the constraint that it 
+\cdots, N_k, \cdots, N_m$, where $N_k$ is optimal under the constraint that it
 contains exactly $k$ edges.
 
 CAMUS has the following inputs and outputs:
 
-**Input**
+- **Input**
 
-- *Constraint Tree:* Rooted, binary, tree in newick format without duplicate
-  labels.
-- *Gene Trees:* List of trees in newick format, containing only labels from the
-  constraint tree.
+	- *Constraint Tree:* Rooted, binary, tree in newick format without duplicate
+	  labels.
+	- *Gene Trees:* List of trees in newick format, containing only labels from the
+	  constraint tree.
 
-**Output**
+- **Output**
 
-- *Output Network:* Level-1 networks written in extended newick format.
+	- *Output Network:* Level-1 networks written in extended newick format.
 
-CAMUS  should be invoked with the constraint tree file path and gene trees file 
-path as positional arguments in that order; the output network and logging 
-information is written to files with a prefix that can optionally be set 
+CAMUS  should be invoked with the constraint tree file path and gene trees file
+path as positional arguments in that order; the output network and logging
+information is written to files with a prefix that can optionally be set
 with the `-o` flag.
 
 ## Installation
 
 CAMUS should be able to build on any operating system, though it has only been
 tested on Linux. It is implemented in the Go programming language (which can be
-installed [here](https://go.dev/doc/install)).
+installed from the [Go website](https://go.dev/doc/install)).
 
-There are three methods for installing CAMUS. 
+There are three methods for installing CAMUS.
 
 ### Using Go's package manager
 
 After installing Go, run:
 
-```
+```sh
 go install github.com/jsdoublel/camus@latest
 ```
 
@@ -69,10 +69,10 @@ directory make sure you add `$GOPATH/bin` to your `PATH` environmental variable.
 
 ### Build from source
 
-Once Go is installed, clone the repository and build the project with the 
+Once Go is installed, clone the repository and build the project with the
 following commands:
 
-```
+```sh
 git clone https://github.com/jsdoublel/camus.git
 cd camus
 go build
@@ -85,30 +85,32 @@ binaries compiled for Windows, macOS, and Linux (for both arm64 and amd64).
 
 ## Usage
 
-```
+```text
 camus [ -f <format> | -o <output> | -t <threshold> | -n <threads> | -h | -v | ... ] <const_tree> <gene_trees>
 ```
 
 There are two positional arguments indicating the inputs. Additionally, there
 are the following flags that precedes the positional arguments.
 
-**Basic Flags**
+- **Basic Flags**
 
-- `-f format [ newick | nexus ] (default "newick")` sets the format of the input gene tree file
-- `-t threshold [0, 1] (default 0.5)` quartet filtering threshold
-- `-n num_procs` number of parallel processes
-- `-o prefix` output prefix
-- `-s threshold` collapse edges in gene trees with support less than threshold value
-- `-h` prints usage information and exits
-- `-hh` prints extended usage information and exits
-- `-v` prints software version and exits
+	- `-f format [ newick | nexus ] (default "newick")` sets the format of the
+	  input gene tree file
+	- `-t threshold [0, 1] (default 0.5)` quartet filtering threshold
+	- `-n num_procs` number of parallel processes
+	- `-o prefix` output prefix
+	- `-s threshold` collapse edges in gene trees with support less than
+	  threshold value
+	- `-h` prints usage information and exits
+	- `-hh` prints extended usage information and exits
+	- `-v` prints software version and exits
 
-**Experimental Flags**
- 
-- `-sm mode [ max | norm | sym ] (default "max")` sets the score mode
-- `-a alpha` parameter that adjusts penalty in ``sym" score mode
-- `-asSet` quartet count is calculated as a set (counts total unique quartet topologies)
-- `-q mode [0, 2] (default 0)` quartet filtering mode
+- **Experimental Flags**
+
+	- `-sm mode [ max | norm | sym ] (default "max")` sets the score mode
+	- `-a alpha` parameter that adjusts penalty in ``sym" score mode
+	- `-asSet` quartet count is calculated as a set (counts total unique quartet topologies)
+	- `-q mode [0, 2] (default 0)` quartet filtering mode
   
 ### Quartet Filter Mode
 
@@ -119,8 +121,5 @@ filtering.
 
 ### Score Modes
 
-Score Modes are various modifications to the optimization score beyond 
+Score Modes are various modifications to the optimization score beyond
 simple maximization. These are experimental and maximization is recommended.
-
-
-
