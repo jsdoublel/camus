@@ -13,8 +13,8 @@ constraint tree.
 
 If you use CAMUS, please cite
 
-> Willson, James, and Tandy Warnow. "CAMUS: Scalable Phylogenetic Network
-> Estimation." *bioRxiv* (2026): 2026-02.
+> Willson, James, and Tandy Warnow. "CAMUS: scalable phylogenetic network
+> estimation." *Bioinformatics* 42.Supplement_1 (2026): btag245.
 
 ## Algorithm
 
