@@ -1,6 +1,8 @@
 package score
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 
@@ -152,81 +154,117 @@ func TestQuartetsTotal(t *testing.T) {
 	}
 }
 
+func makeBalancedNewick(start, end int) string {
+	if start == end {
+		return fmt.Sprintf("L%d", start)
+	}
+	mid := start + (end-start)/2
+	left := makeBalancedNewick(start, mid)
+	right := makeBalancedNewick(mid+1, end)
+	return fmt.Sprintf("(%s,%s)", left, right)
+}
+
 func BenchmarkQuartetScore(b *testing.B) {
+	nwk := makeBalancedNewick(1, 1000) + ";"
+	tre, err := newick.NewParser(strings.NewReader(nwk)).Parse()
+	if err != nil {
+		b.Fatalf("invalid tree: %v", err)
+	}
+	if err := tre.UpdateTipIndex(); err != nil {
+		b.Fatalf("failed to update tip index: %v", err)
+	}
+	td := gr.MakeTreeData(tre, nil)
+	type benchmarkQuery struct {
+		q    gr.Quartet
+		u    int
+		w    int
+		v    int
+		wSub int
+	}
+	rng := rand.New(rand.NewSource(42))
+	queries := make(map[int][]benchmarkQuery)
+	targetCount := 1000
+	counts := make(map[int]int)
+	nodes := td.Nodes()
+	nNodes := len(nodes)
+	for counts[gr.Qeq] < targetCount || counts[gr.Qneq] < targetCount || counts[gr.Qdiff] < targetCount {
+		u := rng.Intn(nNodes)
+		w := rng.Intn(nNodes)
+		if !ShouldCalcEdge(u, w, td) {
+			continue
+		}
+		leaves := [4]uint16{
+			uint16(rng.Intn(1000)),
+			uint16(rng.Intn(1000)),
+			uint16(rng.Intn(1000)),
+			uint16(rng.Intn(1000)),
+		}
+		if hasDuplicates(leaves) {
+			continue
+		}
+		var qTaxa [4]int16
+		for i := 0; i < 4; i++ {
+			qTaxa[i] = int16(leaves[i])
+		}
+		v := td.LCA(u, w)
+		wSub := getWSubtree(u, w, v, td)
+		uNode := td.IdToNodes[u]
+		wNode := td.IdToNodes[w]
+		vNode := td.IdToNodes[v]
+		for _, topo := range []uint8{gr.Qtopo1, gr.Qtopo2, gr.Qtopo3} {
+			q := makeBenchmarkQuartet(qTaxa, topo)
+			res := QuartetScore(q, uNode, wNode, vNode, wSub, td)
+			if counts[res] < targetCount {
+				queries[res] = append(queries[res], benchmarkQuery{
+					q:    q,
+					u:    u,
+					w:    w,
+					v:    v,
+					wSub: wSub.Id(),
+				})
+				counts[res]++
+			}
+		}
+	}
 	testCases := []struct {
-		name    string
-		tree    string
-		quartet string
-		uLabel  string
-		wLabel  string
-		want    int
+		name string
+		code int
 	}{
-		{
-			name:    "eq",
-			tree:    "((A,B)a,(C,D)b)r;",
-			quartet: "((A,C),(B,D));",
-			uLabel:  "A",
-			wLabel:  "C",
-			want:    gr.Qeq,
-		},
-		{
-			name:    "neq",
-			tree:    "((A,B)a,(C,D)b)r;",
-			quartet: "((A,D),(B,C));",
-			uLabel:  "A",
-			wLabel:  "C",
-			want:    gr.Qneq,
-		},
-		{
-			name:    "diff",
-			tree:    "((A,B)a,(C,D)b)r;",
-			quartet: "((A,C),(B,D));",
-			uLabel:  "A",
-			wLabel:  "B",
-			want:    gr.Qdiff,
-		},
+		{name: "eq", code: gr.Qeq},
+		{name: "neq", code: gr.Qneq},
+		{name: "diff", code: gr.Qdiff},
 	}
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
-			tre, err := newick.NewParser(strings.NewReader(tc.tree)).Parse()
-			if err != nil {
-				b.Fatalf("invalid tree newick: %v", err)
-			}
-			if err := tre.UpdateTipIndex(); err != nil {
-				b.Fatalf("failed to update tip index: %v", err)
-			}
-			td := gr.MakeTreeData(tre, nil)
-			qTree, err := newick.NewParser(strings.NewReader(tc.quartet)).Parse()
-			if err != nil {
-				b.Fatalf("invalid quartet newick %s: %v", tc.quartet, err)
-			}
-			q, err := gr.NewQuartet(qTree, tre)
-			if err != nil {
-				b.Fatalf("failed to build quartet %s: %v", tc.quartet, err)
-			}
-			uID := nodeIDByLabel(b, td, tc.uLabel)
-			wID := nodeIDByLabel(b, td, tc.wLabel)
-			vID := td.LCA(uID, wID)
-			uNode := td.IdToNodes[uID]
-			wNode := td.IdToNodes[wID]
-			vNode := td.IdToNodes[vID]
-			wSub := getWSubtree(uID, wID, vID, td)
-			pre := QuartetScore(q, uNode, wNode, vNode, wSub, td)
-			if pre != tc.want {
-				b.Fatalf("QuartetScore(%s,%s) = %d, want %d", tc.uLabel, tc.wLabel, pre, tc.want)
-			}
+			qList := queries[tc.code]
 			var got int
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				got = QuartetScore(q, uNode, wNode, vNode, wSub, td)
+				query := qList[i%len(qList)]
+				got = QuartetScore(query.q, td.IdToNodes[query.u], td.IdToNodes[query.w], td.IdToNodes[query.v], td.IdToNodes[query.wSub], td)
 			}
 			b.StopTimer()
-			if got != tc.want {
-				b.Fatalf("QuartetScore(%s,%s) = %d, want %d", tc.uLabel, tc.wLabel, got, tc.want)
+			if got != tc.code {
+				b.Fatalf("QuartetScore returned unexpected result: %d", got)
 			}
 		})
 	}
+}
+
+func hasDuplicates(leaves [4]uint16) bool {
+	return leaves[0] == leaves[1] || leaves[0] == leaves[2] || leaves[0] == leaves[3] ||
+		leaves[1] == leaves[2] || leaves[1] == leaves[3] ||
+		leaves[2] == leaves[3]
+}
+
+func makeBenchmarkQuartet(taxa [4]int16, topo uint8) gr.Quartet {
+	var q uint64
+	for i, t := range taxa {
+		q |= uint64(t) << (15 * i)
+	}
+	q |= uint64(topo) << 60
+	return gr.Quartet(q)
 }
 
 type quartetCount struct {

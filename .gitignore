@@ -19,6 +19,5 @@ scratch/
 # compiled markdowns / other docs
 *.pdf
 
-# if anyone asks, it wasn't me
 .vscode
 AGENTS.md
