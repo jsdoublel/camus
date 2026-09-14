@@ -21,6 +21,7 @@ func TestInfer(t *testing.T) {
 		geneTrees   []string
 		expNumEdges int
 		result      string
+		expScore    float64
 	}{
 		{
 			name:      "basic one-edge",
@@ -31,6 +32,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 1,
 			result:      "(A,(B,((C)#H1,((#H1,D),(E,(F,(G,(H,(I,J)))))))));",
+			expScore:    100,
 		},
 		{
 			name:      "basic two-edges",
@@ -41,6 +43,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "(((A)#H1,((((B,(C)#H2),(#H2,D)),E),F)),(G,(#H1,H)));",
+			expScore:    100,
 		},
 		{
 			name:      "two-edge two",
@@ -51,6 +54,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "(A,(B,(C,(D,((E)#H1,((#H1,F),(G,((H)#H2,((#H2,I),J)))))))));",
+			expScore:    100,
 		},
 		{
 			name:      "two-edge case two",
@@ -61,6 +65,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "(((A)#H1,((((B,(C)#H2),(#H2,D)),E),(#H1,F))),(G,H));",
+			expScore:    100,
 		},
 		{
 			name:      "one-sided cycle test",
@@ -74,6 +79,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 1,
 			result:      "((#H1,((((A)#H1,B),C),D)),E);",
+			expScore:    100,
 		},
 		{
 			name:      "double one-sided cycle test",
@@ -93,6 +99,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "((#H1,(((((((#H2,((((A)#H2,B),C),D)))#H1,E),F),G),H),I)),J);",
+			expScore:    100,
 		},
 		{
 			name:      "duplicate quartet basic",
@@ -106,6 +113,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 1,
 			result:      "(((#H1,((((A)#H1,B),C),D)),E),F);",
+			expScore:    80,
 		},
 		{
 			name:      "duplicate quartet basic 2",
@@ -119,6 +127,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 1,
 			result:      "((#H1,(((((A,B))#H1,C),D),E)),F);",
+			expScore:    80,
 		},
 		{
 			name:      "avoid over-adding edges",
@@ -130,6 +139,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "(R,((A,((((B)#H1,C),D),((E,(F)#H2),(#H2,G)))),(#H1,H)));",
+			expScore:    100,
 		},
 		{
 			name:      "avoid over-adding edges 2",
@@ -142,6 +152,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "(R,((A,(((B,(C)#H2),(#H2,D)),(((#H1,E),F),G))),(H)#H1));",
+			expScore:    100,
 		},
 		{
 			name:      "test under node u lookup",
@@ -155,6 +166,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 3,
 			result:      "(R,(((A)#H1,(I,(#H1,J))),(((#H2,((B,(C)#H3),(#H3,D))),H),(((E)#H2,F),G))));",
+			expScore:    100,
 		},
 		{
 			name:      "cycle below base of one-sided cycle",
@@ -171,6 +183,7 @@ func TestInfer(t *testing.T) {
 			},
 			expNumEdges: 2,
 			result:      "((#H1,(((((A)#H1,B),C),(D,((F)#H2,((#H2,G),H)))),E)),R);",
+			expScore:    100,
 		},
 	}
 	for _, test := range testCases {
@@ -202,6 +215,14 @@ func TestInfer(t *testing.T) {
 		if result != test.result {
 			t.Errorf("result %s != expected %s", result, test.result)
 		}
+		score := results.QSatScore[len(results.QSatScore)-1]
+		if score != test.expScore {
+			better := "expected"
+			if score > test.expScore {
+				better = "result"
+			}
+			t.Errorf("score %v != expected %v (%s score is better)", score, test.expScore, better)
+		}
 	}
 }
 
@@ -216,6 +237,7 @@ func TestInfer_Large(t *testing.T) {
 		alpha         float64
 		expNumEdges   int
 		resultFile    string
+		expScores     []float64 // percent of quartets satisfied per edge count, from the last released version (v1.0.1)
 	}{
 		{
 			name:          "pauls data default",
@@ -227,6 +249,7 @@ func TestInfer_Large(t *testing.T) {
 			alpha:         0,
 			expNumEdges:   5,
 			resultFile:    "testdata/network.nwk",
+			expScores:     []float64{22.14993193319253, 28.62205854153435, 30.105112558427976, 30.597831925984657, 31.028672377659944},
 		},
 		{
 			name:          "pauls data quartet filter",
@@ -238,6 +261,7 @@ func TestInfer_Large(t *testing.T) {
 			alpha:         0,
 			expNumEdges:   4,
 			resultFile:    "testdata/net_q2_t05_max.nwk",
+			expScores:     []float64{59.74998871790243, 74.29551359331585, 75.25868237994237, 75.75573936420545},
 		},
 		{
 			name:          "pauls data norm",
@@ -249,6 +273,7 @@ func TestInfer_Large(t *testing.T) {
 			alpha:         0,
 			expNumEdges:   4,
 			resultFile:    "testdata/net_q2_t05_norm.nwk",
+			expScores:     []float64{50.620515366216885, 62.28491486851521, 64.55422820782269, 73.4322719565736},
 		},
 		{
 			name:          "pauls data sym",
@@ -260,6 +285,7 @@ func TestInfer_Large(t *testing.T) {
 			alpha:         0.1,
 			expNumEdges:   4,
 			resultFile:    "testdata/net_q2_t05_sym_a01.nwk",
+			expScores:     []float64{45.56521739130435, 52.34782608695652, 53.04347826086956, 53.391304347826086},
 		},
 	}
 	for _, test := range testCases {
@@ -294,6 +320,19 @@ func TestInfer_Large(t *testing.T) {
 			for i, expNwk := range expNwks[:len(expNwks)-1] {
 				if i < len(resultNwks) && strings.TrimSpace(expNwk) != resultNwks[i] {
 					t.Errorf("%s != %s, result != expected", resultNwks[i], expNwk)
+				}
+			}
+			for i, expScore := range test.expScores {
+				if i >= len(results.QSatScore) {
+					break
+				}
+				score := results.QSatScore[i]
+				if score != expScore {
+					better := "expected"
+					if score > expScore {
+						better = "result"
+					}
+					t.Errorf("edge %d: score %v != expected %v (%s score is better)", i+1, score, expScore, better)
 				}
 			}
 		})
