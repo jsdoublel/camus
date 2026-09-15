@@ -182,14 +182,7 @@ func (dp *DP[S]) scoreAddEdgeK(v *tree.Node, k int, vCycleDP *cycleDP[S]) (bestS
 	prevK := k - 1
 	bestCycleLen := 0
 	vCycleDP.update(prevK, dp)
-	for _, c := range dp.Tree.Children[v.Id()] {
-		if c.Tip() {
-			continue
-		}
-		curScore, curCycleTrace, err := dp.scoreEdgesDown(v, vCycleDP, prevK)
-		if err != nil {
-			continue
-		}
+	if curScore, curCycleTrace, err := dp.scoreEdgesDown(v, vCycleDP, prevK); err == nil {
 		cycleLen := sc.CycleLength(curCycleTrace.branch.IDs[gr.Ui], curCycleTrace.branch.IDs[gr.Wi], dp.Tree)
 		if curScore > bestScore || bestCycleTrace == nil || (curScore == bestScore && cycleLen <= bestCycleLen) {
 			bestScore = curScore
