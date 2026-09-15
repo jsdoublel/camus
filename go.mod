@@ -22,6 +22,6 @@ require (
 	github.com/fredericlemoine/gostats v0.1.1 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/image v0.39.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/image v0.41.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 )
