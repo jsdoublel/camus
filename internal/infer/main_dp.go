@@ -222,16 +222,25 @@ func (dp *DP[S]) scoreEdgesDown(v *tree.Node, vCycleDP *cycleDP[S], prevK int) (
 			return
 		}
 		edgeScore := dp.Scorer.CalcScore(v.Id(), w.Id(), dp.Tree)
-		wPathK, wDownK, err := BestSplit(vCycleDP.scores[w.Id()], dp.DP[w.Id()], prevK)
+		child := w
+		for parent, _ := child.Parent(); parent != v; parent, _ = child.Parent() {
+			child = parent
+		}
+		sibling := dp.Tree.Sibling(child).Id()
+		indices, err := FourWayBestSplit([4][]S{
+			vCycleDP.scores[w.Id()], dp.DP[w.Id()], dp.DP[sibling], {0},
+		}, prevK)
 		if err != nil { // no valid split, so we don't consider this edge
 			return
 		}
+		wPathK, wDownK, siblingK := indices[0], indices[1], indices[2]
 		wScore, wPathTrace := vCycleDP.get(w.Id(), wPathK)
-		score := edgeScore + wScore + dp.DP[w.Id()][wDownK]
+		score := edgeScore + wScore + dp.DP[w.Id()][wDownK] + dp.DP[sibling][siblingK]
 		if score > bestScore || traceback == nil {
 			traceback = &cycleTrace{
 				pathW:      wPathTrace,
 				wDownTrace: &dp.Traceback[w.Id()][wDownK],
+				uDownTrace: &dp.Traceback[sibling][siblingK],
 				branch:     gr.Branch{IDs: [2]int{v.Id(), w.Id()}},
 			}
 			bestScore = score

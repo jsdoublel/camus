@@ -185,6 +185,21 @@ func TestInfer(t *testing.T) {
 			result:      "((#H1,(((((A)#H1,B),C),(D,((F)#H2,((#H2,G),H)))),E)),R);",
 			expScore:    100,
 		},
+		{
+			name:      "one-sided cycle sibling term",
+			constTree: "(((((F,(D,E)),(C,(A,B))),G),H),I);",
+			geneTrees: []string{
+				"((D,F),(B,E));", "((D,F),(B,E));",
+				"((D,H),(B,F));", "((D,H),(B,F));",
+				"((A,C),(B,F));", "((A,C),(B,F));",
+				"((D,F),(G,E));",
+				"((E,F),(D,I));", "((E,F),(D,I));",
+				"((F,I),(G,H));", "((F,I),(G,H));",
+			},
+			expNumEdges: 3,
+			result:      "((((#H2,((F,((D)#H2,E)),((C)#H3,((#H3,A),B)))),(G)#H1),(#H1,H)),I);",
+			expScore:    72.72727272727273,
+		},
 	}
 	for _, test := range testCases {
 		constTree, err := newick.NewParser(strings.NewReader(test.constTree)).Parse()
@@ -271,9 +286,9 @@ func TestInfer_Large(t *testing.T) {
 			filter:        0.5,
 			scorer:        &sc.NormalizedScorer{},
 			alpha:         0,
-			expNumEdges:   4,
+			expNumEdges:   5,
 			resultFile:    "testdata/net_q2_t05_norm.nwk",
-			expScores:     []float64{50.620515366216885, 62.28491486851521, 64.55422820782269, 73.4322719565736},
+			expScores:     []float64{50.620515366216885, 62.28491486851521, 64.55422820782269, 65.05128519208577, 65.05966617885026},
 		},
 		{
 			name:          "pauls data sym",
