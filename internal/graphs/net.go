@@ -26,30 +26,15 @@ func (br Branch) Empty() bool {
 	return br.IDs == [2]int{0, 0}
 }
 
-func (br Branch) Collide(br2 Branch) bool {
-	return (br.IDs[0] == br2.IDs[0] ||
-		br.IDs[0] == br2.IDs[1] ||
-		br.IDs[1] == br2.IDs[0] ||
-		br.IDs[1] == br2.IDs[1])
-}
-
 // Makes extended newick network out of newick tree and branch data computed by
 // the CAMUS algorithm
 func MakeNetwork(td *TreeData, branches []Branch) *Network {
 	td = td.Clone()
 	ret := make(map[string]Branch)
 	slices.SortFunc(branches, func(br1, br2 Branch) int {
-		if br1.Collide(br2) {
-			if td.Under(br1.IDs[0], br2.IDs[0]) ||
-				td.Under(br1.IDs[0], br2.IDs[1]) ||
-				td.Under(br1.IDs[1], br2.IDs[0]) ||
-				td.Under(br1.IDs[1], br2.IDs[1]) {
-				return -1
-			} else {
-				return 1
-			}
-		}
-		return 0
+		top1 := td.LCA(br1.IDs[0], br1.IDs[1])
+		top2 := td.LCA(br2.IDs[0], br2.IDs[1])
+		return td.Depths[top1] - td.Depths[top2]
 	})
 	for i, branch := range branches {
 		ret[fmt.Sprintf("#H%d", i+1)] = branch

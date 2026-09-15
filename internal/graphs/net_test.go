@@ -20,6 +20,12 @@ func TestMakeNetwork(t *testing.T) {
 			edges:     [][2]string{{"F", "E"}},
 			result:    "((A,(B,(C,(#H1,F))a)b)c,(D,(E)#H1)d)e;",
 		},
+		{
+			name:      "transitive comparator",
+			constTree: "[&R]((((A,B)u1,C)mid,G)u3,((D,E)u2,H)mid2)r;",
+			edges:     [][2]string{{"u1", "A"}, {"u2", "D"}, {"u3", "u1"}},
+			result:    "((#H1,((((#H3,((A)#H3,B)u1))#H1,C)mid,G)u3),((#H2,((D)#H2,E)u2),H)mid2)r;",
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
