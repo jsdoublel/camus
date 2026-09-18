@@ -4,7 +4,7 @@
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/jsdoublel/camus?logo=go)](https://go.dev/)
 [![build](https://github.com/jsdoublel/camus/actions/workflows/go.yml/badge.svg)](https://github.com/jsdoublel/camus/actions)
 [![GitHub License](https://img.shields.io/github/license/jsdoublel/camus)](https://github.com/jsdoublel/camus/blob/main/LICENSE.txt)
-[![DOI:10.64898/2026.02.01.703143](https://zenodo.org/badge/DOI/10.64898/2026.02.01.703143.svg)](https://doi.org/10.64898/2026.02.01.703143)
+[![DOI:10.1093/bioinformatics/btag245](https://zenodo.org/badge/DOI/10.1093/bioinformatics/btag245.svg)](https://doi.org/10.1093/bioinformatics/btag245)
 
 CAMUS (Constrained Algorithm Maximizing qUartetS) is a dynamic programming
 algorithm for inferring level-1 phylogenetic networks from quartets and a
