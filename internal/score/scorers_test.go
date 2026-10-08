@@ -239,6 +239,40 @@ func TestSymDiffScorerInit(t *testing.T) {
 	}
 }
 
+func TestSymDiffScorerCalcScore(t *testing.T) {
+	td := makeTreeData(t, "(((A,B),C),((D,E),F));")
+	low, high := &SymDiffScorer{}, &SymDiffScorer{}
+	if err := low.Init(td, 2, WithAlpha(0.2)); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := high.Init(td, 2, WithAlpha(1)); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	checked := false
+	n := len(td.Nodes())
+	for u := range n {
+		for w := range n {
+			if !ShouldCalcEdge(u, w, td) || low.penalties[u][w] == 0 {
+				continue
+			}
+			checked = true
+			for _, s := range []*SymDiffScorer{low, high} {
+				want := 2*float64(s.quartetTotals[u][w]) - s.Alpha*float64(s.penalties[u][w])
+				if got := s.CalcScore(u, w, td); got != want {
+					t.Fatalf("alpha %f, edge (%d, %d): score = %f, want %f", s.Alpha, u, w, got, want)
+				}
+			}
+			if low.CalcScore(u, w, td) <= high.CalcScore(u, w, td) {
+				t.Fatalf("edge (%d, %d): larger alpha should give a lower score, got %f (alpha=%f) and %f (alpha=%f)",
+					u, w, low.CalcScore(u, w, td), low.Alpha, high.CalcScore(u, w, td), high.Alpha)
+			}
+		}
+	}
+	if !checked {
+		t.Fatal("no edges with a non-zero penalty were checked")
+	}
+}
+
 func verifyQuartetTotals(t *testing.T, td *gr.TreeData, totals [][]uint64) bool {
 	t.Helper()
 	n := len(td.Nodes())

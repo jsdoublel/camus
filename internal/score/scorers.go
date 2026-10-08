@@ -104,7 +104,6 @@ func (s NormalizedScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
 
 type SymDiffScorer struct {
 	QuartetTotals
-	NGTree    int
 	Alpha     float64
 	penalties [][]uint64
 }
@@ -140,5 +139,5 @@ func (s *SymDiffScorer) Init(td *gr.TreeData, nprocs int, opts ...ScoreOptions) 
 }
 
 func (s SymDiffScorer) CalcScore(u, w int, td *gr.TreeData) float64 {
-	return 2*float64(s.quartetTotals[u][w]) - s.Alpha*float64(s.penalties[u][w])*float64(s.NGTree)
+	return 2*float64(s.quartetTotals[u][w]) - s.Alpha*float64(s.penalties[u][w])
 }

@@ -298,9 +298,9 @@ func TestInfer_Large(t *testing.T) {
 			filter:        0.5,
 			scorer:        &sc.SymDiffScorer{},
 			alpha:         0.1,
-			expNumEdges:   4,
+			expNumEdges:   3,
 			resultFile:    "testdata/net_q2_t05_sym_a01.nwk",
-			expScores:     []float64{45.56521739130435, 52.34782608695652, 53.04347826086956, 53.391304347826086},
+			expScores:     []float64{38, 51.30434782608695, 52.869565217391305},
 		},
 	}
 	for _, test := range testCases {
